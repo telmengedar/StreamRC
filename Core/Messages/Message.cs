@@ -39,7 +39,7 @@ namespace StreamRC.Core.Messages {
         }
 
         public override string ToString() {
-            return string.Join("", Chunks.Where(c => c.Type == MessageChunkType.Text).Select(c => c.Content));
+            return string.Join("", Chunks.Where(c => c.Type == MessageChunkType.Text || !string.IsNullOrEmpty(c.Alternative)).Select(c => c.Type == MessageChunkType.Text ? c.Content : c.Alternative));
         }
     }
 }

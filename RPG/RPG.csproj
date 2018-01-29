@@ -104,7 +104,9 @@
     <Compile Include="Effects\Status\PlaqueEffect.cs" />
     <Compile Include="Emotions\EmotionImageModule.cs" />
     <Compile Include="Emotions\EmotionType.cs" />
+    <Compile Include="Inventory\IItemCommandModule.cs" />
     <Compile Include="Inventory\ItemUseContext.cs" />
+    <Compile Include="Inventory\ItemUseException.cs" />
     <Compile Include="Messages\GameMessageModule.cs" />
     <Compile Include="Items\ItemImageModule.cs" />
     <Compile Include="Messages\RPGMessageBuilder.cs" />

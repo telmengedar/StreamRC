@@ -92,6 +92,7 @@ Mincemeat	Consumable	None	false	0	8	260	180	0	0	48	26	4	2	16	None		false	substan
 Noodles	Consumable	None	false	0	10	510	100	0	0	30	20	8	4	24	None		false	al dente	
 Spaghetti Bolognese	Consumable	None	false	0	15	580	60	0	0	78	48	14	8	55	None		false	al dente	
 Bolognese	Consumable	None	false	0	12	520	120	0	0	48	28	10	12	30	None		false	italian	
+Protein Shake	Consumable	None	true	0	12	540	100	0	0	75	60	50	20	66	None	effects add herakles 6 1000	true	strong	
 Dish of the Gods	Consumable	None	false	0	20	640	400	0	0	143	75	40	30	58	None	effects add herakles 5 800	false	divine	
 Gold	Gold	None	false	0	1	1	0	0	0	1	0	0	0	0	None		false		
 Torch	Misc	One	true	0	3	50	0	0	0	10	0	0	0	0	None		false		
@@ -139,6 +140,7 @@ C64-Ticket	Special	None	true	10	100	9000	0	0	0	18050	0	0	0	0	None	request addgam
 Saturn-Ticket	Special	None	true	10	100	11800	0	0	0	26000	0	0	0	0	None	request addgame saturn	false		
 Master-Ticket	Special	None	true	10	100	13000	0	0	0	31300	0	0	0	0	None	request addgame master	false		
 NES-Ticket	Special	None	true	10	100	12050	0	0	0	30100	0	0	0	0	None	request addgame nes	false		
+PC-Ticket	Special	None	true	10	100	15000	0	0	0	38356	0	0	0	0	None	request addgame pc	false		
 Megaphone	Special	None	true	0	7	560	0	0	0	530	0	0	0	0	None	tts streamspeak	false		
 Dagger	Weapon	One	true	1	1	80	220	0	3	50	0	0	0	0	Hands		false		
 Baseball Bat	Weapon	Both	true	6	10	580	300	0	8	80	0	0	0	0	Hands		false		

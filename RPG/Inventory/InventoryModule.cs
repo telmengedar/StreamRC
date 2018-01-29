@@ -375,21 +375,33 @@ namespace StreamRC.RPG.Inventory {
             }
 
             if (!string.IsNullOrEmpty(item.Command)) {
-                string[] commandarguments = item.Command.Split(' ').Concat(arguments).ToArray();
-                ICommandModule module = context.GetModuleByKey<ICommandModule>(commandarguments[0]);
+                string[] commandarguments = item.Command.Split(' ').ToArray();
+                IModule module = context.GetModuleByKey<IModule>(commandarguments[0]);
                 if (module == null)
                 {
                     Logger.Error(this, $"Invalid command in item {item.Name}.", $"Module '{commandarguments[0]}' not found.");
                 }
+                else if(!(module is IItemCommandModule) && !(module is ICommandModule)) {
+                    Logger.Error(this, $"Invalid command in item {item.Name}.", $"Module '{commandarguments[0]}' is not able to execute commands.");
+                }
                 else
                 {
-                    try
-                    {
-                        module.ProcessCommand(commandarguments[1], new[] { user.Service, user.Name}.Concat(commandarguments.Skip(2)).ToArray());
+                    try {
+                        if(module is IItemCommandModule)
+                            ((IItemCommandModule)module).ExecuteItemCommand(user, player, commandarguments[1], commandarguments.Skip(2).Concat(arguments).ToArray());
+                        else
+                            ((ICommandModule)module).ProcessCommand(commandarguments[0], new[] {user.Service, user.Name}.Concat(commandarguments.Skip(2)).Concat(arguments).ToArray());
+                    }
+                    catch(ItemUseException e) {
+                        context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, e.Message);
+                        Logger.Warning(this, e.Message);
+                        AddItem(player.UserID, item.ID, 1, true);
                     }
                     catch (Exception e)
                     {
                         Logger.Error(this, $"Error executing item command of item '{item.Name}'.", e);
+                        context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, "Something went wrong when using the item.");
+                        AddItem(player.UserID, item.ID, 1, true);
                         return;
                     }
                 }

@@ -3,6 +3,8 @@ using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
+using StreamRC.RPG.Inventory;
+using StreamRC.RPG.Players;
 using StreamRC.Streaming;
 using StreamRC.Streaming.Notifications;
 using StreamRC.Streaming.Stream;
@@ -14,7 +16,7 @@ namespace StreamRC.RPG.Requests {
     [Dependency(nameof(StreamModule), DependencyType.Type)]
     [Dependency(nameof(NotificationModule), DependencyType.Type)]
     [ModuleKey("request")]
-    public class GameRequestModule : IInitializableModule, ICommandModule, IStreamCommandHandler {
+    public class GameRequestModule : IInitializableModule, ICommandModule, IStreamCommandHandler, IItemCommandModule {
         readonly Context context;
 
         public GameRequestModule(Context context) {
@@ -48,7 +50,10 @@ namespace StreamRC.RPG.Requests {
 
         void RequestGame(string service, string username, string system, string[] arguments) {
             User user = context.GetModule<UserModule>().GetExistingUser(service, username);
+            RequestGame(user, system, arguments);
+        }
 
+        void RequestGame(User user, string system, string[] arguments) {
             string game = string.Join(" ", arguments.Where(a => !a.StartsWith("#")));
             string target = string.Join(", ", arguments.Where(a => a.StartsWith("#")));
 
@@ -63,12 +68,10 @@ namespace StreamRC.RPG.Requests {
                 builder.Text($" ({target})");
             builder.Text(" for ").Text(system, StreamColors.Option, FontWeight.Bold).Text(" has been requested by ").Text(user.Name, user.Color).Text(".");
 
-            context.GetModule<NotificationModule>().ShowNotification(new Notification
-            {
+            context.GetModule<NotificationModule>().ShowNotification(new Notification {
                 Title = "New Game Request",
                 Content = builder.BuildMessage()
             });
-
         }
 
         void IInitializableModule.Initialize() {
@@ -76,7 +79,7 @@ namespace StreamRC.RPG.Requests {
             context.GetModule<StreamModule>().RegisterCommandHandler(this, "requests");
         }
 
-        public void ProcessStreamCommand(StreamCommand command) {
+        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
             switch(command.Command) {
                 case "requests":
                     DisplayRequests(command.Service, command.User);
@@ -96,12 +99,27 @@ namespace StreamRC.RPG.Requests {
             context.GetModule<StreamModule>().SendMessage(service, username, $"Game Requests: {string.Join(", ", gamerequests.Select(r => $"{r.Game} ({r.Platform}{(string.IsNullOrEmpty(r.Conditions) ? "" : ", " + r.Conditions)})"))}");
         }
 
-        public string ProvideHelp(string command) {
+        string IStreamCommandHandler.ProvideHelp(string command) {
             switch(command) {
                 case "requests":
                     return "Displays the request queue in chat";
                 default:
                     throw new StreamCommandException($"'{command}' not handled by this module.");
+            }
+        }
+
+        void IItemCommandModule.ExecuteItemCommand(User user, Player player, string command, params string[] arguments) {
+            switch (command)
+            {
+                case "addgame":
+                    if(arguments.Length < 1)
+                        throw new ItemUseException("You have to provide the system on which the game shall be played.");
+                    if(arguments.Length < 2)
+                        throw new ItemUseException("Missing game name. You have to provide the name of the game to play.");
+                    RequestGame(user, arguments[0], arguments.Skip(1).ToArray());
+                    break;
+                default:
+                    throw new StreamCommandException($"'{command}' not handled by this module");
             }
         }
     }

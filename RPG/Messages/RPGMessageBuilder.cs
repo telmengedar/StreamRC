@@ -4,7 +4,6 @@ using StreamRC.Core.Messages;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
 using StreamRC.RPG.Data;
-using StreamRC.RPG.Effects;
 using StreamRC.RPG.Emotions;
 using StreamRC.RPG.Equipment;
 using StreamRC.RPG.Items;
@@ -38,8 +37,8 @@ namespace StreamRC.RPG.Messages {
 
         public RPGMessageBuilder Gold(int quantity) {
             if(quantity <= 0)
-                return Image(itemimages.GetImagePath("Gold"));
-            return Bold().Color(AdventureColors.Gold).Text(quantity.ToString()).Image(itemimages.GetImagePath("Gold")).Reset();
+                return Image(itemimages.GetImagePath("Gold"), "Gold");
+            return Bold().Color(AdventureColors.Gold).Text(quantity.ToString()).Image(itemimages.GetImagePath("Gold"), "Gold").Reset();
         }
 
         /// <summary>
@@ -109,7 +108,7 @@ namespace StreamRC.RPG.Messages {
             return Image(user.Avatar).Bold().Color(user.Color).Text(user.Name).Reset();
         }
 
-        public new RPGMessageBuilder Image(string imageurl) {
+        public new RPGMessageBuilder Image(string imageurl, string alternative=null) {
             return (RPGMessageBuilder)base.Image(imageurl);
         }
 
