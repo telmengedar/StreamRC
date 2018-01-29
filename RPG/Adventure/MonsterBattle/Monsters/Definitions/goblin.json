@@ -1,0 +1,39 @@
+﻿{
+	"name": "Goblin",
+	"levelresource": "StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions.goblinlevels.csv",
+	"droppeditems": [
+		{
+			"item": "Goblin Eye",
+			"rate": 0.18
+		}
+	],
+	"skillset": [
+		{
+			"minlevel": 5,
+			"maxlevel": 9,
+			"skill": {
+				"type": "steal",
+				"level": 1,
+				"rate": 0.17
+			}
+		},
+		{
+			"minlevel": 10,
+			"maxlevel": 14,
+			"skill": {
+				"type": "steal",
+				"level": 2,
+				"rate": 0.22
+			}
+		},
+		{
+			"minlevel": 11,
+			"maxlevel": 99,
+			"skill": {
+				"type": "steal",
+				"level": 3,
+				"rate": 0.25
+			}
+		}
+	]
+}

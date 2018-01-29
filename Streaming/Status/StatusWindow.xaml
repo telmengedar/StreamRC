@@ -1,0 +1,16 @@
+﻿<modules:ModuleWindow x:Class="StreamRC.Streaming.Status.StatusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:modules="clr-namespace:NightlyCode.StreamRC.Modules;assembly=StreamRC"
+        mc:Ignorable="d"
+        Title="Status" Height="300" Width="401.6" ShowActivated="False">
+    <Grid Background="Black">
+        <FlowDocumentScrollViewer x:Name="txtChat" HorizontalAlignment="Stretch" Height="Auto" Margin="10" VerticalAlignment="Stretch" Width="Auto" Background="Transparent" Foreground="White" BorderBrush="{x:Null}" IsHitTestVisible="False" VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True">
+            <FlowDocument FontSize="26">
+            </FlowDocument>
+        </FlowDocumentScrollViewer>
+
+    </Grid>
+</modules:ModuleWindow>

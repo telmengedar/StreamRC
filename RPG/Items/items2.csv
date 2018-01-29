@@ -1,0 +1,137 @@
+Name	Type	Handedness	Countable	LevelRequirement	FindRequirement	FindOptimum	UsageOptimum	Armor	Damage	Value	HP	MP	Pee	Poo	Target	Command	IsFluid	CriticalAdjective	CommandMessage
+Silk Gloves	Armor	None	false	2	2	140	340	1	0	25	0	0	0	0	Arm		false		
+Oven Gloves	Armor	None	false	4	2	150	260	2	0	30	0	0	0	0	Arm		false		
+Leather Gloves	Armor	None	false	5	5	420	500	3	0	75	0	0	0	0	Arm		false		
+Hardened Gloves	Armor	None	false	7	7	350	400	4	0	84	0	0	0	0	Arm		false		
+Studded Gloves	Armor	None	false	9	9	540	410	5	0	92	0	0	0	0	Arm		false		
+Wooden Gauntlets	Armor	None	false	12	13	430	340	7	0	124	0	0	0	0	Arm		false		
+Cement Gaunlets	Armor	None	true	15	15	480	350	9	0	160	0	0	0	0	Arm		false		
+Blanket	Armor	None	true	2	4	270	330	1	0	200	0	0	0	0	Back		false		
+Silk Cloak	Armor	None	true	6	8	290	300	2	0	280	0	0	0	0	Back		false		
+Woven Poncho	Armor	None	true	9	10	280	290	3	0	310	0	0	0	0	Back		false		
+Leather Cape	Armor	None	true	13	14	310	320	4	0	340	0	0	0	0	Back		false		
+Rags	Armor	None	false	1	1	75	200	4	0	30	0	0	0	0	Body		false		
+T-Shirt	Armor	None	true	3	4	450	550	6	0	70	0	0	0	0	Body		false		
+Sweater	Armor	None	true	6	6	530	460	8	0	98	0	0	0	0	Body		false		
+Leather Suit	Armor	None	true	8	8	460	400	10	0	120	0	0	0	0	Body		false		
+Bamboo Suit	Armor	None	true	10	10	440	400	12	0	145	0	0	0	0	Body		false		
+Kevlar Vest	Armor	None	true	14	15	420	350	15	0	180	0	0	0	0	Body		false		
+Socks	Armor	None	false	1	1	110	200	1	0	28	0	0	0	0	Foot		false		
+Sneakers	Armor	None	false	4	5	320	280	2	0	48	0	0	0	0	Foot		false		
+Tramping Boots	Armor	None	false	6	6	380	260	3	0	72	0	0	0	0	Foot		false		
+Wooden Shoes	Armor	None	false	9	9	479	340	4	0	57	0	0	0	0	Foot		false		
+Patent Shoes	Armor	None	false	12	12	410	305	5	0	83	0	0	0	0	Foot		false		
+Cement Boots	Armor	None	false	15	15	470	330	8	0	115	0	0	0	0	Foot		false		
+Pot	Armor	None	true	2	2	180	400	3	0	40	0	0	0	0	Head		false		
+Hard Hat	Armor	None	true	4	5	340	310	5	0	68	0	0	0	0	Head		false		
+Rubber Hat	Armor	None	true	7	7	300	290	7	0	96	0	0	0	0	Head		false		
+Wooden Hat	Armor	None	true	11	11	305	260	10	0	133	0	0	0	0	Head		false		
+Spiked Hat	Armor	None	true	15	15	350	310	12	0	168	0	0	0	0	Head		false		
+Jeans	Armor	None	false	3	4	110	280	2	0	55	0	0	0	0	Legs		false		
+Sweatpants	Armor	None	false	1	3	90	220	1	0	32	0	0	0	0	Legs		false		
+Leather Pants	Armor	None	false	7	7	340	310	4	0	69	0	0	0	0	Legs		false		
+Plastic Pants	Armor	None	false	11	11	310	302	6	0	102	0	0	0	0	Legs		false		
+Brazen Pants	Armor	None	false	14	14	303	290	8	0	140	0	0	0	0	Legs		false		
+Shoulder Pads	Armor	None	false	2	3	340	280	1	0	38	0	0	0	0	Shoulder		false		
+Shoulder Cover	Armor	None	false	7	7	312	296	2	0	76	0	0	0	0	Shoulder		false		
+Sandpaper	Armor	None	false	12	12	380	310	3	0	96	0	0	0	0	Shoulder		false		
+Book of Healing	Book	None	true	0	8	1050	0	0	0	1800	0	0	0	0	None	skills learn heal	false		
+Book of Logistics	Book	None	true	0	6	1230	0	0	0	1400	0	0	0	0	None	skills learn mule	false		
+Book of Self-Deception	Book	None	true	0	12	1420	0	0	0	2600	0	0	0	0	None	skills learn luckybastard	false		
+Book of Modern Literature	Book	None	true	0	15	2866	0	0	0	2930	0	0	0	0	None	skills forget	false		
+The Art of the Deal	Book	None	true	0	5	1300	0	0	0	1580	0	0	0	0	None	skills learn haggler	false		
+Book of Knowledge	Book	None	false	0	8	1160	0	0	0	2150	0	0	0	0	None	skills learn awareness	false		
+Apple	Consumable	None	true	0	1	10	160	0	0	5	5	2	8	5	None		false	sweet	
+Cookie	Consumable	None	true	0	3	30	180	0	0	8	8	0	2	7	None		false	tasty	
+Beer	Consumable	None	true	0	3	70	205	0	0	12	4	4	20	2	None		true	german	
+Chocolate	Consumable	None	false	0	5	230	240	0	0	25	15	8	3	8	None		false	swiss	
+Orange	Consumable	None	true	0	5	120	180	0	0	10	10	5	12	4	None		false	ripe	
+Herbs	Consumable	None	false	0	0	50	70	0	0	2	2	1	1	2	None		false	wild	
+Water	Consumable	None	false	0	0	80	180	0	0	8	8	5	15	1	None		true	crystal clear	
+Joint	Consumable	None	true	0	999	1500	380	0	0	115	25	15	0	2	None		false	oriental	
+Herbal Tea	Consumable	None	true	0	4	1200	340	0	0	35	20	12	10	1	None		true	strong	
+Coffee Bean	Consumable	None	true	0	4	150	140	0	0	55	10	8	0	5	None		false	brasilian	
+Coffee	Consumable	None	true	0	8	1800	260	0	0	180	35	30	12	3	None		true	brasilian	
+Cherry	Consumable	None	true	0	6	220	150	0	0	40	12	8	2	5	None		false	sweet	
+Meat	Consumable	None	false	0	4	340	520	0	0	32	18	5	3	18	None		false	spicy	
+Quark	Consumable	None	false	0	1	25	250	0	0	10	16	2	6	22	None		false	yummy	
+Fruit Quark	Consumable	None	false	0	1	380	270	0	0	38	40	8	8	28	None		false	delicious	
+Milk	Consumable	None	true	0	5	110	140	0	0	18	10	8	16	12	None		true	fresh	
+Strawberry	Consumable	None	true	0	6	200	180	0	0	24	8	4	11	3	None		false	sweet	
+Fruit-Milkshake	Consumable	None	true	5	16	880	250	0	0	58	32	22	20	16	None		true	delicate	
+Egg	Consumable	None	true	0	4	240	220	0	0	6	7	3	4	3	None		false	organic	
+Fried Egg	Consumable	None	true	0	24	410	200	0	0	38	30	18	5	16	None		false	spicy	
+Juice	Consumable	None	false	0	18	500	180	0	0	47	36	21	23	4	None		true	tasty	
+Antidote	Consumable	None	true	0	4	300	330	0	0	25	0	0	0	0	None	effects remove poison 5	true	magnificient	
+Snake Egg	Consumable	None	true	0	3	160	190	0	0	16	12	7	5	8	None		false		
+Walnut	Consumable	None	true	0	2	48	0	0	0	11	8	6	2	9	None		false		
+Cheese	Consumable	None	false	0	7	190	140	0	0	22	20	8	6	18	None		false	swiss	
+Cookie Crisp	Consumable	None	true	0	10	520	220	0	0	86	35	18	27	18	None		false	sweet	
+Candy	Consumable	None	true	0	5	230	150	0	0	16	12	5	10	6	None		false	fruity	
+Steak	Consumable	None	true	0	5	350	0	0	0	110	42	10	4	36	None		false	argentian	
+Mushroom	Consumable	None	true	0	3	120	0	0	0	13	7	9	6	4	None		false	rare	
+Carrot	Consumable	None	true	0	1	60	140	0	0	14	10	3	2	4	None		false	crunchy	
+Raw Pasta	Consumable	None	false	0	4	128	80	0	0	18	6	1	1	3	None		false	marvellous 	<$2>[c=$1][b]$0[/] feels extremely smart crunching on the dry pasta.
+Salt	Consumable	None	false	0	1	140	90	0	0	8	2	2	0	100	None		false	dense	<$2>[c=$1][b]$0[/] stuffs down a jar of salt kind of wondering why exactly.
+Tomato	Consumable	None	true	0	5	168	95	0	0	10	9	5	6	8	None		false	sun-ripened	
+Mincemeat	Consumable	None	false	0	8	260	180	0	0	48	26	4	2	16	None		false	substantial	
+Noodles	Consumable	None	false	0	10	510	100	0	0	30	20	8	4	24	None		false	al dente	
+Spaghetti Bolognese	Consumable	None	false	0	15	580	60	0	0	78	48	14	8	55	None		false	al dente	
+Bolognese	Consumable	None	false	0	12	520	120	0	0	48	28	10	12	30	None		false	italian	
+Dish of the Gods	Consumable	None	false	0	20	640	400	0	0	143	75	40	30	58	None	effects add herakles 5 800	false	divine	
+Gold	Gold	None	false	0	1	1	0	0	0	1	0	0	0	0	None		false		
+Torch	Misc	One	true	0	3	50	0	0	0	10	0	0	0	0	None		false		
+Daisy	Misc	None	true	0	0	500	0	0	0	40	0	0	0	0	None		false		
+Wood	Misc	None	false	0	0	70	0	0	0	5	0	0	0	0	None		false		
+Stone	Misc	None	true	0	0	90	0	0	0	7	0	0	0	0	None		false		
+Rubber	Misc	None	false	0	0	120	0	0	0	9	0	0	0	0	None		false		
+Paper	Misc	None	true	0	0	100	0	0	0	10	0	0	0	0	None		false		
+Metal	Misc	None	false	0	0	150	0	0	0	12	0	0	0	0	None		false		
+Glass	Misc	None	false	0	0	160	0	0	0	13	0	0	0	0	None		false		
+Acorn	Misc	None	true	0	6	180	0	0	0	15	0	0	0	0	None		false		
+Tobacco	Misc	None	false	0	7	300	0	0	0	30	0	0	0	0	None		false		
+Cigarette	Misc	None	true	0	999	2400	0	0	0	80	0	0	0	0	None		false		
+Lighter	Misc	None	true	0	9	290	0	0	0	48	0	0	0	0	None		false		
+Poo	Misc	None	false	0	1	800	0	0	0	1	0	0	0	0	None	effects add shittyweapon 3 900	false		<$2>[c=$1][b]$0[/] grabs a big pile of poo and smears it onto the weapon.
+Thread	Misc	None	true	0	5	450	0	0	0	30	0	0	0	0	None		false		
+Calendar	Misc	None	true	0	6	305	0	0	0	40	0	0	0	0	None		false		
+Teddy Bear	Misc	None	true	0	6	340	0	0	0	55	0	0	0	0	None		false		
+Garbage	Misc	None	false	0	1	1000	0	0	0	1	0	0	0	0	None		false		
+Pee	Misc	None	false	0	1	800	0	0	0	1	0	0	0	0	None	effects add smellyarmor 3 900	true		<$2>[c=$1][b]$0[/] takes a cup of pee and covers the armor in urine.
+Pebble	Misc	None	true	0	1	120	0	0	0	4	0	0	0	0	None		false		
+Bat Wing	Misc	None	true	0	5	480	0	0	0	21	0	0	0	0	None		false		
+Goblin Eye	Misc	None	true	0	6	440	0	0	0	24	0	0	0	0	None		false		
+Rock	Misc	None	true	0	11	400	0	0	0	24	0	0	0	0	None		false		
+Glue	Misc	None	false	0	8	180	0	0	0	36	0	0	0	0	None		false		
+Vomit	Misc	None	false	0	6	620	0	0	0	2	0	0	0	0	None		false		
+Cunning Polish of Doom	Misc	None	false	0	26	840	0	0	0	210	0	0	0	0	None	effects add shittyweapon 6 1800	true		<$2>[c=$1][b]$0[/] passionately covers the weapon with the polish thinking about the impending doom for eventual enemies.
+Antibiotics	Misc	None	false	0	4	300	0	0	0	140	0	0	0	0	None	effects reduce plaque 3	false		<$2>[c=$1][b]$0[/] trusts in classic pharmaceuticals and injects an unknown amount of antibiotics.
+Broth	Consumable	None	false	0	18	380	150	0	0	90	20	5	30	10	None	effects add herakles 2 240	true	strong	
+Instant Broth	Consumable	None	false	0	8	360	80	0	0	31	7	1	3	8	None	effects add herakles 1 120	false	salty	
+Ramen	Consumable	None	false	0	16	420	200	0	0	130	45	32	48	25	None		false	japanese	
+Stew	Consumable	None	false	0	14	340	260	0	0	80	30	25	35	15	None		false	strong	
+Potion of Herakles	Potion	None	false	0	6	650	0	0	0	150	0	0	15	0	None	effects add herakles 3 300	true		
+Potion of the Cat	Potion	None	false	0	6	600	0	0	0	170	0	0	15	0	None	effects add cat 3 300	true		
+Potion of the Rock	Potion	None	false	0	6	620	0	0	0	195	0	0	15	0	None	effects add rock 3 300	true		
+Potion of Enlightenment	Potion	None	false	0	6	550	0	0	0	120	0	0	15	0	None	effects add enlightment 3 300	true		
+Potion of Fortuna	Potion	None	false	0	6	400	0	0	0	130	0	0	15	0	None	effects add fortuna 3 1800	true		
+Minor Healing Potion	Potion	None	true	8	8	250	220	0	0	60	50	0	26	0	None		true	aromatic	
+Minor Mana Potion	Potion	None	true	8	8	250	220	0	0	70	0	50	26	0	None		true	aromatic	
+Gameboy-Ticket	Special	None	true	10	100	12800	0	0	0	27500	0	0	0	0	None	request gameboy	false		
+SNES-Ticket	Special	None	true	10	100	14300	0	0	0	32500	0	0	0	0	None	request snes	false		
+Genesis-Ticket	Special	None	true	10	100	15000	0	0	0	33000	0	0	0	0	None	request genesis	false		
+Amiga-Ticket	Special	None	true	10	100	10200	0	0	0	22400	0	0	0	0	None	request amiga	false		
+C64-Ticket	Special	None	true	10	100	9000	0	0	0	18050	0	0	0	0	None	request c64	false		
+Saturn-Ticket	Special	None	true	10	100	11800	0	0	0	26000	0	0	0	0	None	request saturn	false		
+Master-Ticket	Special	None	true	10	100	13000	0	0	0	31300	0	0	0	0	None	request master	false		
+NES-Ticket	Special	None	true	10	100	12050	0	0	0	30100	0	0	0	0	None	request nes	false		
+Dagger	Weapon	One	true	1	1	80	220	0	3	50	0	0	0	0	Hands		false		
+Baseball Bat	Weapon	Both	true	6	10	580	300	0	8	80	0	0	0	0	Hands		false		
+Short Sword	Weapon	One	true	5	8	480	180	0	6	70	0	0	0	0	Hands		false		
+Hammer	Weapon	One	true	4	4	200	240	0	4	60	0	0	0	0	Hands		false		
+Morningstar	Weapon	One	true	6	6	600	220	0	9	110	0	0	0	0	Hands		false		
+Flail	Weapon	One	true	9	9	590	280	0	12	140	0	0	0	0	Hands		false		
+Long Sword	Weapon	One	true	12	12	610	320	0	15	170	0	0	0	0	Hands		false		
+Pan	Weapon	One	true	7	8	360	250	0	5	66	0	0	0	0	Hands		false		
+Cooking Knife	Weapon	One	true	3	3	460	260	0	5	67	0	0	0	0	Hands		false		
+Falchion	Weapon	One	true	15	15	500	290	0	18	205	0	0	0	0	Hands		false		

@@ -1,0 +1,21 @@
+﻿<Window x:Class="StreamRC.Core.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="TwitchRC" Height="520.412" Width="779.307">
+    <Grid>
+        <DockPanel>
+            <Menu x:Name="menu" DockPanel.Dock="Top">
+                <MenuItem Header="_File">
+                    <MenuItem Header="_Exit" />
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+        <FlowDocumentScrollViewer x:Name="logViewer"  Margin="10,36,10,84">
+            <FlowDocument x:Name="log" />
+        </FlowDocumentScrollViewer>
+        <TextBox x:Name="txtMessage" Margin="10,0,10,10" TextWrapping="Wrap" FontSize="20" KeyDown="txtMessage_KeyDown" Height="69" VerticalAlignment="Bottom"/>
+    </Grid>
+</Window>

@@ -1,0 +1,59 @@
+﻿<Window x:Class="StreamRC.Streaming.Polls.Management.PollManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:management="clr-namespace:StreamRC.Streaming.Polls.Management"
+        xmlns:polls="clr-namespace:StreamRC.Streaming.Polls"
+        mc:Ignorable="d"
+        Title="Poll Management" Height="454.867" Width="682.301">
+    <Grid>
+        <DataGrid x:Name="grdPolls" HorizontalAlignment="Left" Margin="10,41,0,207" Width="309" RowHeaderWidth="0" SelectionChanged="grdPolls_SelectionChanged" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <management:PollEditor />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Name}" Header="Name" Width="100"/>
+                <DataGridTextColumn Binding="{Binding Path=Description}" Header="Description" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxRemovePoll" Header="Remove" Click="Context_RemovePoll" IsEnabled="False"/>
+                    <MenuItem x:Name="ctxClearPoll" Header="Clear" Click="Context_ClearPoll" IsEnabled="False" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <DataGrid x:Name="grdPollOptions" HorizontalAlignment="Left" Margin="10,0,0,10" Width="309" Height="161" VerticalAlignment="Bottom" RowHeaderWidth="0" SelectionChanged="grdPollOptions_SelectionChanged" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <management:PollOptionEditor />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Key}" Header="Key" Width="100"/>
+                <DataGridTextColumn Binding="{Binding Path=Description}" Header="Description" Width="*"/>
+                <DataGridCheckBoxColumn Binding="{Binding Path=Locked}" Header="Locked" Width="50" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxRemoveOption" Header="Remove" Click="Context_RemoveOption" IsEnabled="False"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <DataGrid x:Name="grdItems" Margin="324,41,10,10" RowHeaderWidth="0" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <polls:PollVote />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=User}" Header="User" Width="100"/>
+                <DataGridTextColumn Binding="{Binding Path=Vote}" Header="Item" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxClearVotes" Header="Clear" Click="Context_ClearCollection" IsEnabled="True"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <Label Content="Options" HorizontalAlignment="Left" Margin="10,222,0,0" VerticalAlignment="Top"/>
+        <Label Content="Polls" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <Label Content="Votes" HorizontalAlignment="Left" Margin="324,10,0,0" VerticalAlignment="Top"/>
+    </Grid>
+</Window>

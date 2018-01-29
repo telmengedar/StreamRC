@@ -1,0 +1,572 @@
+﻿[
+	{
+		"result": "Joint",
+		"ingredients": [
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Tobacco",
+				"consumed": true
+			},
+			{
+				"item": "Paper",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Herbal Tea",
+		"ingredients": [
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Coffee",
+		"ingredients": [
+			{
+				"item": "Coffee Bean",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Cigarette",
+		"ingredients": [
+			{
+				"item": "Tobacco",
+				"consumed": true
+			},
+			{
+				"item": "Paper",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Quark",
+		"ingredients": [
+			{
+				"item": "Quark",
+				"consumed": true
+			},
+			{
+				"item": "Apple",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Quark",
+		"ingredients": [
+			{
+				"item": "Quark",
+				"consumed": true
+			},
+			{
+				"item": "Cherry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Quark",
+		"ingredients": [
+			{
+				"item": "Quark",
+				"consumed": true
+			},
+			{
+				"item": "Orange",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Quark",
+		"ingredients": [
+			{
+				"item": "Quark",
+				"consumed": true
+			},
+			{
+				"item": "Strawberry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit-Milkshake",
+		"ingredients": [
+			{
+				"item": "Milk",
+				"consumed": true
+			},
+			{
+				"item": "Strawberry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit-Milkshake",
+		"ingredients": [
+			{
+				"item": "Milk",
+				"consumed": true
+			},
+			{
+				"item": "Cherry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fried Egg",
+		"ingredients": [
+			{
+				"item": "Pan",
+				"consumed": false
+			},
+			{
+				"item": "Egg",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Mincemeat",
+		"ingredients": [
+			{
+				"item": "Cooking Knife",
+				"consumed": false
+			},
+			{
+				"item": "Meat",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Juice",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Apple",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Juice",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Orange",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Juice",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Cherry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Juice",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Strawberry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of Herakles",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Snake Egg",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of the Cat",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Bat Wing",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of Fortuna",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Goblin Eye",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of the Rock",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Stone",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of the Rock",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Pebble",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of the Rock",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Rock",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Potion of Enlightenment",
+		"ingredients": [
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Herbs",
+				"consumed": true
+			},
+			{
+				"item": "Walnut",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Cookie Crisp",
+		"ingredients": [
+			{
+				"item": "Cookie",
+				"consumed": true
+			},
+			{
+				"item": "Milk",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Cunning Polish of Doom",
+		"ingredients": [
+			{
+				"item": "Poo",
+				"consumed": true
+			},
+			{
+				"item": "Glue",
+				"consumed": true
+			},
+			{
+				"item": "Vomit",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Noodles",
+		"ingredients": [
+			{
+				"item": "Raw Pasta",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Salt",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Spaghetti Bolognese",
+		"ingredients": [
+			{
+				"item": "Noodles",
+				"consumed": true
+			},
+			{
+				"item": "Bolognese",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Bolognese",
+		"ingredients": [
+			{
+				"item": "Tomato",
+				"consumed": true
+			},
+			{
+				"item": "Mincemeat",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Spaghetti Bolognese",
+		"ingredients": [
+			{
+				"item": "Raw Pasta",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Salt",
+				"consumed": true
+			},
+						{
+				"item": "Tomato",
+				"consumed": true
+			},
+			{
+				"item": "Mincemeat",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Spaghetti Bolognese",
+		"ingredients": [
+			{
+				"item": "Noodles",
+				"consumed": true
+			},
+			{
+				"item": "Tomato",
+				"consumed": true
+			},
+			{
+				"item": "Mincemeat",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Spaghetti Bolognese",
+		"ingredients": [
+			{
+				"item": "Raw Pasta",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			},
+			{
+				"item": "Salt",
+				"consumed": true
+			},
+			{
+				"item": "Bolognese",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Dish of the Gods",
+		"ingredients": [
+			{
+				"item": "Spaghetti Bolognese",
+				"consumed": true
+			},
+			{
+				"item": "Cheese",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Broth",
+		"ingredients": [
+			{
+				"item": "Instant Broth",
+				"consumed": true
+			},
+			{
+				"item": "Water",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Yoghurt",
+		"ingredients": [
+			{
+				"item": "Yoghurt",
+				"consumed": true
+			},
+			{
+				"item": "Apple",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Yoghurt",
+		"ingredients": [
+			{
+				"item": "Yoghurt",
+				"consumed": true
+			},
+			{
+				"item": "Cherry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Yoghurt",
+		"ingredients": [
+			{
+				"item": "Yoghurt",
+				"consumed": true
+			},
+			{
+				"item": "Orange",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Fruit Yoghurt",
+		"ingredients": [
+			{
+				"item": "Yoghurt",
+				"consumed": true
+			},
+			{
+				"item": "Strawberry",
+				"consumed": true
+			}
+		]
+	},
+	{
+		"result": "Tzatziki",
+		"ingredients": [
+			{
+				"item": "Quark",
+				"consumed": true
+			},
+			{
+				"item": "Yoghurt",
+				"consumed": true
+			},
+			{
+				"item": "Salt",
+				"consumed": true
+			},
+			{
+				"item": "Pepper",
+				"consumed": true
+			},
+			{
+				"item": "Cucumber",
+				"consumed": true
+			}
+		]
+	}
+]

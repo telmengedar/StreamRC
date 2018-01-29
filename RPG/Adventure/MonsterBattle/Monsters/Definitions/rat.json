@@ -1,0 +1,39 @@
+﻿{
+	"name": "Rat",
+	"levelresource": "StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions.ratlevels.csv",
+	"droppeditems": [
+		{
+			"item": "Cheese",
+			"rate": 0.24
+		}
+	],
+	"skillset": [
+		{
+			"minlevel": 3,
+			"maxlevel": 6,
+			"skill": {
+				"type": "pestilence",
+				"level": 1,
+				"rate": 0.05
+			}
+		},
+		{
+			"minlevel": 7,
+			"maxlevel": 11,
+			"skill": {
+				"type": "pestilence",
+				"level": 2,
+				"rate": 0.14
+			}
+		},
+		{
+			"minlevel": 12,
+			"maxlevel": 99,
+			"skill": {
+				"type": "pestilence",
+				"level": 3,
+				"rate": 0.2
+			}
+		}
+	]
+}

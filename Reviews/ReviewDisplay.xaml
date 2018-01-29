@@ -1,0 +1,47 @@
+﻿<Window x:Class="StreamRC.Reviews.ReviewDisplay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                      xmlns:reviews="clr-namespace:StreamRC.Reviews"
+                      mc:Ignorable="d"
+        Title="Review" Height="380.723" Width="390.084">
+    <Grid Background="#FF89018F" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <DataGrid x:Name="grdItems" HeadersVisibility="None" AutoGenerateColumns="False" Margin="10" Background="{x:Null}" RowBackground="{x:Null}" BorderBrush="{x:Null}" HorizontalGridLinesBrush="{x:Null}" VerticalGridLinesBrush="{x:Null}" Foreground="White" FontSize="30" FontWeight="Bold" Visibility="Hidden">
+            <DataGrid.DataContext>
+                <reviews:ReviewItem />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Topic}" Header="Name" Width="*">
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding Path=Value}" Header="Value" Width="100">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style>
+                            <Setter Property="TextBlock.TextAlignment" Value="Right" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <!--Grid.Triggers>
+            <EventTrigger RoutedEvent="notifications:NotificationControl.NotificationChanged">
+                <BeginStoryboard Name="ShowFollowerNotification">
+                    <Storyboard Completed="Storyboard_Completed">
+                        <ThicknessAnimation 
+                            Storyboard.TargetName="notFollower"
+                            Storyboard.TargetProperty="Margin"
+                            Duration="0:0:0.5"
+                            From="0,-380,0,0"
+                            To="0,0,0,0" />
+                        <ThicknessAnimation 
+                            Storyboard.TargetName="notFollower"
+                            Storyboard.TargetProperty="Margin"
+                            From="0,0,0,0"
+                            To="0,-380,0,0" 
+                            BeginTime="0:0:7" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </-->
+    </Grid>
+</Window>

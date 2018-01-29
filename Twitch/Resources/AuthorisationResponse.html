@@ -1,0 +1,13 @@
+﻿<html>
+<head>
+	<title>Stream RC Twitch Authorisation Response</title>
+</head>
+<body>
+<script>
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.open("GET", "http://localhost:40299/twitchrc/?" + document.location.hash.substring(1), false); // false for synchronous request
+	xmlHttp.send(null);
+	close();
+</script>
+</body>
+</html>

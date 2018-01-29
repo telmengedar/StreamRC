@@ -1,0 +1,279 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{EB1A1823-3D2B-4279-B58C-1C78904ED7D0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>StreamRC.Streaming</RootNamespace>
+    <AssemblyName>StreamRC.Streaming</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NightlyCode.Core">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.DB">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.DB.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Japi">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Modules">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Net">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Ads\Ad.cs" />
+    <Compile Include="Ads\AdModule.cs" />
+    <Compile Include="Cache\ImageCacheEntry.cs" />
+    <Compile Include="Cache\ImageCacheItem.cs" />
+    <Compile Include="Cache\ImageCacheModule.cs" />
+    <Compile Include="Chat\ChatHttpMessage.cs" />
+    <Compile Include="Chat\ChatHttpResponse.cs" />
+    <Compile Include="Chat\ChatHttpService.cs" />
+    <Compile Include="Chat\MicroPresentTTSModule.cs" />
+    <Compile Include="Events\StreamEvent.cs" />
+    <Compile Include="Events\StreamEventHttpModule.cs" />
+    <Compile Include="Events\StreamEventModule.cs" />
+    <Compile Include="Events\StreamHttpEvent.cs" />
+    <Compile Include="Games\CurrentlyPlayedGame.cs" />
+    <Compile Include="Games\CurrentlyPlayedModule.cs" />
+    <Compile Include="Games\GamesHttpModule.cs" />
+    <Compile Include="Status\StatusWindow.xaml.cs">
+      <DependentUpon>StatusWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Http\StreamHttpResourceModule.cs" />
+    <Compile Include="Collections\BlockedCollectionItem.cs" />
+    <Compile Include="Collections\Collection.cs" />
+    <Compile Include="Collections\CollectionDiagramData.cs" />
+    <Compile Include="Collections\CollectionItem.cs" />
+    <Compile Include="Collections\CollectionModule.cs" />
+    <Compile Include="Collections\CollectionTickerGenerator.cs" />
+    <Compile Include="Collections\Management\BlockedItemEditor.cs" />
+    <Compile Include="Collections\Management\CollectionEditor.cs" />
+    <Compile Include="Collections\Management\CollectionManagementWindow.xaml.cs">
+      <DependentUpon>CollectionManagementWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Collections\WeightedCollectionItem.cs" />
+    <Compile Include="Notifications\NotificationHttpMessage.cs" />
+    <Compile Include="Notifications\NotificationHttpResponse.cs" />
+    <Compile Include="Notifications\NotificationsHttpService.cs" />
+    <Compile Include="Notifications\Notification.cs" />
+    <Compile Include="Notifications\NotificationModule.cs" />
+    <Compile Include="Polls\Notifications\PollNotificationGenerator.cs" />
+    <Compile Include="Polls\PollHttpResponse.cs" />
+    <Compile Include="Polls\PollHttpService.cs" />
+    <Compile Include="Polls\PollModule.cs" />
+    <Compile Include="Polls\PollTickerGenerator.cs" />
+    <Compile Include="StreamColors.cs" />
+    <Compile Include="Stream\IEmoteData.cs" />
+    <Compile Include="Stream\IStreamModule.cs" />
+    <Compile Include="Stream\MessageExtensions.cs" />
+    <Compile Include="Stream\MicroPresent.cs" />
+    <Compile Include="Stream\StreamNotificationModule.cs" />
+    <Compile Include="Stream\SubscriberInformation.cs" />
+    <Compile Include="Text\Font\FontDescription.cs" />
+    <Compile Include="Text\Font\FontSet.cs" />
+    <Compile Include="Text\Font\FontSourceType.cs" />
+    <Compile Include="Text\Font\FontSpacing.cs" />
+    <Compile Include="Text\Font\Glyph.cs" />
+    <Compile Include="Text\Images\FastBitmap.cs" />
+    <Compile Include="Text\Images\Pixel.cs" />
+    <Compile Include="Text\Images\PixelData24.cs" />
+    <Compile Include="Text\Images\PixelData32.cs" />
+    <Compile Include="Text\ImageToolset.cs" />
+    <Compile Include="Text\TextHttpModule.cs" />
+    <Compile Include="Text\TextModule.cs" />
+    <Compile Include="Text\TextSpecs.cs" />
+    <Compile Include="Ticker\ITickerMessageSource.cs" />
+    <Compile Include="Ticker\TickerHttpResponse.cs" />
+    <Compile Include="Ticker\TickerHttpMessage.cs" />
+    <Compile Include="Ticker\TickerHttpService.cs" />
+    <Compile Include="Ticker\TickerMessage.cs" />
+    <Compile Include="Ticker\TickerModule.cs" />
+    <Compile Include="Games\Game.cs" />
+    <Compile Include="Games\UpcomingGamesModule.cs" />
+    <Compile Include="Games\UpcomingGamesWindow.xaml.cs">
+      <DependentUpon>UpcomingGamesWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Infos\Info.cs" />
+    <Compile Include="Infos\InfoModule.cs" />
+    <Compile Include="Infos\Management\InfoItem.cs" />
+    <Compile Include="Infos\Management\InfoManagementWindow.xaml.cs">
+      <DependentUpon>InfoManagementWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Polls\ActivePoll.cs" />
+    <Compile Include="Polls\DiagramItem.cs" />
+    <Compile Include="Polls\IDiagramData.cs" />
+    <Compile Include="Polls\Management\PollEditor.cs" />
+    <Compile Include="Polls\Management\PollManagementWindow.xaml.cs">
+      <DependentUpon>PollManagementWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Polls\Management\PollOptionEditor.cs" />
+    <Compile Include="Polls\Poll.cs" />
+    <Compile Include="Polls\PollDiagramData.cs" />
+    <Compile Include="Polls\PollOption.cs" />
+    <Compile Include="Polls\PollVote.cs" />
+    <Compile Include="Polls\WeightedVote.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Stream\ChatEmote.cs" />
+    <Compile Include="Stream\ChatMessage.cs" />
+    <Compile Include="Stream\FollowerInformation.cs" />
+    <Compile Include="Stream\HostInformation.cs" />
+    <Compile Include="Stream\IStreamCommandHandler.cs" />
+    <Compile Include="Stream\IStreamServiceModule.cs" />
+    <Compile Include="Stream\StreamCommand.cs" />
+    <Compile Include="Stream\StreamCommandException.cs" />
+    <Compile Include="Stream\StreamModule.cs" />
+    <Compile Include="Stream\UserInformation.cs" />
+    <Compile Include="Users\User.cs" />
+    <Compile Include="Users\UserCacheEntry.cs" />
+    <Compile Include="Users\UserExtensions.cs" />
+    <Compile Include="Users\UserKey.cs" />
+    <Compile Include="Users\UserModule.cs" />
+    <Compile Include="Users\UserStatus.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Status\StatusWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Collections\Management\CollectionManagementWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Games\UpcomingGamesWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Infos\Management\InfoManagementWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Polls\Management\PollManagementWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Collections\Views\weightedcollectionitem.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Polls\Views\activepoll.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Polls\Views\weightedvote.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{49e63bf7-b832-42ec-98fc-68dcac446338}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StreamRC\StreamRC.csproj">
+      <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
+      <Name>StreamRC</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Chat\chat.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Chat\chat.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Notifications\notifications.css" />
+    <EmbeddedResource Include="Http\Notifications\notifications.html" />
+    <EmbeddedResource Include="Http\Notifications\notifications.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Ticker\ticker.js" />
+    <EmbeddedResource Include="Http\Ticker\ticker.css" />
+    <EmbeddedResource Include="Http\messages.js" />
+    <EmbeddedResource Include="Http\Ticker\ticker.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Chat\chat.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls-h.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls-h.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Polls\polls-h.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Text\Font\CyFont.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Text\Font\CyFont.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Events\events.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Events\events.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Events\events.js" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\StreamRC\bin\Debug\modules\" />
+  </Target>
+</Project>

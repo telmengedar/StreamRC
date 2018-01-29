@@ -1,0 +1,20 @@
+﻿<Window x:Class="StreamRC.Streaming.Infos.Management.InfoManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:management="clr-namespace:StreamRC.Streaming.Infos.Management"
+        mc:Ignorable="d"
+        Title="Info Management" Height="405.978" Width="463.044">
+    <Grid>
+        <DataGrid x:Name="grdInfos" Margin="10" AutoGenerateColumns="False" RowHeaderWidth="0" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Key}" ClipboardContentBinding="{x:Null}" Header="Key" Width="100"/>
+                <DataGridTextColumn Binding="{Binding Path=Text}" ClipboardContentBinding="{x:Null}" Header="Text" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.DataContext>
+                <management:InfoItem />
+            </DataGrid.DataContext>
+        </DataGrid>
+    </Grid>
+</Window>

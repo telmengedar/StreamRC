@@ -1,0 +1,39 @@
+﻿{
+	"name": "Bat",
+	"levelresource": "StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions.batlevels.csv",
+	"droppeditems": [
+		{
+			"item": "Bat Wing",
+			"rate": 0.32
+		}
+	],
+	"skillset": [
+			{
+			"minlevel": 3,
+			"maxlevel": 7,
+			"skill": {
+				"type": "suck",
+				"level": 1,
+				"rate": 0.08
+			}
+		},
+		{
+			"minlevel": 8,
+			"maxlevel": 13,
+			"skill": {
+				"type": "suck",
+				"level": 2,
+				"rate": 0.17
+			}
+		},
+		{
+			"minlevel": 14,
+			"maxlevel": 99,
+			"skill": {
+				"type": "suck",
+				"level": 3,
+				"rate": 0.24
+			}
+		}
+	]
+}

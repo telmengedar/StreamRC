@@ -1,0 +1,57 @@
+﻿<Window x:Class="StreamRC.Streaming.Collections.Management.CollectionManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:collections="clr-namespace:StreamRC.Streaming.Collections"
+        mc:Ignorable="d"
+        Title="Collection Management" Height="454.867" Width="682.301">
+    <Grid>
+        <DataGrid x:Name="grdCollections" HorizontalAlignment="Left" Margin="10,41,0,207" Width="309" RowHeaderWidth="0" SelectionChanged="grdCollections_SelectionChanged" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <collections:Collection />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Name}" Header="Name" Width="100"/>
+                <DataGridTextColumn Binding="{Binding Path=Description}" Header="Description" Width="*"/>
+                <DataGridTextColumn Binding="{Binding Path=ItemsPerUser}" Header="Items" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxRemoveCollection" Header="Remove" Click="Context_RemoveCollection" IsEnabled="False"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <DataGrid x:Name="grdBlockedItems" HorizontalAlignment="Left" Margin="10,0,0,10" Width="309" Height="161" VerticalAlignment="Bottom" RowHeaderWidth="0" SelectionChanged="grdBlockedItems_SelectionChanged" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <collections:BlockedCollectionItem />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=Item}" Header="Item" Width="100" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path=Reason}" Header="Reason" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxUnblockItem" Header="Unblock" Click="Context_UnblockItem" IsEnabled="False"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <DataGrid x:Name="grdItems" Margin="324,41,10,10" RowHeaderWidth="0" SelectionChanged="grdItems_SelectionChanged" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False">
+            <DataGrid.DataContext>
+                <collections:CollectionItem />
+            </DataGrid.DataContext>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Path=User}" Header="User" Width="100" IsReadOnly="True" />
+                <DataGridTextColumn Binding="{Binding Path=Item}" Header="Item" Width="*" IsReadOnly="True" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="ctxBlockItem" Header="Block" Click="Context_BlockItem" IsEnabled="False"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+        <Label Content="Blocked Items" HorizontalAlignment="Left" Margin="10,222,0,0" VerticalAlignment="Top"/>
+        <Label Content="Collections" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <Label Content="Items" HorizontalAlignment="Left" Margin="324,10,0,0" VerticalAlignment="Top"/>
+    </Grid>
+</Window>

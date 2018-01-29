@@ -1,0 +1,39 @@
+﻿{
+	"name": "Snake",
+	"levelresource": "StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions.snakelevels.csv",
+	"droppeditems": [
+		{
+			"item": "Snake Egg",
+			"rate": 0.3
+		}
+	],
+	"skillset": [
+		{
+			"minlevel": 3,
+			"maxlevel": 6,
+			"skill": {
+				"type": "poison",
+				"level": 1,
+				"rate": 0.09
+			}
+		},
+		{
+			"minlevel": 7,
+			"maxlevel": 11,
+			"skill": {
+				"type": "poison",
+				"level": 2,
+				"rate": 0.18
+			}
+		},
+		{
+			"minlevel": 12,
+			"maxlevel": 99,
+			"skill": {
+				"type": "poison",
+				"level": 3,
+				"rate": 0.26
+			}
+		}
+	]
+}

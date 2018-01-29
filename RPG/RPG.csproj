@@ -1,0 +1,302 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8281ECBD-B3C7-422C-B546-5E458C35291D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>StreamRC.RPG</RootNamespace>
+    <AssemblyName>StreamRC.RPG</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NightlyCode.Core">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.DB">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.DB.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Japi">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Math">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Modules">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Adventure\Adventure.cs" />
+    <Compile Include="Adventure\AdventureEvent.cs" />
+    <Compile Include="Adventure\AdventureModule.cs" />
+    <Compile Include="Adventure\AdventureStatus.cs" />
+    <Compile Include="Adventure\AwarenessContext.cs" />
+    <Compile Include="Adventure\Exploration\ExplorationLogic.cs" />
+    <Compile Include="Adventure\Exploration\FoundItem.cs" />
+    <Compile Include="Adventure\IAdventureLogic.cs" />
+    <Compile Include="Adventure\MonsterBattle\BattleReward.cs" />
+    <Compile Include="Adventure\MonsterBattle\IBattleEntity.cs" />
+    <Compile Include="Adventure\MonsterBattle\MonsterBattleEntity.cs" />
+    <Compile Include="Adventure\MonsterBattle\MonsterBattleLogic.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Definitions\MonsterDefinition.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Definitions\MonsterDrop.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Definitions\MonsterLevel.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Definitions\MonsterSkillDefinition.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Definitions\MonsterSkillRange.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\DropItem.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\MonsterModule.cs" />
+    <Compile Include="Adventure\MonsterBattle\Monsters\Monster.cs" />
+    <Compile Include="Adventure\MonsterBattle\PlayerBattleEntity.cs" />
+    <Compile Include="Adventure\PlayerAwarenessModule.cs" />
+    <Compile Include="Adventure\SpiritRealm\SpiritRealmLogic.cs" />
+    <Compile Include="Data\AdventureColors.cs" />
+    <Compile Include="Effects\BattleEffectType.cs" />
+    <Compile Include="Effects\EffectMessage.cs" />
+    <Compile Include="Effects\EffectResult.cs" />
+    <Compile Include="Effects\EffectResultType.cs" />
+    <Compile Include="Effects\IAttackEffect.cs" />
+    <Compile Include="Effects\Battle\IBattleEffect.cs" />
+    <Compile Include="Effects\Status\InfectionEffect.cs" />
+    <Compile Include="Effects\Modifiers\FortunaEffect.cs" />
+    <Compile Include="Effects\Modifiers\EnlightmentEffect.cs" />
+    <Compile Include="Effects\Modifiers\RockEffect.cs" />
+    <Compile Include="Effects\Modifiers\CatEffect.cs" />
+    <Compile Include="Effects\Modifiers\HeraklesEffect.cs" />
+    <Compile Include="Effects\Modifiers\IModifierEffect.cs" />
+    <Compile Include="Effects\Battle\ShittyWeaponEffect.cs" />
+    <Compile Include="Effects\Battle\SmellyArmorEffect.cs" />
+    <Compile Include="Effects\Status\IStatusEffect.cs" />
+    <Compile Include="Effects\Status\PoisonEffect.cs" />
+    <Compile Include="Effects\Status\PlaqueEffect.cs" />
+    <Compile Include="Emotions\EmotionImageModule.cs" />
+    <Compile Include="Emotions\EmotionType.cs" />
+    <Compile Include="Inventory\ItemUseContext.cs" />
+    <Compile Include="Messages\GameMessageModule.cs" />
+    <Compile Include="Items\ItemImageModule.cs" />
+    <Compile Include="Messages\RPGMessageBuilder.cs" />
+    <Compile Include="Players\ConvenienceModule.cs" />
+    <Compile Include="Players\LevelEntry.cs" />
+    <Compile Include="Data\StringExtensions.cs" />
+    <Compile Include="Effects\EffectModule.cs" />
+    <Compile Include="Effects\EffectType.cs" />
+    <Compile Include="Effects\ITemporaryEffect.cs" />
+    <Compile Include="Equipment\EquipmentBonus.cs" />
+    <Compile Include="Equipment\EquipmentItem.cs" />
+    <Compile Include="Equipment\EquipmentModule.cs" />
+    <Compile Include="Equipment\EquipmentSlot.cs" />
+    <Compile Include="Equipment\EquippedItemInformation.cs" />
+    <Compile Include="Items\ItemExtensions.cs" />
+    <Compile Include="Items\Recipes\ItemRecipe.cs" />
+    <Compile Include="Items\Recipes\RecipeIngredient.cs" />
+    <Compile Include="Items\Recipes\ResourceRecipe.cs" />
+    <Compile Include="Items\Recipes\ResourceIngredient.cs" />
+    <Compile Include="Players\Player.cs" />
+    <Compile Include="Data\PlayerAscension.cs" />
+    <Compile Include="Data\PlayerKey.cs" />
+    <Compile Include="Data\PlayerStatus.cs" />
+    <Compile Include="Data\RPGDatabaseModule.cs" />
+    <Compile Include="Exploration\Data\Adjective.cs" />
+    <Compile Include="Exploration\StatementModule.cs" />
+    <Compile Include="Exploration\Statements\AdjectiveSource.cs" />
+    <Compile Include="Exploration\Statements\ConstantTermSource.cs" />
+    <Compile Include="Exploration\Statements\ITerm.cs" />
+    <Compile Include="Exploration\Statements\ITermSource.cs" />
+    <Compile Include="Exploration\Data\Noun.cs" />
+    <Compile Include="Exploration\Statements\NounSource.cs" />
+    <Compile Include="Exploration\Statements\NounTerm.cs" />
+    <Compile Include="Exploration\Statements\PrepositionSource.cs" />
+    <Compile Include="Exploration\Statements\PrepositionTerm.cs" />
+    <Compile Include="Exploration\Statements\Statement.cs" />
+    <Compile Include="Exploration\Statements\Term.cs" />
+    <Compile Include="Inventory\AddInventoryItemResult.cs" />
+    <Compile Include="Inventory\FullInventoryItem.cs" />
+    <Compile Include="Inventory\InventoryItem.cs" />
+    <Compile Include="Inventory\InventoryModule.cs" />
+    <Compile Include="Items\Item.cs" />
+    <Compile Include="Items\ItemEquipmentTarget.cs" />
+    <Compile Include="Items\ItemHandedness.cs" />
+    <Compile Include="Items\ItemModule.cs" />
+    <Compile Include="Items\ItemType.cs" />
+    <Compile Include="Players\PlayerInstance.cs" />
+    <Compile Include="Players\Skills\Monster\MonsterSkill.cs" />
+    <Compile Include="Players\Skills\Monster\PoisonSkill.cs" />
+    <Compile Include="Players\Skills\Monster\SuckSkill.cs" />
+    <Compile Include="Players\Skills\Monster\PestilenceSkill.cs" />
+    <Compile Include="Players\Skills\Monster\StealSkill.cs" />
+    <Compile Include="Players\Skills\PlayerSkill.cs" />
+    <Compile Include="Players\Skills\SkillConsumption.cs" />
+    <Compile Include="Players\Skills\SkillModule.cs" />
+    <Compile Include="Players\Skills\SkillType.cs" />
+    <Compile Include="Properties\Annotations.cs" />
+    <Compile Include="Requests\GameRequest.cs" />
+    <Compile Include="Requests\GameRequestModule.cs" />
+    <Compile Include="Messages\RPGMessageModule.cs" />
+    <Compile Include="Shops\AdvisedItem.cs" />
+    <Compile Include="Shops\FullShopItem.cs" />
+    <Compile Include="Shops\ShopImageModule.cs" />
+    <Compile Include="Shops\ShopEventType.cs" />
+    <Compile Include="Shops\ShopItem.cs" />
+    <Compile Include="Shops\ShopModule.cs" />
+    <Compile Include="Players\PlayerLevelModule.cs" />
+    <Compile Include="Players\PlayerModule.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Shops\ShopQuirk.cs" />
+    <Compile Include="Shops\ShopQuirkType.cs" />
+    <Compile Include="Shops\TravelingMerchant.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{49e63bf7-b832-42ec-98fc-68dcac446338}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Streaming\Streaming.csproj">
+      <Project>{eb1a1823-3d2b-4279-b58c-1c78904ed7d0}</Project>
+      <Name>Streaming</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StreamRC\StreamRC.csproj">
+      <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
+      <Name>StreamRC</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Views\playerascension.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\adjectives.csv" />
+    <EmbeddedResource Include="Resources\nouns.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\items.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Players\leveltable.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\rat.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\bat.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Inventory\Views\fullinventoryitem.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Equipment\equippediteminformation.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\cockroach.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Recipes\recipes.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Players\Skills\skillconsumption.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\goblin.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Shops\fullshopitem.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Shops\adviseditem.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Images\apple.png" />
+    <EmbeddedResource Include="Items\Images\beer.png" />
+    <EmbeddedResource Include="Items\Images\chocolate.png" />
+    <EmbeddedResource Include="Items\Images\cookie.png" />
+    <EmbeddedResource Include="Items\Images\dagger.png" />
+    <EmbeddedResource Include="Items\Images\daisy.png" />
+    <EmbeddedResource Include="Items\Images\herbs.png" />
+    <EmbeddedResource Include="Items\Images\orange.png" />
+    <EmbeddedResource Include="Items\Images\rags.png" />
+    <EmbeddedResource Include="Items\Images\torch.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Images\gold.png" />
+    <EmbeddedResource Include="Items\Images\strawberry.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Emotions\Images\fuckyou.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Shops\Images\shopkeeper_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Images\pee.png" />
+    <EmbeddedResource Include="Items\Images\poo.png" />
+    <EmbeddedResource Include="Items\Images\vomit.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Images\pebble.png" />
+    <EmbeddedResource Include="Items\Images\rock.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Items\Images\fruit quark.png" />
+    <EmbeddedResource Include="Items\Images\quark.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\ratlevels.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\batlevels.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\cockroachlevels.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\goblinlevels.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\Snake.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\snakelevels.csv" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\StreamRC\bin\Debug\modules\" />
+  </Target>
+</Project>

@@ -1,0 +1,58 @@
+﻿html, body {margin: 0; height: 100%; overflow: hidden}
+
+.box {
+	display: flex;
+	flex-direction: column;
+	width: 100vw;
+	height: 100vh;
+
+	opacity: 0;
+	-webkit-transition: opacity 1000ms linear;
+    transition: opacity 1000ms linear;
+}
+
+.title {
+	color: white;
+	padding: 5px 25px;
+	text-shadow:
+	        3px 3px 0 #000,
+	        -1px -1px 0 #000,
+	        1px -1px 0 #000,
+	        -1px 1px 0 #000,
+	        1px 1px 0 #000;
+
+	border-style: solid solid none;
+	border-width: medium;
+	border-color: rgba(0, 0, 0, 0.9);
+	background-color: rgba(0, 0, 0, 0.9);
+}
+
+.content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	text-align: center;
+	vertical-align: middle;
+	padding: 25px;
+	height: 100%;
+	text-shadow:
+	        3px 3px 0 #000,
+	        -1px -1px 0 #000,
+	        1px -1px 0 #000,
+	        -1px 1px 0 #000,
+	        1px 1px 0 #000;
+
+	border-style: solid;
+	border-width: medium;
+	border-color: rgba(0, 0, 0, 0.8);
+	background-color: rgba(0, 0, 0, 0.6);
+}
+
+.message {
+	display: inline;
+}
+
+.element {
+	padding-right: 5px;
+}
