@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -7,10 +8,14 @@ using System.Windows.Media.Imaging;
 using NightlyCode.Core.Collections.Cache;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
+using StreamRC.Core.TTS;
 using StreamRC.Streaming.Cache;
+using StreamRC.Streaming.Chat;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Status
@@ -18,13 +23,14 @@ namespace StreamRC.Streaming.Status
     /// <summary>
     /// Interaction logic for ChatWindow.xaml
     /// </summary>
-    [Dependency(nameof(MessageModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(UserModule), DependencyType.Type)]
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
-    [Dependency(nameof(ImageCacheModule), DependencyType.Type)]
+    [Dependency(nameof(TTSModule))]
+    [Dependency(nameof(MessageModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(UserModule))]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
+    [Dependency(nameof(ImageCacheModule))]
     [ModuleKey("status")]
-    public partial class StatusWindow : ModuleWindow {
+    public partial class StatusWindow : ModuleWindow, IRunnableModule {
         readonly Context context;
 
         readonly object chatlock = new object();
@@ -52,28 +58,38 @@ namespace StreamRC.Streaming.Status
 
         void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
             StreamModule streammodule = context.GetModule<StreamModule>();
+            TTSModule ttsmodule = context.GetModule<TTSModule>();
+
             if (IsVisible) {
                 streammodule.ChatMessage += OnMessageReceived;
                 streammodule.Hosted += OnHost;
+                streammodule.Raid += OnRaid;
                 streammodule.NewFollower += OnFollower;
                 streammodule.NewSubscriber += OnSubscriber;
                 streammodule.MicroPresent += OnMicroPresent;
+                ttsmodule.TextSpoken += OnTextSpoken;
                 context.GetModule<MessageModule>().Message += OnStatusMessage;
             }
             else {
                 streammodule.ChatMessage -= OnMessageReceived;
                 streammodule.Hosted -= OnHost;
+                streammodule.Raid -= OnRaid;
                 streammodule.NewFollower -= OnFollower;
                 streammodule.NewSubscriber -= OnSubscriber;
                 streammodule.MicroPresent -= OnMicroPresent;
+                ttsmodule.TextSpoken -= OnTextSpoken;
                 context.GetModule<MessageModule>().Message -= OnStatusMessage;
             }
         }
 
+        void OnTextSpoken(string voice, string text) {
+            Dispatcher.Invoke(() => AddStatus($"{voice}: {text}.", Colors.DarkRed));
+        }
+
         void OnMicroPresent(MicroPresent present) {
             if(!string.IsNullOrEmpty(present.Message))
-                Dispatcher.Invoke(() => AddStatus($"{present.Username} has donated {present.Amount} {present.Currency} -> \"{present.Message}\""));
-            else Dispatcher.Invoke(() => AddStatus($"{present.Username} has donated {present.Amount} {present.Currency}."));
+                Dispatcher.Invoke(() => AddStatus($"{present.Username} has donated {present.Amount} {present.Currency} -> \"{present.Message}\"", Colors.DarkBlue));
+            else Dispatcher.Invoke(() => AddStatus($"{present.Username} has donated {present.Amount} {present.Currency}.", Colors.DarkBlue));
         }
 
         void OnStatusMessage(Message message) {
@@ -81,23 +97,28 @@ namespace StreamRC.Streaming.Status
         }
 
         void OnSubscriber(SubscriberInformation subscriber) {
-            Dispatcher.Invoke(() => AddStatus($"New Subscriber {subscriber.Username} ({subscriber.PlanName})."));
+            Dispatcher.Invoke(() => AddStatus($"New Subscriber {subscriber.Username} ({subscriber.PlanName}).", Colors.DarkBlue));
         }
 
         void OnFollower(UserInformation follower) {
-            Dispatcher.Invoke(() => AddStatus($"New Follower {follower.Username}."));
+            Dispatcher.Invoke(() => AddStatus($"New Follower {follower.Username}.", Colors.DarkBlue));
         }
 
         void OnHost(HostInformation host) {
-            Dispatcher.Invoke(() => AddStatus($"New Host from {host.Channel} for {host.Viewers} viewers."));
+            Dispatcher.Invoke(() => AddStatus($"New Host from {host.Channel} for {host.Viewers} viewers.", Colors.DarkBlue));
         }
 
-        void AddStatus(string message) {
+        void OnRaid(RaidInformation raid)
+        {
+            Dispatcher.Invoke(() => AddStatus($"New Host from {raid.Login} for {raid.RaiderCount} viewers.", Colors.DarkBlue));
+        }
+
+        void AddStatus(string message, Color backcolor) {
             lock(chatlock) {
                 RemoveOldEntries();
 
                 Paragraph paragraph = new Paragraph {
-                    Background = new SolidColorBrush(Colors.DarkBlue),
+                    Background = new SolidColorBrush(backcolor),
                     Margin = new Thickness(0.0)
                 };
 
@@ -118,7 +139,7 @@ namespace StreamRC.Streaming.Status
         }
 
         void OnMessageReceived(ChatMessage message) {
-            if(message.IsWhisper || string.IsNullOrEmpty(message.Message) || message.Message.StartsWith("!"))
+            if(message.IsWhisper || message.Message.StartsWith("!"))
                 return;
 
             Dispatcher.Invoke(() => AddMessage(message));
@@ -127,14 +148,6 @@ namespace StreamRC.Streaming.Status
         void RemoveOldEntries() {
             while(txtChat.Document.Blocks.Count > 64)
                 txtChat.Document.Blocks.Remove(txtChat.Document.Blocks.FirstBlock);
-        }
-
-        Color FixColor(Color color) {
-            float value = color.R + color.G + color.B;
-            if(value >= 386)
-                return color;
-
-            return Color.FromRgb((byte)(128 + color.R / 2), (byte)(128 + color.G / 2), (byte)(128 + color.B / 2));
         }
 
         System.Windows.FontWeight TranslateWeight(Core.Messages.FontWeight weight) {
@@ -172,7 +185,10 @@ namespace StreamRC.Streaming.Status
 
                 foreach(MessageChunk chunk in message.Chunks) {
                     if(chunk.Type == MessageChunkType.Emoticon) {
-                        long imageid = context.GetModule<ImageCacheModule>().AddImage(chunk.Content);
+                        long imageid;
+                        if(!long.TryParse(chunk.Content, out imageid))
+                            continue;
+
                         if(imageid > -1) {
                             BitmapImage image = emotecache[imageid];
                             if(image != null) {
@@ -187,7 +203,7 @@ namespace StreamRC.Streaming.Status
                     else {
                         paragraph.Inlines.Add(new Run(chunk.Content) {
                             FontWeight = TranslateWeight(chunk.FontWeight),
-                            Foreground = new SolidColorBrush(TranslateColor(chunk.Color))
+                            Foreground = new SolidColorBrush(TranslateColor(chunk.Color).FixColor())
                         });
                     }
                 }
@@ -207,19 +223,72 @@ namespace StreamRC.Streaming.Status
                 };
                 alternate = !alternate;
 
-                if(!string.IsNullOrEmpty(message.AvatarLink))
+                paragraph.Inlines.Add(new Image {
+                    Source = emotecache[context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={message.Service}")],
+                    Stretch = Stretch.Uniform,
+                    Height = 24.0
+                });
+
+                if (!string.IsNullOrEmpty(message.AvatarLink))
                     paragraph.Inlines.Add(new Image {
                         Source = emotecache[context.GetModule<ImageCacheModule>().AddImage(message.AvatarLink)],
                         Stretch = Stretch.Uniform,
                         Height = 24.0
                     });
+
                 paragraph.Inlines.Add(new Run(message.User)
                 {
                     FontWeight = FontWeights.Bold,
-                    Foreground = new SolidColorBrush(FixColor(message.UserColor))
+                    Foreground = new SolidColorBrush(message.UserColor.FixColor())
                 });
                 paragraph.Inlines.Add(new Run(": "));
                 CreateInlines(message, paragraph);
+                txtChat.Document.Blocks.Add(paragraph);
+                paragraph.Loaded += paragraph_Loaded;
+
+                if(message.Attachements!=null)
+                foreach(MessageAttachement attachement in message.Attachements) {
+                    if(attachement.Type == AttachmentType.Image)
+                        AddImage(attachement.URL, attachement.Width, attachement.Height);
+                }
+            }
+        }
+
+        void AddImage(string url, int width, int height) {
+            lock(chatlock) {
+                RemoveOldEntries();
+                Paragraph paragraph = new Paragraph {
+                    Margin = new Thickness(0.0),
+                };
+
+                if(width == 0) {
+                    width = 320;
+                    height = 180;
+                }
+                else {
+                    if(width > height) {
+                        float aspect = (float)height / width;
+                        width = 320;
+                        height = (int)(width * aspect);
+                    }
+                    else {
+                        float aspect = (float)width / height;
+                        height = 180;
+                        width = (int)(height * aspect);
+                    }
+                }
+
+                long imageid = context.GetModule<ImageCacheModule>().ExtractIDFromUrl(url);
+                if(imageid == -1)
+                    imageid = context.GetModule<ImageCacheModule>().AddImage(url, DateTime.Now + TimeSpan.FromMinutes(5.0));
+
+                paragraph.Inlines.Add(new Image {
+                    Source = emotecache[imageid],
+                    Stretch = Stretch.Uniform,
+                    Width = width,
+                    Height = height
+                });
+
                 txtChat.Document.Blocks.Add(paragraph);
                 paragraph.Loaded += paragraph_Loaded;
             }
@@ -270,6 +339,20 @@ namespace StreamRC.Streaming.Status
         public override void Initialize() {
             base.Initialize();
             context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Display.Status", (sender, args) => Show());
+        }
+
+        void IRunnableModule.Start() {
+            context.GetModule<StreamModule>().ViewersChanged += OnViewersChanged;
+        }
+
+        void OnViewersChanged(int viewers) {
+            Dispatcher.Invoke(() => {
+                lblViewers.Content = viewers.ToString();
+            });
+        }
+
+        void IRunnableModule.Stop() {
+            context.GetModule<StreamModule>().ViewersChanged += OnViewersChanged;
         }
     }
 }

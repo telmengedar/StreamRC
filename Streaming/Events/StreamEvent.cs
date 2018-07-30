@@ -1,4 +1,5 @@
 ﻿using System;
+using NightlyCode.DB.Entities.Attributes;
 
 namespace StreamRC.Streaming.Events {
 
@@ -11,6 +12,36 @@ namespace StreamRC.Streaming.Events {
         /// time when event happened
         /// </summary>
         public DateTime Timestamp { get; set; }
+
+        /// <summary>
+        /// type of event
+        /// </summary>
+        [DefaultValue(0)]
+        [Index("type")]
+        public StreamEventType Type { get; set; }
+
+        /// <summary>
+        /// user if applicable
+        /// </summary>
+        [DefaultValue(0)]
+        public long UserID { get; set; }
+
+        /// <summary>
+        /// value for certain stream event types
+        /// </summary>
+        [DefaultValue(0)]
+        public double Value { get; set; }
+
+        /// <summary>
+        /// factor with which to multiplicate value
+        /// </summary>
+        [DefaultValue(1)]
+        public double Multiplicator { get; set; }
+
+        /// <summary>
+        /// secondary argument for event content
+        /// </summary>
+        public string Argument { get; set; }
 
         /// <summary>
         /// title for the event

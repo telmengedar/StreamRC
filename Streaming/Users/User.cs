@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
-using NightlyCode.DB.Entities.Attributes;
-using StreamRC.Core.Messages;
+﻿using NightlyCode.DB.Entities.Attributes;
 
 namespace StreamRC.Streaming.Users {
 
@@ -47,6 +44,12 @@ namespace StreamRC.Streaming.Users {
         /// status of user
         /// </summary>
         public UserStatus Status { get; set; }
+
+        /// <summary>
+        /// flags for user
+        /// </summary>
+        [DefaultValue(0)]
+        public UserFlags Flags { get; set; }
 
         protected bool Equals(User other) {
             return ID == other.ID;

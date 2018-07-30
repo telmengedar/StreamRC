@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Stream;
@@ -11,7 +12,7 @@ namespace StreamRC.Streaming.Ticker {
     /// <summary>
     /// manages ticker messages
     /// </summary>
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
+    [Dependency(nameof(TimerModule))]
     [ModuleKey("ticker")]
     public class TickerModule : IInitializableModule, IRunnableModule, ITimerService, ICommandModule {
         readonly Context context;
@@ -89,7 +90,9 @@ namespace StreamRC.Streaming.Ticker {
                 index = (index + 1) % sources.Count;
 
                 try {
-                    Message?.Invoke(sources[index].GenerateTickerMessage());
+                    TickerMessage message = sources[index].GenerateTickerMessage();
+                    if(message != null)
+                        Message?.Invoke(message);
                 }
                 catch(Exception e) {
                     Logger.Error(this, "Error displaying ticker message", e);

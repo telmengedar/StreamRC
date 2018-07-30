@@ -4,9 +4,9 @@ using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
-using StreamRC.Streaming.Ads;
 using StreamRC.Streaming.Polls;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Ticker;
@@ -16,10 +16,9 @@ namespace StreamRC.Streaming.Games {
     /// <summary>
     /// module managing games to be played next
     /// </summary>
-    [Dependency(nameof(AdModule), DependencyType.Type)]
-    [Dependency(nameof(TickerModule), DependencyType.Type)]
-    [Dependency(nameof(PollModule), DependencyType.Type)]
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
+    [Dependency(nameof(TickerModule))]
+    [Dependency(nameof(PollModule))]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     [ModuleKey("upcoming")]
     public class UpcomingGamesModule : IInitializableModule, ICommandModule, ITickerMessageSource, IRunnableModule {
         readonly Context context;
@@ -147,19 +146,12 @@ namespace StreamRC.Streaming.Games {
             lock(gameslock) {
                 if(games.Count == 0) {
                     string nextgame = GetUpcomingGames();
-                    if(nextgame == null) {
-                        return new TickerMessage {
-                            Content = new MessageBuilder()
-                                .Text("Next game played not yet determined. See poll ")
-                                .Text("next", StreamColors.Option, FontWeight.Bold)
-                                .Text(" for options.")
-                                .BuildMessage()
-                        };
-                    }
+                    if(nextgame == null)
+                        return null;
 
                     return new TickerMessage {
                         Content = new MessageBuilder()
-                            .Text("Next game(s) which might get played: ")
+                            .Text("Next game which might get played: ")
                             .Text(nextgame, StreamColors.Game, FontWeight.Bold)
                             .BuildMessage()
                     };

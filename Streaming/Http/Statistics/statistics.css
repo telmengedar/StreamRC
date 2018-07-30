@@ -1,0 +1,43 @@
+﻿body{ width: 100%;}
+
+.statistics {
+	margin: 5px;
+	width: 100%;
+}
+
+.statistic {
+	width: 100%;
+	font-size: 130%;
+	padding-bottom: 5px;
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(80, 80, 80, 0.4));
+
+	text-shadow:
+	           3px 3px 0 #000,
+	           -1px -1px 0 #000,
+	           1px -1px 0 #000,
+	           -1px 1px 0 #000,
+	           1px 1px 0 #000;
+}
+
+p {
+	margin: 0 0 0 5px;
+	padding: 0;
+}
+
+.element {
+	padding-right: 5px;
+}
+
+.imageattachement {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 160px;
+}
+
+img.element {
+	padding-left: 5px;
+	min-height: 1em;
+	max-height: 1em;
+	vertical-align: middle;
+}

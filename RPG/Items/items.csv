@@ -7,11 +7,13 @@ Studded Gloves	Armor	None	false	9	9	540	410	5	0	92	0	0	0	0	Arm		false
 Wooden Gauntlets	Armor	None	false	12	13	430	340	7	0	124	0	0	0	0	Arm		false		
 Cement Gauntlets	Armor	None	true	15	15	480	350	9	0	160	0	0	0	0	Arm		false		
 Fiber Knuckles	Armor	None	false	17	17	540	300	12	0	190	0	0	0	0	Arm		false		
+Titanic Gloves	Armor	None	false	19	19	520	260	14	0	220	0	0	0	0	Arm		false		
 Blanket	Armor	None	true	2	4	270	330	1	0	200	0	0	0	0	Back		false		
 Silk Cloak	Armor	None	true	6	8	290	300	2	0	280	0	0	0	0	Back		false		
 Woven Poncho	Armor	None	true	9	10	280	290	3	0	310	0	0	0	0	Back		false		
 Leather Cape	Armor	None	true	13	14	310	320	4	0	340	0	0	0	0	Back		false		
 Aluminium Foil Cloak	Armor	None	false	16	16	370	340	5	0	360	0	0	0	0	Back		false		
+Lametta Cape	Armor	None	true	19	19	400	320	6	0	380	0	0	0	0	Back				
 Rags	Armor	None	false	1	1	75	200	4	0	30	0	0	0	0	Body		false		
 T-Shirt	Armor	None	true	3	4	450	550	6	0	70	0	0	0	0	Body		false		
 Sweater	Armor	None	true	6	6	530	460	8	0	98	0	0	0	0	Body		false		
@@ -42,12 +44,12 @@ Shoulder Pads	Armor	None	false	2	3	340	280	1	0	38	0	0	0	0	Shoulder		false
 Shoulder Cover	Armor	None	false	7	7	312	296	2	0	76	0	0	0	0	Shoulder		false		
 Sandpaper	Armor	None	false	12	12	380	310	3	0	96	0	0	0	0	Shoulder		false		
 Acid Pads	Armor	None	false	16	16	420	340	4	0	140	0	0	0	0	Shoulder		false		
-Book of Healing	Book	None	true	0	8	1050	0	0	0	1800	0	0	0	0	None	skills learn heal	false		
-Book of Logistics	Book	None	true	0	6	1230	0	0	0	1400	0	0	0	0	None	skills learn mule	false		
-Book of Self-Deception	Book	None	true	0	12	1420	0	0	0	2600	0	0	0	0	None	skills learn luckybastard	false		
-Book of Modern Literature	Book	None	true	0	15	2866	0	0	0	2930	0	0	0	0	None	skills forget	false		
-The Art of the Deal	Book	None	true	0	5	1300	0	0	0	1580	0	0	0	0	None	skills learn haggler	false		
-Book of Knowledge	Book	None	false	0	8	1160	0	0	0	2150	0	0	0	0	None	skills learn awareness	false		
+Book of Healing	Book	None	true	0	8	5340	0	0	0	1800	0	0	0	0	None	skills learn heal	false		
+Book of Logistics	Book	None	true	0	6	5422	0	0	0	1400	0	0	0	0	None	skills learn mule	false		
+Book of Self-Deception	Book	None	true	0	12	5156	0	0	0	2600	0	0	0	0	None	skills learn luckybastard	false		
+Book of Modern Literature	Book	None	true	0	15	5520	0	0	0	2930	0	0	0	0	None	skills forget	false		
+The Art of the Deal	Book	None	true	0	5	5050	0	0	0	1580	0	0	0	0	None	skills learn haggler	false		
+Book of Knowledge	Book	None	false	0	8	5288	0	0	0	2150	0	0	0	0	None	skills learn awareness	false		
 Apple	Consumable	None	true	0	1	10	160	0	0	5	5	2	8	5	None		false	sweet	
 Cookie	Consumable	None	true	0	3	30	180	0	0	8	8	0	2	7	None		false	tasty	
 Beer	Consumable	None	true	0	3	70	205	0	0	12	4	4	20	2	None		true	german	
@@ -142,6 +144,7 @@ Master-Ticket	Special	None	true	10	100	13000	0	0	0	31300	0	0	0	0	None	request ad
 NES-Ticket	Special	None	true	10	100	12050	0	0	0	30100	0	0	0	0	None	request addgame nes	false		
 PC-Ticket	Special	None	true	10	100	15000	0	0	0	38356	0	0	0	0	None	request addgame pc	false		
 Megaphone	Special	None	true	0	7	560	0	0	0	530	0	0	0	0	None	tts streamspeak	false		
+Wildcard	Special	None	true	15	100	6820	0	0	0	3159	0	0	0	0	None	request addwildcard	false		
 Dagger	Weapon	One	true	1	1	80	220	0	3	50	0	0	0	0	Hands		false		
 Baseball Bat	Weapon	Both	true	6	10	580	300	0	8	80	0	0	0	0	Hands		false		
 Short Sword	Weapon	One	true	5	8	480	180	0	6	70	0	0	0	0	Hands		false		
@@ -153,3 +156,4 @@ Pan	Weapon	One	true	7	8	360	250	0	5	66	0	0	0	0	Hands		false
 Cooking Knife	Weapon	One	true	3	3	460	260	0	5	67	0	0	0	0	Hands		false		
 Falchion	Weapon	One	true	15	15	500	290	0	18	205	0	0	0	0	Hands		false		
 Claymore	Weapon	Both	true	18	18	580	260	0	22	295	0	0	0	0	Hands		false		
+Sledgehammer	Weapon	Both	true	20	20	550	266	0	25	310	0	0	0	0	Hands		false		

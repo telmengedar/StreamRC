@@ -1,15 +1,15 @@
 ﻿var messages = [];
 var timestamp = 0;
 
-var titlevisible = true;
 var messagebackground;
 var noborder = false;
+
+var flipflop = false;
 
 function loadSettings() {
     var params = new URLSearchParams(window.location.search);
 
     if (params.has('notitle')) {
-        titlevisible = false;
         document.getElementById('messages').removeChild(document.getElementById('title'));
     }
 
@@ -32,12 +32,12 @@ function refresh() {
             element.style.opacity = 0;
             removeMessage(element);
             messages.splice(i, 1);
-            if (titlevisible && messages.length === 0)
-                document.getElementById("title").style.opacity = 0;
+            if (messages.length === 0)
+                document.getElementById("messages").style.opacity = 0;
         }
         else if (message.isnew) {
-            if (titlevisible && messages.length > 0)
-                document.getElementById("title").style.opacity = 255;
+            if (messages.length > 0)
+                document.getElementById("messages").style.opacity = 0.8;
             document.getElementById(message.id).style.opacity = 255;
             message.isnew = false;
         }
@@ -72,9 +72,11 @@ function createMessages(loadedmessages) {
         messages.push({
             id: id,
             time: 15.0,
-            isnew: true
+            isnew: true,
+            flipflop: flipflop
         });
 
+        flipflop = !flipflop;
         createMessage(id, message);
     }
 }
@@ -84,11 +86,14 @@ function createMessage(id, message) {
     mdiv.id = id;
     mdiv.className = "message";
     if (messagebackground !== null)
-        mdiv.style.backgroundColor = messagebackground;
+        mdiv.style.background = messagebackground;
     if (noborder)
         mdiv.style.borderWidth = 0;
 
-    createMessageElement(message.content, mdiv);
+    createMessageElement(message.content, mdiv, true);
+
+    if (message.flipflop && messagebackground === null)
+        mdiv.style.background = "linear-gradient(to right, rgba(40, 40, 40, 0.9), rgba(80, 80, 80, 0.4))";
 
     var messages = document.getElementById("messages");
     messages.appendChild(mdiv, messages.firstChild);

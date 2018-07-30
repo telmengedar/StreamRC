@@ -39,7 +39,7 @@ namespace StreamRC.RPG.Adventure.Exploration {
         }
 
         void ExecuteChest(Player player) {
-            double chance = 0.9;
+            double chance = 0.8;
 
             List<FoundItem> items=new List<FoundItem>();
 
@@ -60,7 +60,7 @@ namespace StreamRC.RPG.Adventure.Exploration {
                     found.Quantity += 1 + player.Luck * 30 + RNG.XORShift64.NextInt((int)Math.Max(1, player.Level * player.Luck * 0.75));
                 else ++found.Quantity;
 
-                chance *= 0.9;
+                chance *= 0.8;
             }
 
             User user = context.GetModule<UserModule>().GetUser(player.UserID);

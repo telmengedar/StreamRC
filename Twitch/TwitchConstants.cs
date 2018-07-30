@@ -6,6 +6,11 @@
     public class TwitchConstants {
 
         /// <summary>
+        /// key used to identify the service
+        /// </summary>
+        public const string ServiceKey = "Twitch";
+
+        /// <summary>
         /// id of twitch RC app
         /// </summary>
         public const string ClientID = "jhh6rkkuubmhz31eoachd8kkyh5luo";

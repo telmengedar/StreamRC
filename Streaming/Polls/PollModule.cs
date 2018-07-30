@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Collections;
 using StreamRC.Streaming.Notifications;
+using StreamRC.Streaming.Polls.Commands;
 using StreamRC.Streaming.Polls.Notifications;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Ticker;
@@ -21,11 +23,11 @@ namespace StreamRC.Streaming.Polls {
     /// manages user polls for stream
     /// </summary>
     [ModuleKey("poll")]
-    [Dependency(nameof(CollectionModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(TickerModule), DependencyType.Type)]
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
-    public class PollModule : IInitializableModule, ICommandModule, IStreamCommandHandler, IRunnableModule, ITimerService
+    [Dependency(nameof(CollectionModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(TickerModule))]
+    [Dependency(nameof(TimerModule))]
+    public class PollModule : IInitializableModule, ICommandModule, IRunnableModule, ITimerService
     {
         readonly Context context;
 
@@ -172,7 +174,7 @@ namespace StreamRC.Streaming.Polls {
                 availablepolls = context.Database.Load<ActivePoll>(p => p.Name).ExecuteSet<string>().ToArray();
         }
 
-        void ExecuteVote(string poll, string user, string option) {
+        public void ExecuteVote(string poll, string user, string option) {
             if (context.Database.Update<PollVote>().Set(p => p.Vote == option).Where(p => p.Poll == poll && p.User == user).Execute() == 0)
                 context.Database.Insert<PollVote>().Columns(p => p.Poll, p => p.User, p => p.Vote).Values(poll, user, option).Execute();
 
@@ -182,75 +184,48 @@ namespace StreamRC.Streaming.Polls {
             // if this is a vote for a new poll, include poll in polls to be shown
             if (availablepolls.All(p => p != poll))
                 ReloadAvailablePolls();
+
+            VoteAdded?.Invoke(new PollVote {
+                Poll = poll,
+                User = user,
+                Vote = option
+            });
         }
 
-        PollOption[] FindOptions(string[] arguments) {
+        /// <summary>
+        /// determines whether a poll with the specified name exists in database
+        /// </summary>
+        /// <param name="name">name of poll</param>
+        /// <returns>true when a poll named <see cref="name"/> was found, false otherwise</returns>
+        public bool ExistsPoll(string name) {
+            return context.Database.Load<Poll>(DBFunction.Count).Where(p => p.Name == name).ExecuteScalar<long>() > 0;
+        }
+
+        /// <summary>
+        /// determines whether a poll has a specified option
+        /// </summary>
+        /// <param name="poll">name of poll</param>
+        /// <param name="option">name of option</param>
+        /// <returns>true when poll named <see cref="poll"/> has an option named <see cref="option"/>, false otherwise</returns>
+        public bool ExistsOption(string poll, string option) {
+            return context.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll && o.Key == option).ExecuteScalar<long>() > 0;
+        }
+
+        /// <summary>
+        /// determines whether a poll has any predefined options
+        /// </summary>
+        /// <param name="poll">name of poll</param>
+        /// <returns>true when options for the poll are defined, false otherwise</returns>
+        public bool HasOptions(string poll) {
+            return context.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll).ExecuteScalar<long>() > 0;
+        }
+
+        public PollOption[] FindOptions(string[] arguments) {
             string optionname = string.Join(" ", arguments.Select(a => a.ToLower()));
             PollOption[] options = context.Database.LoadEntities<PollOption>().Where(o => o.Description.ToLower() == optionname).Execute().ToArray();
             if (options.Length == 0)
                 options = context.Database.LoadEntities<PollOption>().Where(o => o.Key == optionname).Execute().ToArray();
             return options;
-        }
-
-        void HeuristicVote(StreamCommand command) {
-            Logger.Info(this, $"Executing heuristic vote for '{command}'");
-
-            
-            PollOption[] options = FindOptions(command.Arguments);
-
-            string optionname = string.Join(" ", command.Arguments);
-            if (options.Length > 1)
-                throw new StreamCommandException($"Sadly there is more than one poll which contains an option '{optionname}' so you need to specify in which poll you want to vote ({string.Join(", ", options.Select(o => o.Poll))}).", false);
-
-            if(options.Length == 0) {
-                Poll poll = context.Database.LoadEntities<Poll>().Where(p => p.Name == optionname).Execute().FirstOrDefault();
-                if(poll == null)
-                    throw new StreamCommandException($"There is no poll and no option named '{optionname}' so i have no idea what you want to vote for.", false);
-
-                options = GetOptions(poll.Name);
-                throw new StreamCommandException($"You need to specify the option to vote for. The following options are available. {string.Join(", ", options.Select(o => $"'{o.Key}' for '{o.Description}'"))}", false);
-            }
-
-            ExecuteVote(options[0].Poll, command.User, options[0].Key);
-
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"You voted successfully for '{options[0].Description}' in poll '{options[0].Poll}'.", command.IsWhispered);
-            VoteAdded?.Invoke(new PollVote
-            {
-                Poll = options[0].Poll,
-                User = command.User,
-                Vote = options[0].Key
-            });
-        }
-
-        void Vote(StreamCommand command)
-        {
-            if(command.Arguments.Length != 2) {
-                HeuristicVote(command);
-                return;
-            }
-
-            string poll = command.Arguments[0].ToLower();
-            if(context.Database.Load<Poll>(DBFunction.Count).Where(p => p.Name == poll).ExecuteScalar<long>() == 0) {
-                HeuristicVote(command);
-                return;
-            }
-
-            string vote = command.Arguments[1].ToLower();
-
-            if(context.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll).ExecuteScalar<long>() > 0 && context.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll && o.Key == vote).ExecuteScalar<long>() == 0) {
-                HeuristicVote(command);
-                return;
-            }
-
-            ExecuteVote(poll, command.User, vote);
-
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"You voted successfully for {vote} in poll {poll}.", command.IsWhispered);
-            VoteAdded?.Invoke(new PollVote
-            {
-                Poll = poll,
-                User = command.User,
-                Vote = vote
-            });
         }
 
         void IInitializableModule.Initialize()
@@ -269,7 +244,6 @@ namespace StreamRC.Streaming.Polls {
             if (tickergenerator.PollOptionCount > 0)
                 context.GetModule<TickerModule>().AddSource(tickergenerator);
 
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "vote", "revoke", "pollresult", "polls", "pollinfo");
             context.GetModule<CollectionModule>().ItemAdded += OnCollectionItemAdded;
             context.GetModule<CollectionModule>().ItemRemoved += OnCollectionItemRemoved;
             context.GetModule<CollectionModule>().ItemBlocked += OnCollectionItemBlocked;
@@ -293,43 +267,8 @@ namespace StreamRC.Streaming.Polls {
                 ShowCollection(collection);
         }
 
-
-        void GetPollResult(StreamCommand command)
-        {
-            if(command.Arguments.Length == 0) {
-                Logger.Info(this, $"Starting heuristic poll result estimation for '{command.User}'");
-                ActivePoll leadingpoll = context.Database.LoadEntities<ActivePoll>().OrderBy(new OrderByCriteria(EntityField.Create<ActivePoll>(p => p.Votes), false)).Execute().FirstOrDefault();
-                if(leadingpoll == null) {
-                    context.GetModule<StreamModule>().SendMessage(command.Service, command.User, "Since no one voted for anything i can't show you any poll.", command.IsWhispered);
-                }
-                else {
-                    context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"You seem to be too lazy to tell me which poll you want to know something about. I just guess you want to see poll '{leadingpoll.Name}' since it is the most active poll.", command.IsWhispered);
-                    GetPollResult(new StreamCommand {
-                        User = command.User,
-                        Service = command.Service,
-                        Command = command.Command,
-                        IsWhispered = command.IsWhispered,
-                        Arguments = new[] {
-                            leadingpoll.Name
-                        }
-                    });
-                }
-                return;
-            }
-
-            string pollkey = command.Arguments[0];
-            Poll poll = context.Database.LoadEntities<Poll>().Where(p => p.Name == pollkey).Execute().FirstOrDefault();
-
-            if (poll == null)
-            {
-                context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"There is no poll named '{pollkey}'", command.IsWhispered);
-                return;
-            }
-
-            PollDiagramData data = new PollDiagramData(context.Database.LoadEntities<WeightedVote>().Where(p => p.Poll == pollkey).Execute());
-
-            string message = $"Results for {pollkey}: {string.Join(", ", data.GetItems(100).Where(r => r.Count > 0).Select(r => $"{r.Item} [{r.Count}]"))}";
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, message, command.IsWhispered);
+        public ActivePoll GetMostActivePoll() {
+            return context.Database.LoadEntities<ActivePoll>().OrderBy(new OrderByCriteria(EntityField.Create<ActivePoll>(p => p.Votes), false)).Limit(1).Execute().FirstOrDefault();
         }
 
         void ICommandModule.ProcessCommand(string command, string[] arguments)
@@ -418,6 +357,17 @@ namespace StreamRC.Streaming.Polls {
             {
                 Name = poll
             });
+        }
+
+        public IEnumerable<PollVote> GetUserVotes(string user, string poll=null) {
+            if(string.IsNullOrEmpty(poll))
+                return context.Database.LoadEntities<PollVote>().Where(v => v.User == user).Execute();
+            return context.Database.LoadEntities<PollVote>().Where(v => v.User == user && v.Poll == poll).Execute();
+        }
+
+        public IEnumerable<PollVote> GetUserVotes(string user, string[] options)
+        {
+            return context.Database.LoadEntities<PollVote>().Where(v => v.User==user && options.Contains(v.Vote)).Execute();
         }
 
         public void ChangePoll(string oldname, string newname, string description)
@@ -524,6 +474,24 @@ namespace StreamRC.Streaming.Polls {
             return context.Database.LoadEntities<PollOption>().Where(p => p.Poll == pollname).Execute().ToArray();
         }
 
+        public bool RevokeVote(string user, string poll) {
+            return context.Database.Delete<PollVote>().Where(p => p.Poll == poll && p.User == user).Execute() > 0;
+        }
+
+        /// <summary>
+        /// get a poll from database
+        /// </summary>
+        /// <param name="pollname">name of poll</param>
+        /// <returns><see cref="Poll"/> object with poll information (not the options and votes)</returns>
+        public Poll GetPoll(string pollname) {
+            return context.Database.LoadEntities<Poll>().Where(p => p.Name == pollname).Execute().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// get votes of a poll
+        /// </summary>
+        /// <param name="pollname">name of poll</param>
+        /// <returns>votes which were applied on a poll</returns>
         public PollVote[] GetVotes(string pollname)
         {
             return context.Database.LoadEntities<PollVote>().Where(p => p.Poll == pollname).Execute().ToArray();
@@ -541,146 +509,13 @@ namespace StreamRC.Streaming.Polls {
         {
             return context.Database.LoadEntities<Poll>().Execute().ToArray();
         }
-
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command)
-        {
-            switch (command.Command)
-            {
-                case "myvote":
-                    DisplayVote(command);
-                    break;
-                case "vote":
-                    Vote(command);
-                    break;
-                case "revoke":
-                    Revoke(command);
-                    break;
-                case "pollresult":
-                    GetPollResult(command);
-                    break;
-                case "polls":
-                    GetPollList(command);
-                    break;
-                case "pollinfo":
-                    GetPollInfo(command);
-                    break;
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
-        }
-
-        void DisplayVote(StreamCommand command) {
-            PollVote[] votes;
-            if(command.Arguments.Length > 0)
-                votes = context.Database.LoadEntities<PollVote>().Where(v => v.User == command.User && v.Poll == command.Arguments[0]).Execute().ToArray();
-            else votes = context.Database.LoadEntities<PollVote>().Where(v => v.User == command.User).Execute().ToArray();
-
-            if(votes.Length == 0)
-                context.GetModule<StreamModule>().SendMessage(command, $"You didn't vote for anything{(command.Arguments.Length > 0 ? $" in poll {command.Arguments[0]}" : "")}");
-            else context.GetModule<StreamModule>().SendMessage(command, $"You voted for: {string.Join(", ", votes.Select(v => $"'{v.Vote}' in poll '{v.Poll}'"))}");
-        }
-
-        void ExecuteRevoke(string poll, string user) {
+    
+        public void ExecuteRevoke(string poll, string user) {
             context.Database.Delete<PollVote>().Where(p => p.Poll == poll && p.User == user).Execute();
             VoteRemoved?.Invoke(new PollVote {
                 Poll = poll,
                 User = user
             });
-        }
-
-        void Revoke(StreamCommand command) {
-            PollVote[] votes;
-            if (command.Arguments.Length == 0 || (command.Arguments.Length==1&&command.Arguments[0]=="all")) {
-                votes = context.Database.LoadEntities<PollVote>().Where(o => o.User == command.User).Execute().ToArray();
-                if(votes.Length == 0)
-                    throw new StreamCommandException("You haven't voted for anything, so revoking a vote doesn't make any sense.", false);
-
-                if(votes.Length > 1) {
-                    if(command.Arguments.Length == 1 && command.Arguments[0] == "all") {
-                        foreach(PollVote vote in votes)
-                            ExecuteRevoke(vote.Poll, command.User);
-                        context.GetModule<StreamModule>().SendMessage(command, $"You revoked your votes in polls '{string.Join(", ", votes.Select(v => v.Poll))}'");
-                        return;
-                    }
-                    throw new StreamCommandException($"You have voted in more than one poll. Type !revoke all to remove all your votes. You voted in the following polls: {string.Join(", ", votes.Select(v => v.Poll))}");
-                }
-
-                ExecuteRevoke(votes[0].Poll, command.User);
-                context.GetModule<StreamModule>().SendMessage(command, $"You revoked your vote in poll '{votes[0].Poll}'");
-                return;
-            }
-
-            string poll = command.Arguments[0].ToLower();
-            if(context.Database.Delete<PollVote>().Where(p => p.Poll == poll && p.User == command.User).Execute() > 0) {
-                context.GetModule<StreamModule>().SendMessage(command, $"You revoked your vote in poll '{poll}'");
-                return;
-            }
-
-            PollOption[] options = FindOptions(command.Arguments);            
-            string[] keys = options.Select(o => o.Key).ToArray();
-            votes = context.Database.LoadEntities<PollVote>().Where(v => keys.Contains(v.Vote)).Execute().ToArray();
-
-            if(votes.Length == 0) {
-                context.GetModule<StreamModule>().SendMessage(command, "No votes match your arguments so no clue what you want to revoke.");
-                return;
-            }
-
-            foreach (PollVote vote in votes)
-                ExecuteRevoke(vote.Poll, command.User);
-            context.GetModule<StreamModule>().SendMessage(command, $"You revoked your votes in polls '{string.Join(", ", votes.Select(v => v.Poll))}'");
-        }
-
-        void GetPollInfo(StreamCommand command)
-        {
-            if (command.Arguments.Length != 1)
-                throw new StreamCommandException("Invalid command syntax");
-
-            string pollname = command.Arguments[0];
-
-            Poll poll = context.Database.LoadEntities<Poll>().Where(p => p.Name == pollname).Execute().FirstOrDefault();
-            if (poll == null)
-                throw new StreamCommandException($"There is no active poll named '{pollname}'");
-
-            PollOption[] options = GetOptions(pollname).Where(o => !o.Locked).ToArray();
-            StringBuilder message = new StringBuilder(poll.Description).Append(": ");
-            if (options.Length == 0)
-            {
-                message.Append("This is an unrestricted poll, so please vote for 'penis' when you're out of ideas");
-            }
-            else
-            {
-                message.Append(string.Join(", ", options.Select(o => $"{o.Key} - {o.Description}")));
-                message.Append(". Usually there is more info available by typing !info <option>");
-            }
-
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, message.ToString(), command.IsWhispered);
-        }
-
-        void GetPollList(StreamCommand command)
-        {
-            string polllist = string.Join(", ", context.Database.Load<Poll>(p => p.Name).ExecuteSet<string>());
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"Currently running polls: {polllist}");
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command)
-        {
-            switch (command)
-            {
-                case "myvote":
-                    return "Displays the options for which you have voted in chat. Syntax: !myvote [poll]";
-                case "vote":
-                    return "Registers a vote for a poll. Syntax: !vote <poll> <option>";
-                case "revoke":
-                    return "Removes a vote from a poll. Syntax: !revoke <poll>";
-                case "pollresult":
-                    return "Returns the results for a poll in chat. Syntax: !pollresult <poll>";
-                case "polls":
-                    return "Returns a list of currently running polls. Syntax: !polls";
-                case "pollinfo":
-                    return "Returns info about an active poll. Syntax: !pollinfo <poll>";
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
         }
 
         void LoadSettings()
@@ -696,10 +531,22 @@ namespace StreamRC.Streaming.Polls {
         }
 
         public void Start() {
+            context.GetModule<StreamModule>().RegisterCommandHandler("myvote", new UserVoteCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("vote", new VoteCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("revoke", new RevokeCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("pollresult", new PollResultCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("polls", new ListPollsCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("pollinfo", new PollInfoCommandHandler(this));
             context.GetModule<TimerModule>().AddService(this, Period);
         }
 
         public void Stop() {
+            context.GetModule<StreamModule>().UnregisterCommandHandler("myvote");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("vote");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("revoke");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("pollresult");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("polls");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("pollinfo");
             context.GetModule<TimerModule>().RemoveService(this);
         }
 

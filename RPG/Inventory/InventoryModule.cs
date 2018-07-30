@@ -5,11 +5,13 @@ using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Equipment;
+using StreamRC.RPG.Inventory.Commands;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.RPG.Messages;
@@ -23,12 +25,12 @@ namespace StreamRC.RPG.Inventory {
     /// <summary>
     /// module managing inventory of players
     /// </summary>
-    [Dependency(nameof(SkillModule), DependencyType.Type)]
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(MessageModule), DependencyType.Type)]
+    [Dependency(nameof(SkillModule))]
+    [Dependency(nameof(PlayerModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(MessageModule))]
     [ModuleKey("inventory")]
-    public class InventoryModule : IInitializableModule, IStreamCommandHandler, ICommandModule {
+    public class InventoryModule : IInitializableModule, ICommandModule, IRunnableModule {
         readonly Context context;
 
         /// <summary>
@@ -161,34 +163,11 @@ namespace StreamRC.RPG.Inventory {
         void IInitializableModule.Initialize() {
             context.Database.UpdateSchema<InventoryItem>();
             context.Database.UpdateSchema<FullInventoryItem>();
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "inventory", "use", "drop", "craft", "give");
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "inventory":
-                    ShowInventory(command.Service, command.User, command.IsWhispered);
-                    break;
-                case "use":
-                    UseItem(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-                case "drop":
-                    DropItem(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-                case "craft":
-                    CraftItem(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-                case "give":
-                    DonateItem(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-                default:
-                    throw new StreamCommandException($"Command {command.Command} not implemented by this module.");
-            }
-        }
-
-        void DonateItem(string service, string username, string[] arguments, bool isWhispered) {
+        public void DonateItem(string service, string channel, string username, string[] arguments) {
             if(arguments.Length < 2) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "You have to tell me who to send what. Syntax: !donate <playername> [amount] <item>.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "You have to tell me who to send what. Syntax: !donate <playername> [amount] <item>.");
                 return;
             }
 
@@ -198,14 +177,14 @@ namespace StreamRC.RPG.Inventory {
             }
             catch(Exception e) {
                 Logger.Error(this, $"Error getting user '{arguments[0]}'", e);
-                context.GetModule<StreamModule>().SendMessage(service, username, $"There is no player named '{arguments[0]}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"There is no player named '{arguments[0]}'.");
                 return;
             }
 
             Player targetplayer = context.GetModule<PlayerModule>().GetExistingPlayer(targetuser.ID);
             if (targetplayer == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"'{arguments[0]}' has not yet played this game.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"'{arguments[0]}' has not yet played this game.");
                 return;
             }
 
@@ -215,7 +194,7 @@ namespace StreamRC.RPG.Inventory {
                 quantity = 1;
 
             if(index >= arguments.Length) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "You have to tell me who to send what. Syntax: !donate <playername> [amount] <item>.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "You have to tell me who to send what. Syntax: !donate <playername> [amount] <item>.");
                 return;
             }
 
@@ -224,18 +203,18 @@ namespace StreamRC.RPG.Inventory {
 
             Item item = context.GetModule<ItemModule>().RecognizeItem(arguments, ref index);
             if(item == null) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "I can't make out what item you want to donate.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "I can't make out what item you want to donate.");
                 return;
             }
 
             if(item.Type == ItemType.Gold) {
                 if(quantity > player.Gold) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, "You don't have that much gold on you.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, "You don't have that much gold on you.");
                     return;
                 }
 
                 if(quantity <= 0) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, "Why do you tell me such weird nonsense?.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, "Why do you tell me such weird nonsense?.");
                     return;
                 }
 
@@ -245,7 +224,7 @@ namespace StreamRC.RPG.Inventory {
             }
             else {
                 if(!RemoveItem(player.UserID, item.ID)) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, $"And you are absolutely sure {item.GetEnumerationName()} is in your possession?.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, $"And you are absolutely sure {item.GetEnumerationName()} is in your possession?.");
                     return;
                 }
 
@@ -261,7 +240,7 @@ namespace StreamRC.RPG.Inventory {
             }
         }
 
-        void CraftItem(string service, string username, string[] arguments, bool whispered) {
+        public void CraftItem(string service, string channel, string username, string[] arguments) {
             List<Item> ingredients = new List<Item>();
             int lastindex = 0;
             while(lastindex < arguments.Length) {
@@ -282,19 +261,19 @@ namespace StreamRC.RPG.Inventory {
             }
 
             if (lastindex != arguments.Length) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "Not all of your ingredients are known so ... check spelling or whatever.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "Not all of your ingredients are known so ... check spelling or whatever.");
                 return;
             }
 
             if(ingredients.Count == 0) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "Your have to provide the names of the ingredients to use.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "Your have to provide the names of the ingredients to use.");
                 return;
             }
 
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, username);
 
             if(ingredients.Any(i => GetItem(player.UserID, i.ID) == null)) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "It seems you don't have all of these ingredients in your inventory.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "It seems you don't have all of these ingredients in your inventory.");
                 return;
             }
 
@@ -332,45 +311,45 @@ namespace StreamRC.RPG.Inventory {
             }
         }
 
-        void DropItem(string service, string user, string[] arguments, bool whispered) {
+        public void DropItem(string service, string channel, string user, string[] arguments) {
             if (arguments.Length == 0)
             {
-                context.GetModule<StreamModule>().SendMessage(service, user, "Well, you have to specify the name of the item to drop.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, "Well, you have to specify the name of the item to drop.");
                 return;
             }
 
             Item item = context.GetModule<ItemModule>().GetItem(arguments);
             if (item == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"An item of the name '{arguments[0]}' is unknown.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"An item of the name '{arguments[0]}' is unknown.");
                 return;
             }
 
             Player player = context.GetModule<PlayerModule>().GetPlayer(service, user);
             if (player == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, user, "Umm ... you do not seem to be a player in this channel.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, "Umm ... you do not seem to be a player in this channel.");
                 return;
             }
 
             if (!RemoveItem(player.UserID, item.ID))
             {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"And you are absolutely sure {item.Name.GetPreposition()}{item.Name} is in your possession?.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"And you are absolutely sure {item.Name.GetPreposition()}{item.Name} is in your possession?.");
                 return;
             }
 
-            context.GetModule<StreamModule>().SendMessage(service, user, $"You drop all {item.Name}s in your possession.", whispered);
+            context.GetModule<StreamModule>().SendMessage(service, channel, user, $"You drop all {item.Name}s in your possession.");
         }
 
-        public void UseItem(User user, Player player, Item item, params string[] arguments) {
+        public void UseItem(string channel, User user, Player player, Item item, params string[] arguments) {
             if(player.CurrentHP == 0) {
-                context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, "I am terribly sorry to inform you that you died quite a while ago.", false);
+                context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, "I am terribly sorry to inform you that you died quite a while ago.");
                 return;
             }
 
             if (!RemoveItem(player.UserID, item.ID, 1))
             {
-                context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, $"And you are absolutely sure {item.GetEnumerationName()} is in your possession?.", false);
+                context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, $"And you are absolutely sure {item.GetEnumerationName()} is in your possession?.");
                 return;
             }
 
@@ -390,17 +369,17 @@ namespace StreamRC.RPG.Inventory {
                         if(module is IItemCommandModule)
                             ((IItemCommandModule)module).ExecuteItemCommand(user, player, commandarguments[1], commandarguments.Skip(2).Concat(arguments).ToArray());
                         else
-                            ((ICommandModule)module).ProcessCommand(commandarguments[0], new[] {user.Service, user.Name}.Concat(commandarguments.Skip(2)).Concat(arguments).ToArray());
+                            ((ICommandModule)module).ProcessCommand(commandarguments[1], new[] {user.Service, user.Name}.Concat(commandarguments.Skip(2)).Concat(arguments).ToArray());
                     }
                     catch(ItemUseException e) {
-                        context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, e.Message);
+                        context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, e.Message);
                         Logger.Warning(this, e.Message);
                         AddItem(player.UserID, item.ID, 1, true);
                     }
                     catch (Exception e)
                     {
                         Logger.Error(this, $"Error executing item command of item '{item.Name}'.", e);
-                        context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, "Something went wrong when using the item.");
+                        context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, "Something went wrong when using the item.");
                         AddItem(player.UserID, item.ID, 1, true);
                         return;
                     }
@@ -437,7 +416,7 @@ namespace StreamRC.RPG.Inventory {
                 message.Text(".");
             }
             else {
-                message.Text(" for no reason.");
+                message.Text(string.IsNullOrEmpty(item.Command) ? " for no reason." : ".");
             }
 
             player.Pee += item.Pee;
@@ -459,11 +438,8 @@ namespace StreamRC.RPG.Inventory {
 
                 if (player.Pee >= 100)
                 {
-                    if(poo) {
-                        if(vomit)
-                            message.Text(", ");
-                        else message.Text(" and ");
-                    }
+                    if(poo)
+                        message.Text(vomit ? ", " : " and ");
 
                     player.Pee -= 100;
                     Item peeitem = context.GetModule<ItemModule>().GetItem("Pee");
@@ -487,26 +463,26 @@ namespace StreamRC.RPG.Inventory {
             context.GetModule<PlayerModule>().UpdatePeeAndPoo(player.UserID, player.Pee, player.Poo, player.Vomit);
         }
 
-        void UseItem(string service, string username, string[] arguments, bool whispered) {
+        public void UseItem(string service, string channel, string username, string[] arguments) {
             if (arguments.Length == 0) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "Well, you have to specify the name of the item to use", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "Well, you have to specify the name of the item to use");
                 return;
             }
 
             int index = 0;
             Item item = context.GetModule<ItemModule>().RecognizeItem(arguments, ref index);
             if(item == null) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"An item of the name '{string.Join(" ", arguments)}' is unknown.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"An item of the name '{string.Join(" ", arguments)}' is unknown.");
                 return;
             }
 
             if(item.Type == ItemType.Armor || item.Type == ItemType.Weapon) {
-                context.GetModule<EquipmentModule>().Equip(service, username, context.GetModule<PlayerModule>().GetPlayer(service, username), item);
+                context.GetModule<EquipmentModule>().Equip(service, channel, username, context.GetModule<PlayerModule>().GetPlayer(service, username), item);
                 return;
             }
 
             if(item.Type != ItemType.Consumable && item.Type != ItemType.Potion && string.IsNullOrEmpty(item.Command)) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"Yeah sure ... use {item.Name} ... get real!", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"Yeah sure ... use {item.Name} ... get real!");
                 return;
             }
 
@@ -514,36 +490,19 @@ namespace StreamRC.RPG.Inventory {
             Player player = context.GetModule<PlayerModule>().GetPlayer(user.ID);
             if (player == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, "Umm ... you do not seem to be a player in this channel.", whispered);
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "Umm ... you do not seem to be a player in this channel.");
                 return;
             }
 
             context.GetModule<SkillModule>().ModifyPlayerStats(player);
             context.GetModule<EffectModule>().ModifyPlayerStats(player);
 
-            UseItem(user, player, item, arguments.Skip(index).ToArray());
+            UseItem(channel, user, player, item, arguments.Skip(index).ToArray());
         }
 
-        void ShowInventory(string service, string user, bool whispered) {
+        public void ShowInventory(string service, string channel, string user) {
             Player player = context.GetModule<PlayerModule>().GetPlayer(service, user);
-            context.GetModule<StreamModule>().SendMessage(service, user, string.Join(", ", context.Database.LoadEntities<FullInventoryItem>().Where(p=>p.PlayerID==player.UserID).Execute().Select(i=>$"{i.Quantity} x {i.Name}")), whispered);
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "inventory":
-                    return "Displays all items currently in your inventory.";
-                case "use":
-                    return "Uses an item in your inventory";
-                case "drop":
-                    return "Drops an item from your inventory";
-                case "craft":
-                    return "Tries to craft a new item using items from your inventory";
-                case "give":
-                    return "Gives an item to another player";
-                default:
-                    throw new StreamCommandException($"Command {command} not implemented by this module.");
-            }
+            context.GetModule<StreamModule>().SendMessage(service, channel, user, string.Join(", ", context.Database.LoadEntities<FullInventoryItem>().Where(p=>p.PlayerID==player.UserID).Execute().Select(i=>$"{i.Quantity} x {i.Name}")));
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {
@@ -554,6 +513,22 @@ namespace StreamRC.RPG.Inventory {
                 default:
                     throw new StreamCommandException($"'{command}' not handled by this module.");
             }
+        }
+
+        void IRunnableModule.Start() {
+            context.GetModule<StreamModule>().RegisterCommandHandler("inventory", new ShowInventoryCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("use", new UseItemCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("drop", new DropItemCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("craft", new CraftItemCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("give", new GiveCommandHandler(this));
+        }
+
+        void IRunnableModule.Stop() {
+            context.GetModule<StreamModule>().UnregisterCommandHandler("inventory");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("use");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("drop");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("craft");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("give");
         }
     }
 }

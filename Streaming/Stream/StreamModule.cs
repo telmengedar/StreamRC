@@ -1,23 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using NightlyCode.Core.Helpers;
+using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
+using StreamRC.Streaming.Stream.Chat;
+using StreamRC.Streaming.Stream.Commands;
+using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Stream {
     /// <summary>
     /// module providing stream information
     /// </summary>
     [ModuleKey("stream")]
-    public class StreamModule : IRunnableModule, IStreamCommandHandler, IMessageSenderModule, ICommandModule, IStreamModule {
+    public class StreamModule : IRunnableModule, IStreamModule, IChatMessageSender, IStreamStatsModule {
         readonly Context context;
-        readonly object commandhandlerlock = new object();
-        readonly Dictionary<string, IStreamCommandHandler> commandhandlers = new Dictionary<string, IStreamCommandHandler>();
         readonly Dictionary<string, IStreamServiceModule> services = new Dictionary<string, IStreamServiceModule>();
+        readonly StreamCommandManager commandmanager = new StreamCommandManager();
 
-        DateTime start = DateTime.Now;
+        readonly object channellock = new object();
+        readonly List<IChatChannel> channels=new List<IChatChannel>(); 
 
         /// <summary>
         /// creates a new <see cref="StreamModule"/>
@@ -25,6 +29,189 @@ namespace StreamRC.Streaming.Stream {
         /// <param name="context">context used to access environment</param>
         public StreamModule(Context context) {
             this.context = context;
+        }
+
+        /// <summary>
+        /// get a channel which matches the filters
+        /// </summary>
+        /// <param name="service">service which manages the channel</param>
+        /// <param name="channelname">name of channel</param>
+        /// <param name="included">flags channel has to have</param>
+        /// <param name="excluded">flags channel mustn't have</param>
+        /// <returns>access to channel</returns>
+        public IChatChannel GetChannel(string service, string channelname, ChannelFlags included = ChannelFlags.None, ChannelFlags excluded = ChannelFlags.None) {
+            lock(channellock)
+                return channels.FirstOrDefault(c => c.Service == service && c.Name == channelname && (c.Flags & included) == included && (c.Flags & excluded) == ChannelFlags.None);
+        }
+
+        /// <summary>
+        /// get a channel which matches the filters
+        /// </summary>
+        /// <param name="service">service which manages the channel</param>
+        /// <param name="included">flags channel has to have</param>
+        /// <param name="excluded">flags channel mustn't have</param>
+        /// <returns>access to channel</returns>
+        public IChatChannel GetChannel(string service, ChannelFlags included=ChannelFlags.All, ChannelFlags excluded=ChannelFlags.None) {
+            lock(channellock)
+                return channels.FirstOrDefault(c => c.Service == service && (c.Flags & included) == included && (c.Flags & excluded) == ChannelFlags.None);
+        }
+
+        /// <summary>
+        /// get all channels which are matching the filters
+        /// </summary>
+        /// <param name="included">flags channel has to have</param>
+        /// <param name="excluded">flags channel mustn't have</param>
+        /// <returns>channels which match the specified flags</returns>
+        public IEnumerable<IChatChannel> GetChannels(ChannelFlags included = ChannelFlags.All, ChannelFlags excluded = ChannelFlags.None) {
+            lock(channellock)
+                return channels.Where(c => (c.Flags & included) == included && (c.Flags & excluded) == ChannelFlags.None);
+        }
+
+        public void AddChannel(IChatChannel channel) {
+            Logger.Info(this, $"Adding channel '{channel.Name}' from connected channel list");
+            lock (channellock) {
+                channel.UserJoined += OnChannelUserJoined;
+                channel.UserLeft += OnChannelUserLeft;
+
+                if(channel.Flags.HasFlag(ChannelFlags.Chat))
+                    channel.ChatMessage += OnChannelChatMessage;
+
+                if(channel is IBotChatChannel) {
+                    IBotChatChannel botchannel = (IBotChatChannel)channel;
+                    
+                    botchannel.CommandReceived += OnChannelCommandReceived;
+                    
+                }
+
+                if(channel is IChannelInfoChannel) {
+                    IChannelInfoChannel infochannel = (IChannelInfoChannel)channel;
+                    infochannel.Hosted += OnHosted;
+                    infochannel.Raid += OnRaided;
+                    infochannel.MicroPresent += OnChannelMicroPresentReceived;
+                }
+
+                channels.Add(channel);
+                channel.Initialize();
+            }
+        }
+
+        /// <summary>
+        /// remove all channels which match the specified predicate
+        /// </summary>
+        /// <param name="predicate">predicate to match</param>
+        public void RemoveChannels(Func<IChatChannel, bool> predicate) {
+            lock(channellock) {
+                foreach(IChatChannel channel in channels.Where(predicate).ToArray())
+                    RemoveChannel(channel);
+            }
+        }
+
+        public void RemoveChannels(string service) {
+            lock(channellock) {
+                foreach(IChatChannel channel in channels.Where(c => c.Service == service).ToArray())
+                    RemoveChannel(channel);
+            }
+        }
+
+        public void RemoveChannel(string service, string name) {
+            lock(channellock) {
+                IChatChannel channel = GetChannel(service, name);
+                RemoveChannel(channel);
+            }
+        }
+
+        public void RemoveChannel(IChatChannel channel) {
+            Logger.Info(this, $"Removing channel '{channel.Name}' from connected channel list");
+
+            lock(channellock) {
+                channel.UserJoined -= OnChannelUserJoined;
+                channel.UserLeft -= OnChannelUserLeft;
+
+                if (channel.Flags.HasFlag(ChannelFlags.Chat))
+                    channel.ChatMessage -= OnChannelChatMessage;
+
+                if (channel is IBotChatChannel)
+                {
+                    IBotChatChannel botchannel = (IBotChatChannel)channel;
+                    botchannel.CommandReceived -= OnChannelCommandReceived;
+                }
+
+                if (channel is IChannelInfoChannel)
+                {
+                    IChannelInfoChannel infochannel = (IChannelInfoChannel)channel;
+                    infochannel.Hosted -= OnHosted;
+                    infochannel.Raid -= OnRaided;
+                    infochannel.MicroPresent -= OnChannelMicroPresentReceived;
+                }
+
+                channels.Remove(channel);
+            }
+        }
+
+        void OnChannelMicroPresentReceived(IChannelInfoChannel channel, MicroPresent present)
+        {
+            Logger.Info(this, $"{present.Service}/{present.Username} donated {present.Amount} {present.Currency}.");
+            MicroPresent?.Invoke(present);
+        }
+
+        void OnChannelCommandReceived(IBotChatChannel channel, StreamCommand command)
+        {
+            if (!ValidUser(command.Service, command.User))
+                return;
+
+            string whispered = command.IsWhispered ? "(Whispered)" : "";
+            Logger.Info(this, $"{command.Service} - {whispered}{command.User}: !{command.Command} {string.Join(" ", command.Arguments)}");
+            ExecuteCommand(channel, command);
+        }
+
+        void OnChannelChatMessage(IChatChannel channel, ChatMessage message) {
+            if(!ValidUser(message.Service, message.User))
+                return;
+
+            string whispered = message.IsWhisper ? "(Whispered)" : "";
+            Logger.Info(this, $"{message.Service} - {whispered}{message.User}: {message.Message}");
+            ChatMessage?.Invoke(message);
+        }
+
+        void OnChannelUserJoined(IChatChannel channel, UserInformation information)
+        {
+            UserJoined?.Invoke(information);
+        }
+
+        void OnChannelUserLeft(IChatChannel channel, UserInformation information)
+        {
+            UserLeft?.Invoke(information);
+        }
+
+        bool ValidUser(string service, string username) {
+
+            // the user doesn't necessarily exist just yet ... could be a message from an unknown user
+            User user = context.GetModule<UserModule>().GetUser(service, username);
+            bool result = (user.Flags & UserFlags.Bot) == UserFlags.None;
+            if(!result)
+                Logger.Warning(this, $"Blocking message for {service}/{username} because of userflags ({user.Flags})");
+            return result;
+        }
+
+        public void TriggerHosted(string service, string username, int viewers) {
+            OnHosted(null, new HostInformation {
+                Service = service,
+                Channel = username,
+                Viewers = viewers
+            });
+        }
+
+        void OnRaided(IChannelInfoChannel channel, RaidInformation info)
+        {
+            Logger.Info(this, $"Channel is being raided by {info.Login} with {info.RaiderCount} users on {info.Service}");
+            if(ValidUser(info.Service, info.Login))
+                Raid?.Invoke(info);
+        }
+
+        void OnHosted(IChannelInfoChannel channel, HostInformation information) {
+            Logger.Info(this, $"Channel is being hosted by {information.Channel} with {information.Viewers} viewers on {information.Service}");
+            if(ValidUser(information.Service, information.Channel))
+                Hosted?.Invoke(information);
         }
 
         /// <summary>
@@ -40,35 +227,21 @@ namespace StreamRC.Streaming.Stream {
             };
             module.NewFollower += information => {
                 Logger.Info(this, $"New follower '{information.Username}' on {type}.");
-                NewFollower?.Invoke(information);
+                if(ValidUser(information.Service, information.Username))
+                    NewFollower?.Invoke(information);
             };
-            module.NewSubscriber += information => {
-                Logger.Info(this, $"New subscriber '{information.Username}' with plan {information.PlanName} on {type}.");
-                NewSubscriber?.Invoke(information);
-            };
-            module.Hosted += information => {
-                Logger.Info(this, $"Channel is being hosted by {information.Channel} with {information.Viewers} viewers on {type}");
-                Hosted?.Invoke(information);
-            };
-            module.UserJoined += information => {
-                UserJoined?.Invoke(information);
-            };
-            module.ChatMessage += message => {
-                string whispered = message.IsWhisper ? "(Whispered)" : "";
-                Logger.Info(this, $"{type} - {whispered}{message.User}: {message.Message}");
-                ChatMessage?.Invoke(message);
-            };
-            module.UserLeft += information => UserLeft?.Invoke(information);
-            module.CommandReceived += command => {
-                string whispered = command.IsWhispered ? "(Whispered)" : "";
-                Logger.Info(this, $"{type} - {whispered}{command.User}: !{command.Command} {string.Join(" ", command.Arguments)}");
-                OnCommand(command);
-            };
+            module.NewSubscriber += AddSubscriber;
+            if(module is IStreamStatsModule)
+                ((IStreamStatsModule)module).ViewersChanged += OnViewersChanged;
+        }
 
-            module.MicroPresent += present => {
-                Logger.Info(this, $"{present.Service}/{present.Username} donated {present.Amount} {present.Currency}.");
-                MicroPresent?.Invoke(present);
-            };
+        void OnViewersChanged(int viewers) {
+            ViewersChanged?.Invoke(Viewers);
+        }
+
+        public void AddSubscriber(SubscriberInformation subscriber) {
+            Logger.Info(this, $"New subscriber '{subscriber.Username}' with plan {subscriber.PlanName} on {subscriber.Service}.");
+            NewSubscriber?.Invoke(subscriber);
         }
 
         /// <summary>
@@ -85,6 +258,11 @@ namespace StreamRC.Streaming.Stream {
         /// triggered when channel is being hosted
         /// </summary>
         public event Action<HostInformation> Hosted;
+
+        /// <summary>
+        /// triggered when channel is being raided
+        /// </summary>
+        public event Action<RaidInformation> Raid;
 
         /// <summary>
         /// triggered when user has joined the channel
@@ -117,7 +295,9 @@ namespace StreamRC.Streaming.Stream {
         public event Action<MicroPresent> MicroPresent;
 
         void IRunnableModule.Start() {
-            RegisterCommandHandler(this, "commands", "uptime", "help");
+            RegisterCommandHandler("commands", new CommandListHandler(commandmanager));
+            RegisterCommandHandler("uptime", new UptimeCommandHandler());
+            RegisterCommandHandler("help", new HelpCommandHandler(commandmanager));
         }
 
         public IStreamServiceModule GetService(string service) {
@@ -127,201 +307,80 @@ namespace StreamRC.Streaming.Stream {
         /// <summary>
         /// registers a command handler for a command
         /// </summary>
+        /// <param name="command">command for which to register handler</param>
         /// <param name="handler">handler used to process commands</param>
-        /// <param name="commands">commands for which to register handler</param>
-        public void RegisterCommandHandler(IStreamCommandHandler handler, params string[] commands) {
-            lock(commandhandlerlock)
-                foreach(string command in commands)
-                    commandhandlers[command] = handler;
+        public void RegisterCommandHandler(string command, IStreamCommandHandler handler) {
+            commandmanager.AddCommandHandler(command, handler);
         }
 
-        public void UnregisterCommandHandler(IStreamCommandHandler handler) {
-            lock(commandhandlerlock)
-                foreach(string key in commandhandlers.Keys.ToArray())
-                    if(commandhandlers[key] == handler)
-                        commandhandlers.Remove(key);
+        /// <summary>
+        /// unregisters existing command handler
+        /// </summary>
+        /// <param name="command">command to unregister</param>
+        public void UnregisterCommandHandler(string command) {
+            commandmanager.RemoveCommandHandler(command);
         }
 
-        void OnCommand(StreamCommand command) {
-            IStreamCommandHandler handler;
-            lock(commandhandlerlock)
-                commandhandlers.TryGetValue(command.Command, out handler);
+        /// <summary>
+        /// executes a stream command received by a channel
+        /// </summary>
+        /// <param name="channel">channel the command was received from</param>
+        /// <param name="command">received command</param>
+        public void ExecuteCommand(IChatChannel channel, StreamCommand command) {
+            IStreamCommandHandler handler = commandmanager.GetCommandHandlerOrDefault(command.Command);
+
             if(handler == null)
-                SendMessage(command.Service, command.User, $"Unknown command '{command.Command}', try '!commands' for a list of commands.", command.IsWhispered);
+                channel.SendMessage($"Unknown command '{command.Command}', try '!commands' for a list of commands.");
             else {
+                if((channel.Flags & handler.RequiredFlags) != handler.RequiredFlags)
+                    return;
+
                 try {
-                    handler.ProcessStreamCommand(command);
+                    handler.ExecuteCommand(channel, command);
                 }
                 catch(StreamCommandException e) {
-                    SendMessage(command.Service, command.User, e.Message, command.IsWhispered);
+                    channel.SendMessage(e.Message);
                     if(e.ProvideHelp)
-                        SendMessage(command.Service, command.User, $"Try '!help {command.Command}' to get an idea how to use the command.", command.IsWhispered);
+                        channel.SendMessage($"Try '!help {command.Command}' to get an idea how to use the command.");
 
                 }
                 catch(Exception e) {
                     Logger.Error(this, $"Error processing command '{command}'", e);
-                    SendMessage(command.Service, command.User, "Error processing command. You should probably inform the streamer that this tool is crap (also he can take a look at the logs what went wrong).", command.IsWhispered);
+                    channel.SendMessage("Error processing command. You should probably inform the streamer that this tool is crap (also he can take a look at the logs what went wrong).");
                 }
             }
 
             Command?.Invoke(command);
         }
 
-        void DisplayUptime(StreamCommand command) {
-            TimeSpan uptime = DateTime.Now - start;
-            if(uptime.Days > 0)
-                SendMessage(command.Service, command.User, $"This stream is going on for {uptime.Days} days, {uptime.Hours} hours and {uptime.Minutes} minutes now");
-            else SendMessage(command.Service, command.User, $"This stream is going on for {uptime.Hours} hours and {uptime.Minutes} minutes now");
-        }
-
         /// <summary>
-        /// sends a message to the author of the specified command
+        /// determines whether a handler for the specified command exists
         /// </summary>
-        /// <param name="command">original command which led to the message</param>
-        /// <param name="message">message to send</param>
-        public void SendMessage(StreamCommand command, string message) {
-            SendMessage(command.Service, command.User, message, command.IsWhispered);
-        }
-
-        /// <summary>
-        /// sends a message to a user of a service
-        /// </summary>
-        /// <param name="service">service to send message to</param>
-        /// <param name="user">user to send message to</param>
-        /// <param name="message">message to send</param>
-        /// <param name="iswhisper">whether to send a private message</param>
-        public void SendMessage(string service, string user, string message, bool iswhisper = false) {
-            if(string.IsNullOrEmpty(service)) {
-                if(iswhisper)
-                    throw new Exception("Whispered message without service is actually impossible");
-
-                BroadcastMessage(message);
-                return;
-            }
-
-            int maxlength = iswhisper ? 500 : 500 - user.Length - 2;
-            string[] messages = message.SplitMessage(maxlength).ToArray();
-
-            foreach(string chunk in messages) {
-                if(iswhisper) {
-                    SendPrivateMessage(service, user, chunk);
-                }
-                else {
-                    string tosend = $"{user}: {chunk}";
-                    SendMessage(service, tosend);
-                }
-            }
-        }
-
-        /// <summary>
-        /// sends a message to all connected services
-        /// </summary>
-        /// <param name="message">message to send</param>
-        public void BroadcastMessage(string message) {
-            foreach(string service in services.Keys)
-                SendMessage(service, message);
-        }
-
-        /// <summary>
-        /// sends a message to a service
-        /// </summary>
-        /// <param name="service">service to send message to</param>
-        /// <param name="message">message to send</param>
-        public void SendMessage(string service, string message) {
-            GetService(service).SendMessage(message);
-            //if(!message.StartsWith("!"))
-            //    ChatMessage?.Invoke(new ChatMessage {
-            //        AvatarLink = null,
-            //        Emotes = new ChatEmote[0],
-            //        IsWhisper = false,
-            //        Message = message,
-            //        Service = null,
-            //        User = "Channel",
-            //        UserColor = Color.FromRgb(255,230,174)
-            //    });
-        }
-
-        /// <summary>
-        /// sends a private message to a user of a service
-        /// </summary>
-        /// <param name="service">service user is registered to</param>
-        /// <param name="user">user to send message to</param>
-        /// <param name="message">message to send</param>
-        public void SendPrivateMessage(string service, string user, string message) {
-            GetService(service).SendPrivateMessage(user, message);
+        /// <param name="command">command to be checked</param>
+        /// <returns></returns>
+        public bool HasCommandHandler(string command) {
+            return commandmanager.Commands.Any(c => c == command);
         }
 
         void IRunnableModule.Stop() {
+            UnregisterCommandHandler("commands");
+            UnregisterCommandHandler("uptime");
+            UnregisterCommandHandler("help");
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "commands":
-                    lock(commandhandlerlock)
-                        SendMessage(command.Service, command.User, $"Commandlist: {string.Join(", ", commandhandlers.Keys.Select(k => $"!{k}"))}");
-                    break;
-                case "uptime":
-                    DisplayUptime(command);
-                    break;
-                case "help":
-                    string helpcommand = "help";
-                    if(command.Arguments.Length > 0)
-                        helpcommand = command.Arguments[0];
-
-                    IStreamCommandHandler handler;
-                    lock(commandhandlerlock)
-                        commandhandlers.TryGetValue(helpcommand, out handler);
-                    if (handler == null)
-                        SendMessage(command.Service, command.User, $"Unknown command '{helpcommand}', try !commands for a list of commands.", command.IsWhispered);
-                    else {
-                        string help = handler.ProvideHelp(helpcommand);
-                        SendMessage(command.Service, command.User, help, command.IsWhispered);
-                    }
-                    break;
-            }
+        public void SendMessage(string service, string channel, string user, string message) {
+            GetChannel(service, channel).SendMessage($"{user}: {message}");
         }
 
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "commands":
-                    return "Prints a list of supported commands. Syntax: !commands";
-                case "uptime":
-                    return "Prints out how long the stream is running. Syntax: !uptime";
-                case "help":
-                    return "Returns help on how to use a command. Syntax: !help <command>";
-                default:
-                    throw new ArgumentException(command);
-            }
+        void IChatMessageSender.SendChatMessage(string message) {
+            GetChannels(ChannelFlags.Chat, ChannelFlags.Bot).Foreach(c => c.SendMessage(message));
         }
 
-        void IMessageSender.SendMessage(string message) {
-            BroadcastMessage(message);
-            if(message.StartsWith("!")) {
-                string[] split= Commands.SplitArguments(message.Substring(1)).ToArray();
-                string[] arguments = split.Skip(1).ToArray();
-                foreach(KeyValuePair<string, IStreamServiceModule> streamservice in services) {
-                    if(string.IsNullOrEmpty(streamservice.Value.ConnectedUser))
-                        continue;
+        public event Action<int> ViewersChanged;
 
-                    OnCommand(new StreamCommand {
-                        Service = streamservice.Key,
-                        User = streamservice.Value.ConnectedUser,
-                        Command = split[0].ToLower(),
-                        Arguments = arguments,
-                        IsWhispered = false
-                    });
-                }
-            }
-        }
-
-        void ICommandModule.ProcessCommand(string command, params string[] arguments) {
-            switch(command) {
-                case "uptime":
-                    start = DateTime.Now - TimeSpan.Parse(arguments[0]);
-                    break;
-                default:
-                    throw new StreamCommandException($"Command '{command}' not supported by this module.");
-            }
+        public int Viewers
+        {
+            get { return services.Where(s => s.Value is IStreamStatsModule).Select(s=>s.Value).Cast<IStreamStatsModule>().Sum(s => s.Viewers); }
         }
     }
 }

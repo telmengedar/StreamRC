@@ -1,4 +1,5 @@
 ﻿using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.TTS;
 using StreamRC.Streaming.Stream;
@@ -8,8 +9,8 @@ namespace StreamRC.Streaming.Chat {
     /// <summary>
     /// sends text of micropresents to tts module if certain conditions are met
     /// </summary>
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(TTSModule), DependencyType.Type)]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(TTSModule))]
     public class MicroPresentTTSModule : IRunnableModule, IInitializableModule {
         readonly Context context;
         int threshold;
@@ -50,7 +51,9 @@ namespace StreamRC.Streaming.Chat {
             if(string.IsNullOrEmpty(present.Message) || present.Amount < Threshold)
                 return;
 
-            context.GetModule<TTSModule>().Speak(present.Message);
+            string text = present.Message.Replace("cheer50", "").Replace("cheer100", "").Replace("cheer250", "").Replace("cheer500", "").Trim();
+            if(!string.IsNullOrEmpty(text))
+                context.GetModule<TTSModule>().Speak(text);
         }
 
         void IInitializableModule.Initialize() {

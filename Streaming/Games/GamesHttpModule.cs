@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -8,9 +9,9 @@ using StreamRC.Streaming.Text;
 
 namespace StreamRC.Streaming.Games {
 
-    [Dependency(nameof(CurrentlyPlayedModule), DependencyType.Type)]
-    [Dependency(nameof(TextModule), DependencyType.Type)]
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(CurrentlyPlayedModule))]
+    [Dependency(nameof(TextModule))]
+    [Dependency(nameof(HttpServiceModule))]
     public class GamesHttpModule : IRunnableModule, IHttpService {
         readonly Context context;
 

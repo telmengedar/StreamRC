@@ -3,34 +3,36 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
+using StreamRC.RPG.Adventure.Commands;
 using StreamRC.RPG.Adventure.Exploration;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
 using StreamRC.RPG.Adventure.SpiritRealm;
-using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Adventure {
 
-    [Dependency(nameof(MessageModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
-    [Dependency(nameof(UserModule), DependencyType.Type)]
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
-    [Dependency(nameof(ItemModule), DependencyType.Type)]
-    [Dependency(nameof(MonsterModule), DependencyType.Type)]
-    [Dependency(nameof(ImageCacheModule), DependencyType.Type)]
+    [Dependency(nameof(MessageModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(PlayerModule))]
+    [Dependency(nameof(UserModule))]
+    [Dependency(nameof(TimerModule))]
+    [Dependency(nameof(ItemModule))]
+    [Dependency(nameof(MonsterModule))]
+    [Dependency(nameof(ImageCacheModule))]
     [ModuleKey("adventure")]
-    public class AdventureModule : IRunnableModule, ITimerService, ICommandModule, IStreamCommandHandler {
+    public class AdventureModule : IRunnableModule, ITimerService, ICommandModule {
         readonly Context context;
 
         readonly object adventurerlock = new object();
@@ -74,6 +76,17 @@ namespace StreamRC.RPG.Adventure {
             ItemFound?.Invoke(player, item, quantity);
         }
 
+        /// <summary>
+        /// determines whether someone is adventuring
+        /// </summary>
+        public bool IsSomeoneActive
+        {
+            get
+            {
+                lock(adventurerlock)
+                    return activeplayers.Any();
+            }
+        }
         public IEnumerable<Adventure> Adventures
         {
             get
@@ -91,7 +104,6 @@ namespace StreamRC.RPG.Adventure {
 
             PlayerModule playermodule = context.GetModule<PlayerModule>();
             Player player = playermodule.GetPlayer(message.Service, message.User);
-            AddAdventurer(player);
             PlayerActiveTrigger?.Invoke(player.UserID);
         }
 
@@ -100,7 +112,9 @@ namespace StreamRC.RPG.Adventure {
             context.GetModule<PlayerModule>().PlayerStatusChanged += OnStatusChanged;
             context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
             context.GetModule<StreamModule>().Command += OnCommand;
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "rescue", "rest");
+            context.GetModule<StreamModule>().RegisterCommandHandler("explore", new ExploreCommandHandler(this, context.GetModule<PlayerModule>()));
+            context.GetModule<StreamModule>().RegisterCommandHandler("rest", new RestCommandHandler(this, context.GetModule<PlayerModule>()));
+            context.GetModule<StreamModule>().RegisterCommandHandler("rescue", new RescuePlayerCommandHandler(this));
             context.GetModule<TimerModule>().AddService(this, 0.5);
         }
 
@@ -117,7 +131,9 @@ namespace StreamRC.RPG.Adventure {
             context.GetModule<PlayerModule>().PlayerStatusChanged -= OnStatusChanged;
             context.GetModule<StreamModule>().ChatMessage -= OnChatMessage;
             context.GetModule<StreamModule>().Command -= OnCommand;
-            context.GetModule<StreamModule>().UnregisterCommandHandler(this);
+            context.GetModule<StreamModule>().UnregisterCommandHandler("explore");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("rest");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("rescue");
             context.GetModule<TimerModule>().RemoveService(this);
         }
 
@@ -243,17 +259,6 @@ namespace StreamRC.RPG.Adventure {
             }
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "rescue":
-                    Rescue(command.Service, command.User);
-                    break;
-                case "rest":
-                    RemoveAdventurer(context.GetModule<PlayerModule>().GetExistingPlayer(command.Service, command.User).UserID);
-                    break;
-            }
-        }
-
         /// <summary>
         /// takes a break from adventuring
         /// </summary>
@@ -264,19 +269,19 @@ namespace StreamRC.RPG.Adventure {
             context.GetModule<RPGMessageModule>().Create().User(user).Text(" went to the city to rest a bit.").Send();
         }
 
-        void Rescue(string service, string username) {
+        public void Rescue(string service, string channel, string username) {
             lock(adventurerlock) {
                 User rescueuser = context.GetModule<UserModule>().GetExistingUser(service, username);
                 Player rescueplayer = context.GetModule<PlayerModule>().GetPlayer(rescueuser.ID);
 
                 if(rescueplayer.CurrentHP == 0) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, "Umm ... you're dead, you know.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, "Umm ... you're dead, you know.");
                     return;
                 }
 
                 Adventure adventure = adventurers.FirstOrDefault(a => a.AdventureLogic.Status == AdventureStatus.SpiritRealm && a.Player != rescueplayer.UserID);
                 if(adventure == null) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, "There is no one to rescue out there.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, "There is no one to rescue out there.");
                     return;
                 }
 
@@ -299,18 +304,6 @@ namespace StreamRC.RPG.Adventure {
                     context.GetModule<PlayerModule>().UpdateGold(rescueplayer.UserID, 50);
                     context.GetModule<RPGMessageModule>().Create().User(rescueuser).Text(" rescued ").User(user).Text(" for ").Gold(50).Text(".").Send();
                 }
-            }
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "rescue":
-                    return "Rescues a dead player";
-                case "rest":
-                    return "Takes a rest from adventuring.";
-                default:
-                    throw new StreamCommandException($"'{command}' not handled by this module.");
-
             }
         }
     }

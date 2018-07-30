@@ -10,11 +10,11 @@ namespace StreamRC.Streaming.Notifications {
         /// <summary>
         /// notification title
         /// </summary>
-        public string Title { get; set; }
+        public Message Title { get; set; }
 
         /// <summary>
         /// notification content
         /// </summary>
-        public Message Content { get; set; } 
+        public Message Text { get; set; } 
     }
 }

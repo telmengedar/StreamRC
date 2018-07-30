@@ -33,6 +33,12 @@ namespace StreamRC.Streaming.Cache {
         public DateTime LastUpdate { get; set; }
 
         /// <summary>
+        /// time when image expires
+        /// </summary>
+        [Index("expiration")]
+        public DateTime Expiration { get; set; }
+
+        /// <summary>
         /// image data
         /// </summary>
         public byte[] Data { get; set; }

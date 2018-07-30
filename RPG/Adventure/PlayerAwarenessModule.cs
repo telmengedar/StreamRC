@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Equipment;
 using StreamRC.RPG.Inventory;
@@ -14,9 +15,9 @@ using StreamRC.RPG.Shops;
 
 namespace StreamRC.RPG.Adventure {
 
-    [Dependency(nameof(AdventureModule), DependencyType.Type)]
-    [Dependency(nameof(InventoryModule), DependencyType.Type)]
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
+    [Dependency(nameof(AdventureModule))]
+    [Dependency(nameof(InventoryModule))]
+    [Dependency(nameof(PlayerModule))]
     public class PlayerAwarenessModule : IRunnableModule {
         readonly Context context;
 

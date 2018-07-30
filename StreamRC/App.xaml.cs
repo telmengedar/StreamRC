@@ -31,10 +31,6 @@ namespace NightlyCode.StreamRC
             foreach(IModule module in scanner.ScanForModules(context))
                 context.AddModule(module);
 
-            foreach(ModuleInformation module in context.Modules)
-                if(module.Module is IMessageSender)
-                    context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).RegisterMessageSender((IMessageSender)module.Module);
-
             context.Start();
             Logger.Info(this, "StreamRC started");
         }

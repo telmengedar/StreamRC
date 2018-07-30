@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -12,7 +13,7 @@ namespace StreamRC.RPG.Shops {
     /// <summary>
     /// serves images for items
     /// </summary>
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(HttpServiceModule))]
     public class ShopImageModule : IRunnableModule, IHttpService {
         readonly Context context;
         readonly Dictionary<string, string> imagecache=new Dictionary<string, string>();

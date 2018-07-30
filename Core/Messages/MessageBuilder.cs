@@ -40,11 +40,11 @@ namespace StreamRC.Core.Messages {
             return this;
         }
 
-        public MessageBuilder Image(string imageurl, string alternative=null) {
-            if(string.IsNullOrEmpty(imageurl))
+        public MessageBuilder Image(long imageid, string alternative=null) {
+            if(imageid <= 0)
                 return this;
 
-            chunks.Add(new MessageChunk(MessageChunkType.Emoticon, imageurl) {
+            chunks.Add(new MessageChunk(MessageChunkType.Emoticon, imageid.ToString()) {
                 Alternative = alternative
             });
             return this;

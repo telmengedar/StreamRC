@@ -32,6 +32,11 @@ namespace StreamRC.Core.TTS {
             synthesizer.SpeakCompleted += OnSpeakCompleted;
         }
 
+        /// <summary>
+        /// triggered when a text is spoken
+        /// </summary>
+        public event Action<string, string> TextSpoken;
+
         public string Voice
         {
             get { return voice; }
@@ -64,6 +69,7 @@ namespace StreamRC.Core.TTS {
             if (!string.IsNullOrEmpty(text.Voice))
                 synthesizer.SelectVoice(text.Voice);
             synthesizer.SpeakAsync(text.Text);
+            TextSpoken?.Invoke(text.Voice, text.Text);
         }
 
         /// <summary>

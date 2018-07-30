@@ -11,6 +11,11 @@
         public string Service { get; set; }
 
         /// <summary>
+        /// channel from which command was received
+        /// </summary>
+        public string Channel { get; set; }
+
+        /// <summary>
         /// user which sent the command
         /// </summary>
         public string User { get; set; }

@@ -9,6 +9,10 @@ using FontWeight = StreamRC.Core.Messages.FontWeight;
 
 namespace StreamRC.Streaming.Polls
 {
+
+    /// <summary>
+    /// generates ticker messages for poll options
+    /// </summary>
     public class PollTickerGenerator : ITickerMessageSource {
         readonly Context context;
         readonly object countlock = new object();
@@ -24,6 +28,8 @@ namespace StreamRC.Streaming.Polls
             this.context = context;
             module.OptionAdded += option => Recount();
             module.OptionRemoved += option => Recount();
+            module.PollCreated += poll => Recount();
+            module.PollRemoved += poll => Recount();
             Recount();
         }
 
@@ -55,9 +61,9 @@ namespace StreamRC.Streaming.Polls
                 if(poll != null) {
                     return new TickerMessage {
                         Content = new MessageBuilder()
-                            .Text(" Type ")
-                            .Text($"!vote {poll.Name} {option.Key}", StreamColors.Command, FontWeight.Bold)
-                            .Text(" for ")
+                            .Text("Type ")
+                            .Text($"!vote {option.Key}", StreamColors.Command, FontWeight.Bold)
+                            .Text(" in chat for ")
                             .Text(option.Description, StreamColors.Game, FontWeight.Bold)
                             .BuildMessage()
                     };

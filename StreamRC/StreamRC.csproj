@@ -74,8 +74,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Modules\IMainWindow.cs" />
-    <Compile Include="Modules\IMessageSender.cs" />
-    <Compile Include="Modules\IMessageSenderModule.cs" />
     <Compile Include="Modules\ISettings.cs" />
     <Compile Include="Modules\ModuleKeys.cs" />
     <Compile Include="Modules\Context.cs" />
@@ -112,6 +110,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\Compiled\Library\NightlyCode.Discord.dll">
+      <Link>NightlyCode.Discord.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\Compiled\Library\NightlyCode.Twitch.dll">
+      <Link>NightlyCode.Twitch.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="websocket-sharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

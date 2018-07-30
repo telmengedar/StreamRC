@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -15,7 +17,7 @@ namespace StreamRC.Streaming.Cache {
     /// <summary>
     /// module used to cache web images in database
     /// </summary>
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(HttpServiceModule))]
     public class ImageCacheModule : IInitializableModule, IHttpService {
         readonly Context context;
         TimeSpan refreshTime;
@@ -25,7 +27,12 @@ namespace StreamRC.Streaming.Cache {
         readonly List<ImageCacheEntry> images=new List<ImageCacheEntry>();
         readonly Dictionary<long, ImageCacheEntry> imagesbyid=new Dictionary<long, ImageCacheEntry>();
         readonly Dictionary<string, ImageCacheEntry> imagesbykey=new Dictionary<string, ImageCacheEntry>();
-          
+
+        static ImageCacheModule() {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            //ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+        }
+
         /// <summary>
         /// creates a new <see cref="ImageCacheModule"/>
         /// </summary>
@@ -47,6 +54,7 @@ namespace StreamRC.Streaming.Cache {
                         images.RemoveAt(i);
                     }
                 }
+                context.Database.Delete<ImageCacheItem>().Where(i => i.Expiration < DateTime.Now).Execute();
             }
         }
 
@@ -62,11 +70,12 @@ namespace StreamRC.Streaming.Cache {
             }
             catch(Exception e) {
                 Logger.Warning(this, $"Unable to refresh image '{entry.Image.URL}'", e.Message);
+                context.Database.Update<ImageCacheItem>().Set(i => i.LastUpdate == DateTime.Now).Where(i => i.ID == entry.Image.ID).Execute();
                 return;
             }
 
             entry.Image.Data = data;
-            context.Database.Update<ImageCacheItem>().Set(i => i.Data == data).Where(i => i.ID == entry.Image.ID).Execute();
+            context.Database.Update<ImageCacheItem>().Set(i => i.Data == data, i => i.LastUpdate == DateTime.Now).Where(i => i.ID == entry.Image.ID).Execute();
         }
 
         /// <summary>
@@ -113,6 +122,7 @@ namespace StreamRC.Streaming.Cache {
                 return entry.Image.Data;
             }
         }
+
         /// <summary>
         /// adds an image entry to the cache
         /// </summary>
@@ -120,21 +130,32 @@ namespace StreamRC.Streaming.Cache {
         /// <param name="key">key to retrieve image (optional)</param>
         /// <returns>id of image in databasee</returns>
         public long AddImage(string url, string key=null) {
-            if(string.IsNullOrEmpty(url))
+            return AddImage(url, DateTime.MaxValue, key);
+        }
+
+        /// <summary>
+        /// adds an image entry to the cache
+        /// </summary>
+        /// <param name="url">url to image data</param>
+        /// <param name="key">key to retrieve image (optional)</param>
+        /// <returns>id of image in databasee</returns>
+        public long AddImage(string url, DateTime expiration, string key = null)
+        {
+            if (string.IsNullOrEmpty(url))
                 return -1;
 
-            lock(imagelock) {
-                if(!string.IsNullOrEmpty(key) && imagesbykey.ContainsKey(key))
+            lock (imagelock)
+            {
+                if (!string.IsNullOrEmpty(key) && imagesbykey.ContainsKey(key))
                     return imagesbykey[key].Image.ID;
 
                 long id = context.Database.Load<ImageCacheItem>(i => i.ID).Where(i => i.URL == url).ExecuteScalar<long>();
-                if(id != 0)
+                if (id != 0)
                     return id;
 
-                return context.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.URL, i => i.LastUpdate).Values(key, url, DateTime.Now - TimeSpan.FromDays(2.0)).ReturnID().Execute();
+                return context.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.URL, i => i.LastUpdate, i => i.Expiration).Values(key, url, DateTime.Now - TimeSpan.FromDays(2.0), expiration).ReturnID().Execute();
             }
         }
-
 
         /// <summary>
         /// time after which image data is refreshed
@@ -149,6 +170,28 @@ namespace StreamRC.Streaming.Cache {
                 refreshTime = value;
                 context.Settings.Set(this, "RefreshTime", value);
             }
+        }
+
+        /// <summary>
+        /// creates an url to use to access a specific image
+        /// </summary>
+        /// <param name="id">id of image in cache</param>
+        /// <returns>url to be used to access image</returns>
+        public string CreateCacheUrl(long id) {
+            return $"/streamrc/image?id={id}";
+        }
+
+        /// <summary>
+        /// extracts the id of an url which points to an image in this cache
+        /// </summary>
+        /// <param name="url">url under which cache image is stored</param>
+        /// <returns>id of image</returns>
+        public long ExtractIDFromUrl(string url) {
+            Match match = Regex.Match(url, "^/streamrc/image\\?id=(?<id>[0-9]+)$");
+            if(!match.Success)
+                return -1;
+
+            return long.Parse(match.Groups["id"].Value);
         }
 
         void IInitializableModule.Initialize() {
@@ -170,12 +213,18 @@ namespace StreamRC.Streaming.Cache {
 
             byte[] data = GetImageData(id);
 
-            client.WriteStatus(200, "OK");
-            client.WriteHeader("Content-Type", MimeTypes.GetMimeType(".png"));
-            client.WriteHeader("Content-Length", data.Length.ToString());
-            client.EndHeader();
-            using (System.IO.Stream stream = client.GetStream())
-                stream.Write(data, 0, data.Length);
+            if(data == null || data.Length == 0) {
+                client.WriteStatus(404, "Not found");
+                client.EndHeader();
+            }
+            else {
+                client.WriteStatus(200, "OK");
+                client.WriteHeader("Content-Type", MimeTypes.GetMimeType(".png"));
+                client.WriteHeader("Content-Length", data.Length.ToString());
+                client.EndHeader();
+                using (System.IO.Stream stream = client.GetStream())
+                    stream.Write(data, 0, data.Length);
+            }
         }
     }
 }

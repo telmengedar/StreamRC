@@ -3,7 +3,9 @@ using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
+using StreamRC.Streaming.Collections.Commands;
 using StreamRC.Streaming.Collections.Management;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Ticker;
@@ -13,11 +15,11 @@ namespace StreamRC.Streaming.Collections {
     /// <summary>
     /// module providing collections for users
     /// </summary>
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(TickerModule), DependencyType.Type)]
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(TickerModule))]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     [ModuleKey("collection")]
-    public class CollectionModule : IInitializableModule, IStreamCommandHandler, ICommandModule {
+    public class CollectionModule : IInitializableModule, ICommandModule, IRunnableModule {
         readonly Context context;
 
         readonly CollectionTickerGenerator tickergenerator;
@@ -87,48 +89,11 @@ namespace StreamRC.Streaming.Collections {
             return context.Database.LoadEntities<WeightedCollectionItem>().Where(i=>i.Collection==collection).Execute().ToArray();
         }
 
-        public void ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "add":
-                    AddItem(command.User, command.Arguments[0].ToLower(), command.Arguments[1].ToLower());
-                    break;
-                case "remove":
-                    RemoveItem(command.User, command.Arguments[0].ToLower(), command.Arguments[1].ToLower());
-                    break;
-                case "clear":
-                    Clear(command.User, command.Arguments[0].ToLower());
-                    break;
-                case "collections":
-                    ListCollections(command);
-                    break;
-                case "collectioninfo":
-                    DisplayCollectionInfo(command);
-                    break;
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
+        public string[] GetCollectionNames() {
+            return context.Database.Load<Collection>(c => c.Name).ExecuteSet<string>().ToArray();
         }
-
-        void DisplayCollectionInfo(StreamCommand command) {
-            string collectionname = command.Arguments[0];
-            Collection collection = context.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
-            if (collection == null)
-                throw new StreamCommandException($"There is no collection named '{collectionname}'");
-
-            string itemsperuser = collection.ItemsPerUser > 0 ? $"max {collection.ItemsPerUser} per user." : "unlimited items per user";
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"Collection {collectionname}: {collection.Description} - {itemsperuser}", command.IsWhispered);
-        }
-
-        void ListCollections(StreamCommand command) {
-            string message = string.Join(", ", context.Database.Load<Collection>(c => c.Name).ExecuteSet<string>());
-            if(message.Length == 0)
-                message = "There are no open collections";
-            else message = "Open collections: " + message;
-
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, message, command.IsWhispered);
-        }
-
-        void Clear(string user, string collectionname) {
+        
+        public void Clear(string user, string collectionname) {
             Collection collection = context.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if (collection == null)
                 throw new StreamCommandException($"There is no collection named '{collectionname}'");
@@ -140,7 +105,7 @@ namespace StreamRC.Streaming.Collections {
             CollectionClearedUser?.Invoke(collection, user);
         }
 
-        void RemoveItem(string user, string collectionname, string item) {
+        public void RemoveItem(string user, string collectionname, string item) {
             Collection collection = context.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if (collection == null)
                 throw new StreamCommandException($"There is no collection named '{collectionname}'");
@@ -156,7 +121,7 @@ namespace StreamRC.Streaming.Collections {
             });
         }
 
-        void AddItem(string user, string collectionname, string item) {
+        public void AddItem(string user, string collectionname, string item) {
             Collection collection = context.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if(collection == null)
                 throw new StreamCommandException($"There is no collection named '{collectionname}'");
@@ -184,23 +149,6 @@ namespace StreamRC.Streaming.Collections {
             });
         }
 
-        public string ProvideHelp(string command) {
-            switch(command) {
-                case "add":
-                    return "Adds an item to a collection. Syntax: !add <collection> <item>";
-                case "remove":
-                    return "Removes a personal item from a collection. Syntax: !remove <collection> <item>";
-                case "clear":
-                    return "Clears all items personally added to a collection. Syntax: !clear <collection>";
-                case "collections":
-                    return "Lists all available collections. Syntax: !collections";
-                case "collectioninfo":
-                    return "Provides info about a collection. Syntax: !collectioninfo <collection>";
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
-        }
-
         public void Initialize() {
             context.Database.UpdateSchema<Collection>();
             context.Database.UpdateSchema<CollectionItem>();
@@ -210,7 +158,6 @@ namespace StreamRC.Streaming.Collections {
             if(tickergenerator.CollectionCount > 0)
                 context.GetModule<TickerModule>().AddSource(tickergenerator);
 
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "add", "remove", "clear", "collections", "collectioninfo");
             context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Manage.Collections", (sender, args) => new CollectionManagementWindow(this).Show());
         }
 
@@ -320,6 +267,22 @@ namespace StreamRC.Streaming.Collections {
                 context.Database.Update<CollectionItem>().Set(i=>i.Collection==newname).Where(i=>i.Collection==oldname).Execute();
                 context.Database.Update<BlockedCollectionItem>().Set(i=>i.Collection==newname).Where(i=>i.Collection==oldname).Execute();
             }
+        }
+
+        void IRunnableModule.Start() {
+            context.GetModule<StreamModule>().RegisterCommandHandler("add", new AddCollectionItemCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("remove", new RemoveCollectionItemCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("clear", new ClearCollectionCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("collections", new ListCollectionsCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("collectioninfo", new CollectionInfoCommandHandler(this));
+        }
+
+        void IRunnableModule.Stop() {
+            context.GetModule<StreamModule>().UnregisterCommandHandler("add");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("remove");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("clear");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("collections");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("collectioninfo");
         }
     }
 }

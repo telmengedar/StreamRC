@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
-using StreamRC.RPG.Data;
+using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Messages;
+using StreamRC.RPG.Players.Commands;
 using StreamRC.RPG.Players.Skills.Monster;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Players.Skills {
 
-    [Dependency(nameof(MessageModule), DependencyType.Type)]
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
+    [Dependency(nameof(MessageModule))]
+    [Dependency(nameof(PlayerModule))]
     [ModuleKey("skills")]
-    public class SkillModule : ICommandModule, IInitializableModule, IStreamCommandHandler, IRunnableModule {
+    public class SkillModule : ICommandModule, IInitializableModule, IRunnableModule, IItemCommandModule {
         readonly Context context;
 
         public SkillModule(Context context) {
@@ -69,16 +71,16 @@ namespace StreamRC.RPG.Players.Skills {
             }
         }
 
-        void CastHeal(User user, Player player) {
+        void CastHeal(string channel, User user, Player player) {
             SkillConsumption skill = GetSkill(player.UserID, SkillType.Heal);
             if(skill == null) {
-                context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, $"You don't know anything about {SkillType.Heal}.");
+                context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, $"You don't know anything about {SkillType.Heal}.");
                 return;
             }
 
             int cost = GetSkillCost(SkillType.Heal, skill.Level);
             if(cost > player.CurrentMP) {
-                context.GetModule<StreamModule>().SendMessage(user.Service, user.Name, "Not enough mana.");
+                context.GetModule<StreamModule>().SendMessage(user.Service, channel, user.Name, "Not enough mana.");
                 return;
             }
 
@@ -100,7 +102,7 @@ namespace StreamRC.RPG.Players.Skills {
             context.GetModule<RPGMessageModule>().Create().User(user).Text(" casts ").Skill(SkillType.Heal).Text(" and heals ").Health(healed).Text(".").Send();
         }
 
-        public void Cast(User user, Player player, SkillType skill) {
+        public void Cast(string channel, User user, Player player, SkillType skill) {
             switch(skill) {
                 default:
                     throw new Exception($"{skill} is an unknown skill and can't be cast.");
@@ -108,7 +110,7 @@ namespace StreamRC.RPG.Players.Skills {
                 case SkillType.Mule:
                     throw new Exception($"{skill} is a passive skill and can't be cast.");
                 case SkillType.Heal:
-                    CastHeal(user, player);
+                    CastHeal(channel, user, player);
                     break;
             }
         }
@@ -161,7 +163,7 @@ namespace StreamRC.RPG.Players.Skills {
             int skillpointsleft = player.Level - skillconsumption;
             int nextlevel = skillevel + 1;
             if(skillpointsleft < GetSkillpointRequirement(nextlevel)) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"You don't have enough skillpoints to learn {skilltype}.");
+                context.GetModule<RPGMessageModule>().Create().User(user).Text(" doesn't have enough skillpoints to learn ").Skill(skilltype).Send();
                 return;
             }
 
@@ -225,22 +227,9 @@ namespace StreamRC.RPG.Players.Skills {
             context.Database.UpdateSchema<SkillConsumption>();
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "skills":
-                    ShowSkillList(command.Service, command.User, command.IsWhispered);
-                    break;
-                case "cast":
-                    CastSpell(command.Service, command.User, command.Arguments);
-                    break;
-                default:
-                    throw new StreamCommandException($"'{command}' not handled by this module.");
-            }
-        }
-
-        void CastSpell(string service, string username, string[] arguments) {
+        public void CastSpell(string service, string channel, string username, string[] arguments) {
             if(arguments.Length < 1) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "You have to specify the name of the spell to cast -> !cast <SPELL>");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "You have to specify the name of the spell to cast -> !cast <SPELL>");
                 return;
             }
 
@@ -249,45 +238,47 @@ namespace StreamRC.RPG.Players.Skills {
                 skill = (SkillType)Enum.Parse(typeof(SkillType), arguments[0], true);
             }
             catch(Exception) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"'{arguments[0]}' is not a spell (at least not a spell known around here).");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"'{arguments[0]}' is not a spell (at least not a spell known around here).");
                 return;
             }
 
             User user = context.GetModule<UserModule>().GetExistingUser(service, username);
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(user.ID);
             if(player == null) {
-                context.GetModule<StreamModule>().SendMessage(service, username, "You are not a player in this rpg.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, "You are not a player in this rpg.");
                 return;
             }
 
-            Cast(user, player, skill);
+            Cast(channel, user, player, skill);
         }
 
-        void ShowSkillList(string service, string user, bool whispered) {
+        public void ShowSkillList(string service, string channel, string user) {
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, user);
             SkillConsumption[] skills = GetSkills(player.UserID).ToArray();
             string skillist = string.Join(", ", skills.Select(s => $"{s.Skill} {s.Level}"));
             int left = player.Level - skills.Sum(s => s.Consumption);
-            context.GetModule<StreamModule>().SendMessage(service, user, $"{skillist}. Skillpoints Left: {left}.", whispered);
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "skills":
-                    return "Shows the skillist in chat";
-                case "cast":
-                    return "Casts a spell. Syntax !cast <spell>";
-                default:
-                    throw new StreamCommandException($"'{command}' not handled by this module.");
-            }
+            context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{skillist}. Skillpoints Left: {left}.");
         }
 
         void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "skills");
+            context.GetModule<StreamModule>().RegisterCommandHandler("skills", new SkillListCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("cast", new CastSpellCommandHandler(this));
         }
 
         void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().UnregisterCommandHandler(this);
+            context.GetModule<StreamModule>().UnregisterCommandHandler("skills");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("cast");
+        }
+
+        void IItemCommandModule.ExecuteItemCommand(User user, Player player, string command, params string[] arguments) {
+            switch(command) {
+                case "forget":
+                    ForgetSkill(user.Service, user.Name, arguments[0]);
+                    break;
+                case "learn":
+                    LearnSkill(user.Service, user.Name, arguments[0]);
+                    break;
+            }
         }
     }
 }

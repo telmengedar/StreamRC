@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Streaming.Ads;
 using StreamRC.Streaming.Infos;
@@ -11,8 +12,7 @@ namespace StreamRC.Streaming.Games {
     /// <summary>
     /// configures the currently played game
     /// </summary>
-    [Dependency(nameof(InfoModule), DependencyType.Type)]
-    [Dependency(nameof(AdModule), DependencyType.Type)]
+    [Dependency(nameof(InfoModule))]
     [ModuleKey("current")]
     public class CurrentlyPlayedModule : ICommandModule, IInitializableModule {
         readonly Context context;
@@ -36,7 +36,6 @@ namespace StreamRC.Streaming.Games {
         /// </summary>
         public void Clear() {
             context.GetModule<InfoModule>().RemoveInfo("current");
-            context.GetModule<AdModule>().RemoveAd("current");
         }
 
         /// <summary>
@@ -73,7 +72,6 @@ namespace StreamRC.Streaming.Games {
 
             string text = sb.ToString();
             context.GetModule<InfoModule>().SetInfo("current", text);
-            context.GetModule<AdModule>().SetAdText("current", text);
             game = new CurrentlyPlayedGame {
                 Game = gamename,
                 Epithet = epithet,

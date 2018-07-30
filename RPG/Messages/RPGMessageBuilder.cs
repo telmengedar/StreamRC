@@ -9,6 +9,7 @@ using StreamRC.RPG.Equipment;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Players.Skills;
 using StreamRC.RPG.Shops;
+using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Messages {
@@ -52,7 +53,7 @@ namespace StreamRC.RPG.Messages {
                 Color(AdventureColors.Gold);
             else
                 Color(AdventureColors.Item).Text(item.GetMultiple());
-            return Image(itemimages.GetImagePath(item.Name)).Reset();
+            return Image(itemimages.GetImagePath(item.Name), item.Type == ItemType.Gold ? "Gold" : "").Reset();
         }
 
         /// <summary>
@@ -108,8 +109,16 @@ namespace StreamRC.RPG.Messages {
             return Image(user.Avatar).Bold().Color(user.Color).Text(user.Name).Reset();
         }
 
-        public new RPGMessageBuilder Image(string imageurl, string alternative=null) {
-            return (RPGMessageBuilder)base.Image(imageurl);
+        public RPGMessageBuilder Service(string servicename) {
+            return Image(context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={servicename}"));
+        }
+
+        public RPGMessageBuilder Image(string imageurl, string alternative = null) {
+            return Image(context.GetModule<ImageCacheModule>().AddImage(imageurl), alternative);
+        }
+
+        public new RPGMessageBuilder Image(long imageid, string alternative=null) {
+            return (RPGMessageBuilder)base.Image(imageid, alternative);
         }
 
         public new RPGMessageBuilder Color(string color) {

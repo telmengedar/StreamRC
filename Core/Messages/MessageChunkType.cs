@@ -13,6 +13,11 @@ namespace StreamRC.Core.Messages {
         /// <summary>
         /// emoticon
         /// </summary>
-        Emoticon
+        Emoticon,
+
+        /// <summary>
+        /// full image
+        /// </summary>
+        Image
     }
 }

@@ -6,10 +6,9 @@
 	font-weight: bold;
 	text-align: center;
 	color: #FFFFFF;
-	background-color: rgba(0, 0, 0, 0.4);
-	opacity: 0;
-	-webkit-transition: opacity 1000ms ease-in-out;
-    transition: opacity 1000ms ease-in-out;
+
+	background: linear-gradient(to right, rgba(0, 0, 0, 1.0), rgba(60, 60, 60, 0.5));
+
 	text-shadow:
 	           3px 3px 0 #000,
 	           -1px -1px 0 #000,
@@ -17,19 +16,25 @@
 	           -1px 1px 0 #000,
 	           1px 1px 0 #000;
 
-	border-style: solid;
-	border-width: 1px;
+	border-style: none none solid none;
+	border-width: 2px;
 	border-color: rgba(0, 0, 0, 0.6);
 }
 
 .messages {
 	width: 100%;
+	opacity: 0;
+
+	-webkit-transition: opacity 1000ms ease-in-out;
+    transition: opacity 1000ms ease-in-out;
 }
 
 .message {
 	width: 100%;
 	font-size: 130%;
-	background-color: rgba(0, 0, 0, 0.4);
+
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(80, 80, 80, 0.4));
+
 	opacity: 0;
 	-webkit-transition: opacity 1000ms ease-in-out;
     transition: opacity 1000ms ease-in-out;
@@ -40,10 +45,6 @@
 	           1px -1px 0 #000,
 	           -1px 1px 0 #000,
 	           1px 1px 0 #000;
-
-	border-style: solid;
-	border-width: 1px;
-	border-color: rgba(0, 0, 0, 0.6);
 }
 
 p {
@@ -53,6 +54,13 @@ p {
 
 .element {
 	padding-right: 5px;
+}
+
+.imageattachement {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 160px;
 }
 
 img.element {

@@ -22,12 +22,10 @@ function refresh() {
 
 function removeMessage() {
     setTimeout(function () {
-        var element = document.getElementById("message");
-        while (element.firstChild)
-            element.removeChild(element.firstChild);
+        clearMessage(document.getElementById("titlecontent"));
+        clearMessage(document.getElementById("textcontent"));
         createNotification();
     }, 1000);
-
 }
 
 function createNotification() {
@@ -35,14 +33,14 @@ function createNotification() {
         return;
 
     // check if there is already an notification displaying
-    var element = document.getElementById("message");
+    var element = document.getElementById("textcontent");
     if (element.firstChild)
         return;
 
     var message = messages[0];
-    document.getElementById("title").textContent = message.title;
 
-    createMessageElement(message.content.chunks, element);
+    createMessageElement(message.title.chunks, document.getElementById("titlecontent"), true);
+    createMessageElement(message.text.chunks, element, true);
 }
 
 function loadMessages() {
@@ -65,7 +63,7 @@ function createMessages(loadedmessages) {
         messages.push({
             time: 15.0,
             title: message.title,
-            content: message.content,
+            text: message.text,
             isnew: true
         });
     }

@@ -20,11 +20,5 @@ namespace NightlyCode.StreamRC.Modules {
         /// </summary>
         /// <param name="menuname"></param>
         void AddSeparator(string menuname);
-
-        /// <summary>
-        /// registers a messagesender to be used for messages to be sent
-        /// </summary>
-        /// <param name="sender">custom message sender</param>
-        void RegisterMessageSender(IMessageSender sender);
     }
 }

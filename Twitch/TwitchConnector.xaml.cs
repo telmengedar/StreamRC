@@ -8,7 +8,8 @@ using System.Windows.Input;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using StreamRC.Streaming;
+using NightlyCode.StreamRC.Modules;
+using StreamRC.Twitch.Chat;
 
 namespace StreamRC.Twitch
 {
@@ -18,15 +19,15 @@ namespace StreamRC.Twitch
     public partial class TwitchConnector : Window {
         const int port = 40299;
         readonly HttpServer server = new HttpServer(IPAddress.Any, port);
-        readonly TwitchModule module;
+
+        readonly Context context;
 
         /// <summary>
         /// creates a new <see cref="TwitchConnector"/>
         /// </summary>
-        public TwitchConnector(TwitchModule module)
-        {
+        public TwitchConnector(Context context) {
+            this.context = context;
             InitializeComponent();
-            this.module = module;
             server.Request += OnRequest;
             server.Start();
         }
@@ -45,7 +46,9 @@ namespace StreamRC.Twitch
                 client.EndHeader();
 
                 Dispatcher.Invoke(() => {
-                    module.CreateProfile(txtAccount.Text, token);
+                    if(chkBot.IsChecked ?? false)
+                        context.GetModule<TwitchBotModule>().SetCredentials(txtAccount.Text, token);
+                    else context.GetModule<TwitchChatModule>().SetCredentials(txtAccount.Text, token);
                     Close();
                 });
             }

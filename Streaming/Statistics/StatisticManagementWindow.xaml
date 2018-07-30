@@ -1,0 +1,12 @@
+﻿<Window x:Class="StreamRC.Streaming.Statistics.StatisticManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Statistic Management" Height="157.041" Width="190.301">
+    <Grid>
+        <Button x:Name="cmdDemise" Content="Another Demise" HorizontalAlignment="Left" Margin="10,10,0,0" Width="164" Click="cmdDemise_Click" Height="51" VerticalAlignment="Top"/>
+        <Button x:Name="cmdBackseat" Content="Another Brain" HorizontalAlignment="Left" Margin="10,66,0,0" Width="164" Height="51" VerticalAlignment="Top" Click="cmdBackseat_Click"/>
+    </Grid>
+</Window>

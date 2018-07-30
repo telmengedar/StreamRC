@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Reviews {
@@ -10,7 +11,7 @@ namespace StreamRC.Reviews {
     /// <summary>
     /// module managing review data
     /// </summary>
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     [ModuleKey("review")]
     public class ReviewModule : ICommandModule, IInitializableModule {
         readonly Context context;

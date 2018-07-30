@@ -2,14 +2,17 @@
 using System.Linq;
 using System.Threading.Tasks;
 using NightlyCode.Core.Conversion;
-using NightlyCode.Core.Data;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Data;
+using StreamRC.RPG.Players.Commands;
+using StreamRC.Streaming.Events;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Players {
@@ -17,14 +20,16 @@ namespace StreamRC.RPG.Players {
     /// <summary>
     /// module managing player data
     /// </summary>
-    [Dependency(nameof(PlayerLevelModule), DependencyType.Type)]
-    [Dependency(nameof(UserModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
+    [Dependency(nameof(PlayerLevelModule))]
+    [Dependency(nameof(UserModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(StreamEventModule))]
     [ModuleKey("player")]
-    public class PlayerModule : IInitializableModule, IRunnableModule, IStreamCommandHandler, ICommandModule
+    public class PlayerModule : IInitializableModule, IRunnableModule, ICommandModule
     {
         readonly Context context;
         readonly PeriodicTimer experiencetimer = new PeriodicTimer();
+        object createplayerlock = new object();
 
         /// <summary>
         /// creates a new <see cref="PlayerModule"/>
@@ -51,6 +56,10 @@ namespace StreamRC.RPG.Players {
 
         public int GetPlayerGold(long playerid) {
             return context.Database.Load<Player>(p => p.Gold).Where(p => p.UserID == playerid).ExecuteScalar<int>();
+        }
+
+        public PlayerAscension GetPlayerAscension(long playerid) {
+            return context.Database.LoadEntities<PlayerAscension>().Where(a => a.UserID == playerid).Execute().FirstOrDefault();
         }
 
         /// <summary>
@@ -85,16 +94,18 @@ namespace StreamRC.RPG.Players {
         /// <returns>player data of user</returns>
         public Player GetPlayer(string service, string username) {
             User user = context.GetModule<UserModule>().GetUser(service, username);
-            Player player = context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
-            if(player != null)
-                return player;
+            lock(createplayerlock) {
+                Player player = context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
+                if(player != null)
+                    return player;
 
-            context.Database.Insert<Player>()
-                .Columns(p => p.UserID, p => p.Experience, p => p.Gold, p => p.Level, p => p.CurrentHP, p => p.MaximumHP, p => p.CurrentMP, p => p.MaximumMP, p => p.Strength, p => p.Dexterity, p => p.Fitness, p => p.Luck)
-                .Values(user.ID, 0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-                .Execute();
-            LevelUp(user.ID, 1);
-            return context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
+                context.Database.Insert<Player>()
+                    .Columns(p => p.UserID, p => p.Experience, p => p.Gold, p => p.Level, p => p.CurrentHP, p => p.MaximumHP, p => p.CurrentMP, p => p.MaximumMP, p => p.Strength, p => p.Dexterity, p => p.Fitness, p => p.Luck)
+                    .Values(user.ID, 0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                    .Execute();
+                LevelUp(user.ID, 1);
+                return context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
+            }
         }
 
         public void UpdateRunningStats(long playerid, int health, int mana) {
@@ -176,8 +187,6 @@ namespace StreamRC.RPG.Players {
         void IInitializableModule.Initialize() {
             context.Database.UpdateSchema<Player>();
             context.Database.UpdateSchema<PlayerAscension>();
-
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "character");
             Task.Run(() => FixStats());
         }
 
@@ -216,21 +225,30 @@ namespace StreamRC.RPG.Players {
             AddExperience(host.Service, host.Channel, 10.0f + Math.Max(0, host.Viewers));
         }
 
+        void OnRaidHosted(RaidInformation raid) {
+            AddExperience(raid.Service, raid.Login, 12.0f + Math.Max(0, raid.RaiderCount) * 1.3f);
+        }
+
         void IRunnableModule.Start() {
             experiencetimer.Elapsed += OnTimerElapsed;
             context.GetModule<StreamModule>().UserJoined += OnUserJoined;
             context.GetModule<StreamModule>().UserLeft += OnUserLeft;
             context.GetModule<StreamModule>().Hosted += OnChannelHosted;
+            context.GetModule<StreamModule>().Raid += OnRaidHosted;
             context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
+            context.GetModule<StreamEventModule>().EventValue += OnEventValue;
 
             context.Database.Update<Player>().Set(p => p.IsActive == false).Execute();
             experiencetimer.Start(TimeSpan.FromMinutes(1.0));
+
+            context.GetModule<StreamModule>().RegisterCommandHandler("character", new CharacterStatsCommandHandler(this, context.GetModule<UserModule>()));
+        }
+
+        void OnEventValue(long userid, int value) {
+            UpdateGold(userid, value);
         }
 
         void OnChatMessage(ChatMessage message) {
-            if(string.IsNullOrEmpty(message.Service) || message.User == "jtv")
-                return;
-
             AddExperience(message.Service, message.User, 3 + message.Message.Length * 0.05f);
         }
 
@@ -239,47 +257,12 @@ namespace StreamRC.RPG.Players {
             context.GetModule<StreamModule>().UserJoined -= OnUserJoined;
             context.GetModule<StreamModule>().UserLeft -= OnUserLeft;
             context.GetModule<StreamModule>().Hosted -= OnChannelHosted;
+            context.GetModule<StreamModule>().Raid -= OnRaidHosted;
             context.GetModule<StreamModule>().ChatMessage -= OnChatMessage;
+            context.GetModule<StreamEventModule>().EventValue -= OnEventValue;
             experiencetimer.Stop();
-        }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command)
-        {
-            switch (command.Command)
-            {
-                case "character":
-                    DisplayStats(command);
-                    break;
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
-        }
-
-        void DisplayStats(StreamCommand command) {
-            long id = context.GetModule<UserModule>().GetUserID(command.Service, command.User);
-
-            Player player = context.Database.LoadEntities<Player>().Where(u => u.UserID==id).Execute().FirstOrDefault();
-            PlayerAscension ascension = context.Database.LoadEntities<PlayerAscension>().Where(a => a.UserID == id).Execute().FirstOrDefault();
-
-            if(player == null) {
-                context.GetModule<StreamModule>().SendMessage(command.Service, command.User, "No character data found for your user.", command.IsWhispered);
-                return;
-            }
-
-
-            context.GetModule<StreamModule>()
-                .SendMessage(command.Service, command.User, $"You're level {player.Level} with {player.Experience.ToString("F0")}/{ascension?.NextLevel.ToString("F0")} experience. HP {player.CurrentHP}/{player.MaximumHP}, MP {player.CurrentMP}/{player.MaximumMP}. Strength {player.Strength}, Dexterity {player.Dexterity}, Fitness {player.Fitness}, Luck {player.Luck}. {player.Gold} Gold", command.IsWhispered);
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command)
-        {
-            switch (command)
-            {
-                case "character":
-                    return "Displays your character statistics in chat";
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
+            context.GetModule<StreamModule>().UnregisterCommandHandler("character");
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {

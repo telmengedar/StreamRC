@@ -3,14 +3,16 @@ using System.Linq;
 using System.Windows;
 using NightlyCode.Core.Collections;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
+using StreamRC.Streaming.Statistics;
 
 namespace StreamRC.Streaming.Polls.Management
 {
     /// <summary>
     /// Interaction logic for PollManagementWindow.xaml
     /// </summary>
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     public partial class PollManagementWindow : Window, IRunnableModule {
         readonly Context context;
 
@@ -21,7 +23,7 @@ namespace StreamRC.Streaming.Polls.Management
         string selectedpoll;
 
         /// <summary>
-        /// creates a new <see cref="PollManagementWindow"/>
+        /// creates a new <see cref="Statistics.PollManagementWindow"/>
         /// </summary>
         /// <param name="context">access to module context</param>
         public PollManagementWindow(Context context) {

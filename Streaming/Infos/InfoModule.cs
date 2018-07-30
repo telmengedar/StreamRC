@@ -2,7 +2,9 @@
 using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
+using StreamRC.Streaming.Infos.Commands;
 using StreamRC.Streaming.Infos.Management;
 using StreamRC.Streaming.Stream;
 
@@ -12,9 +14,9 @@ namespace StreamRC.Streaming.Infos {
     /// module providing infos to users
     /// </summary>
     [ModuleKey("info")]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
-    public class InfoModule : IInitializableModule, ICommandModule, IStreamCommandHandler {
+    [Dependency(nameof(StreamModule))]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
+    public class InfoModule : IInitializableModule, IRunnableModule, ICommandModule {
         readonly Context context;
 
         /// <summary>
@@ -27,21 +29,11 @@ namespace StreamRC.Streaming.Infos {
 
         void IInitializableModule.Initialize() {
             context.Database.UpdateSchema<Info>();
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "info", "infos");
             context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Manage.Infos", (sender, args) => new InfoManagementWindow(this).Show());
         }
 
-        void ProvideInfo(StreamCommand command) {
-            if(command.Arguments.Length != 1)
-                throw new StreamCommandException("Invalid command syntax. Expected syntax: !info <item>");
-
-            string key = command.Arguments[0];
-            Info info = context.Database.LoadEntities<Info>().Where(i => i.Key == key).Execute().FirstOrDefault();
-            
-            if(info == null)
-                context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"There is no info for '{key}'", command.IsWhispered);
-            else
-                context.GetModule<StreamModule>().SendMessage(command.Service, command.User, info.Text, command.IsWhispered);
+        public Info GetInfo(string key) {
+            return context.Database.LoadEntities<Info>().Where(i => i.Key == key).Execute().FirstOrDefault();
         }
 
         public void ProcessCommand(string command, string[] arguments) {
@@ -97,33 +89,15 @@ namespace StreamRC.Streaming.Infos {
             else Logger.Info(this, $"'{oldkey}' changed", $"'{newkey}' - {text}");
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch (command.Command)
-            {
-                case "info":
-                    ProvideInfo(command);
-                    break;
-                case "infos":
-                    ProvideInfoList(command);
-                    break;
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
+
+        void IRunnableModule.Start() {
+            context.GetModule<StreamModule>().RegisterCommandHandler("info", new InfoCommand(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("infos", new InfoListCommand(this));
         }
 
-        void ProvideInfoList(StreamCommand command) {
-            context.GetModule<StreamModule>().SendMessage(command.Service, command.User, $"List of available infos: {string.Join(", ", context.Database.Load<Info>(i => i.Key).ExecuteSet<string>())}", command.IsWhispered);
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "info":
-                    return "Provides info about a predefined topic. Syntax: !info <topic>";
-                case "infos":
-                    return "Provides a list of available infos. Syntax: !infos";
-                default:
-                    throw new StreamCommandException("Command not supported by this module");
-            }
+        void IRunnableModule.Stop() {
+            context.GetModule<StreamModule>().UnregisterCommandHandler("info");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("infos");
         }
     }
 }

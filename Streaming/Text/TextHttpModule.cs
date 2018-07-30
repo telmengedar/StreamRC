@@ -2,6 +2,7 @@
 using System.Drawing;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -9,8 +10,8 @@ using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Text {
 
-    [Dependency(nameof(TextModule), DependencyType.Type)]
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(TextModule))]
+    [Dependency(nameof(HttpServiceModule))]
     public class TextHttpModule : IRunnableModule, IHttpService {
         readonly Context context;
 

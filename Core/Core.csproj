@@ -66,6 +66,7 @@
     <Compile Include="Http\HttpServiceExtensions.cs" />
     <Compile Include="Http\HttpServiceModule.cs" />
     <Compile Include="Http\IHttpService.cs" />
+    <Compile Include="IChatMessageSender.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>

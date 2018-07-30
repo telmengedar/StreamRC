@@ -26,73 +26,70 @@ namespace StreamRC.Streaming.Polls.Notifications {
         }
 
         void OnOptionRemoved(PollOption option) {
-            notifications.ShowNotification(new Notification {
-                Title = "Poll Option Removed",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Option Removed").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Option).Text(option.Key).Reset()
                     .Text(" was removed from poll ")
                     .Bold().Color(StreamColors.Option).Text(option.Poll).Reset()
                     .BuildMessage()
-            });
+            );
         }
 
         void OnOptionReset(PollOption option) {
-            notifications.ShowNotification(new Notification() {
-                Title = "Poll Option Reset",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Option Reset").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Option).Text(option.Key).Reset()
                     .Text(" of poll ")
                     .Bold().Color(StreamColors.Option).Text(option.Poll).Reset()
                     .Text(" was reset.")
                     .BuildMessage()
-            });
+            );
         }
 
         void OnOptionAdded(PollOption option) {
-            notifications.ShowNotification(new Notification {
-                Title = "Poll Option Added",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Option Added").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Game).Text(option.Description).Reset()
                     .Text(" with key ")
                     .Bold().Color(StreamColors.Option).Text(option.Key).Reset()
                     .Text(" was added to poll ")
                     .Bold().Color(StreamColors.Option).Text(option.Poll).Reset()
                     .BuildMessage()
-            });
+            );
         }
 
         void OnPollCleared(Poll poll) {
-            notifications.ShowNotification(new Notification
-            {
-                Title = "Poll Cleared",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Cleared").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Option).Text(poll.Name).Reset()
                     .Text(" was cleared.")
                     .BuildMessage()
-            });
+            );
         }
 
         void OnPollRemoved(Poll poll) {
-            notifications.ShowNotification(new Notification
-            {
-                Title = "Poll Removed",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Removed").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Option).Text(poll.Name).Reset()
                     .Text(" was removed.")
                     .BuildMessage()
-            });
+            );
         }
 
         void OnPollCreated(Poll poll) {
-            notifications.ShowNotification(new Notification
-            {
-                Title = "New Poll",
-                Content = new MessageBuilder()
+            notifications.ShowNotification(
+                new MessageBuilder().Text("Poll Created").BuildMessage(),
+                new MessageBuilder()
                     .Bold().Color(StreamColors.Game).Text(poll.Description).Reset()
                     .Text(" was created with key ")
                     .Bold().Color(StreamColors.Option).Text(poll.Name).Reset()
                     .BuildMessage()
-            });
+            );
         }
     }
 }

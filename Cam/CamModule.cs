@@ -1,9 +1,10 @@
 ﻿using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Cam {
 
-    [Dependency(ModuleKeys.MainWindow, DependencyType.Key)]
+    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     public class CamModule : IInitializableModule {
         readonly Context context;
 

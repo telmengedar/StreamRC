@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -15,16 +15,18 @@ using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
+using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Chat {
 
     /// <summary>
     /// provides an html window for chat messages
     /// </summary>
-    [Dependency(nameof(MessageModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
+    [Dependency(nameof(MessageModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(HttpServiceModule))]
+    [Dependency(nameof(TimerModule))]
     public class ChatHttpService : IInitializableModule, IHttpService, IRunnableModule, ITimerService {
         readonly Context context;
 
@@ -50,6 +52,16 @@ namespace StreamRC.Streaming.Chat {
             context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
         }
 
+        IEnumerable<MessageChunk> CreateMessageChunks(ChatMessage message) {
+            yield return new MessageChunk(MessageChunkType.Emoticon, context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={message.Service}").ToString());
+
+            foreach(MessageChunk chunk in CreateUserChunks(message))
+                yield return chunk;
+
+            foreach(MessageChunk chunk in CreateMessageParts(message.Message, message.Emotes))
+                yield return chunk;
+        } 
+
         void OnChatMessage(ChatMessage message) {
             if(message.IsWhisper || message.Message.StartsWith("!"))
                 return;
@@ -57,8 +69,52 @@ namespace StreamRC.Streaming.Chat {
             lock(messagelock) {
                 messages.Add(new ChatHttpMessage {
                     Timestamp = DateTime.Now,
-                    Content = CreateUserChunks(message).Concat(CreateMessageParts(message.Message, message.Emotes)).ToArray()
+                    Content = CreateMessageChunks(message).ToArray()
                 });
+
+                if(message.Attachements != null) {
+                    foreach(MessageAttachement attachement in message.Attachements) {
+                        if(attachement.Type != AttachmentType.Image)
+                            continue;
+
+                        int width = 0;
+                        int height = 0;
+
+                        if(attachement.Width > 0 && attachement.Height>0) {
+                            width = attachement.Width;
+                            height = attachement.Height;
+                            if (width > height)
+                            {
+                                float aspect = (float)height / width;
+                                width = 320;
+                                height = (int)(width * aspect);
+                            }
+                            else
+                            {
+                                float aspect = (float)width / height;
+                                height = 180;
+                                width = (int)(height * aspect);
+                            }
+                        }
+                        else {
+                            width = 320;
+                        }
+
+                        long imageid = context.GetModule<ImageCacheModule>().ExtractIDFromUrl(attachement.URL);
+                        if (imageid == -1)
+                            imageid = context.GetModule<ImageCacheModule>().AddImage(attachement.URL, DateTime.Now + TimeSpan.FromMinutes(5.0));
+
+                        messages.Add(new ChatHttpMessage {
+                            Timestamp = DateTime.Now,
+                            Content = new[] {
+                                new MessageChunk(MessageChunkType.Image, imageid.ToString()) {
+                                    Width = width,
+                                    Height = height
+                                }
+                            }
+                        });
+                    }
+                }
             }
         }
 
@@ -67,26 +123,21 @@ namespace StreamRC.Streaming.Chat {
             lock(messagelock) {
                 messages.Add(new ChatHttpMessage {
                     Timestamp = DateTime.Now,
-                    Content = message.Chunks.Select(c => c.Type == MessageChunkType.Emoticon ? new MessageChunk(c.Type, context.GetModule<ImageCacheModule>().AddImage(c.Content).ToString()) : c).ToArray()
+                    Content = message.Chunks
                 });
             }
-        }
-
-        Color FixColor(Color color)
-        {
-            float value = color.R + color.G + color.B;
-            if (value >= 386)
-                return color;
-
-            return Color.FromRgb((byte)(128 + color.R / 2), (byte)(128 + color.G / 2), (byte)(128 + color.B / 2));
         }
 
         IEnumerable<MessageChunk> CreateUserChunks(ChatMessage message) {
             if(!string.IsNullOrEmpty(message.AvatarLink))
                 yield return new MessageChunk(MessageChunkType.Emoticon, context.GetModule<ImageCacheModule>().AddImage(message.AvatarLink).ToString());
 
-            Color usercolor = FixColor(message.UserColor);
-            yield return new MessageChunk(MessageChunkType.Text, message.User, usercolor, FontWeight.Bold);
+            if((context.GetModule<UserModule>().GetUser(message.Service, message.User).Flags & UserFlags.Brainy) == UserFlags.Brainy)
+                yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=4");
+            if ((context.GetModule<UserModule>().GetUser(message.Service, message.User).Flags & UserFlags.Racist) == UserFlags.Racist)
+                yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=8");
+
+            yield return new MessageChunk(MessageChunkType.Text, message.User, message.UserColor.FixColor(), FontWeight.Bold);
         } 
 
         IEnumerable<MessageChunk> CreateMessageParts(string message, ChatEmote[] emotes) {

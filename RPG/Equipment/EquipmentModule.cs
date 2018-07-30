@@ -4,9 +4,10 @@ using System.Linq;
 using NightlyCode.Core.Conversion;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
-using StreamRC.RPG.Data;
+using StreamRC.RPG.Equipment.Commands;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Messages;
@@ -16,12 +17,12 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Equipment {
 
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
-    [Dependency(nameof(ItemModule), DependencyType.Type)]
-    [Dependency(nameof(InventoryModule), DependencyType.Type)]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(GameMessageModule), DependencyType.Type)]
-    public class EquipmentModule : IInitializableModule,IRunnableModule, IStreamCommandHandler {
+    [Dependency(nameof(PlayerModule))]
+    [Dependency(nameof(ItemModule))]
+    [Dependency(nameof(InventoryModule))]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(GameMessageModule))]
+    public class EquipmentModule : IInitializableModule,IRunnableModule {
         readonly Context context;
 
         RPGMessageModule messagemodule;
@@ -39,24 +40,7 @@ namespace StreamRC.RPG.Equipment {
         /// </summary>
         public event Action<long, EquipmentSlot> EquipmentChanged;
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "equip":
-                    Equip(command.Service, command.User, string.Join(" ", command.Arguments));
-                    break;
-                case "equipment":
-                    ShowEquipment(command.Service, command.User);
-                    break;
-                case "takeoff":
-                    TakeOff(command.Service, command.User, string.Join(" ", command.Arguments));
-                    break;
-                case "compare":
-                    Compare(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-            }
-        }
-
-        void ShowEquipment(string service, string username) {
+        public void ShowEquipment(string service, string channel, string username) {
             User user = context.GetModule<UserModule>().GetExistingUser(service, username);
             EquippedItemInformation[] equipment = context.Database.LoadEntities<EquippedItemInformation>().Where(i => i.PlayerID == user.ID).Execute().ToArray();
 
@@ -67,29 +51,12 @@ namespace StreamRC.RPG.Equipment {
                 damage += item.Damage;
             }
 
-            context.GetModule<StreamModule>().SendMessage(service, username, $"Your equipment: {string.Join(", ", equipment.Select(i => i.ToString()))}. Totaling to +{damage} Damage and +{armor} Defense");
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "equip":
-                    return "Equips an item which is stored in your inventory. Syntax: !equip <itemname>";
-                case "equipment":
-                    return "Shows your current equipment.";
-                case "takeoff":
-                    return "Takes off an equipped item and puts it back in your inventory. !takeoff <itemname|slot>";
-                case "compare":
-                    return "Compares an item to the current equipment";
-                default:
-                    throw new StreamCommandException($"'{command}' not handled by this module.");
-            }
+            context.GetModule<StreamModule>().SendMessage(service, channel, username, $"Your equipment: {string.Join(", ", equipment.Select(i => i.ToString()))}. Totaling to +{damage} Damage and +{armor} Defense");
         }
 
         void IInitializableModule.Initialize() {
             context.Database.UpdateSchema<EquipmentItem>();
             context.Database.UpdateSchema<EquippedItemInformation>();
-
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "equip", "equipment", "takeoff", "compare");
         }
 
         public EquipmentBonus GetEquipmentBonus(long playerid) {
@@ -123,7 +90,7 @@ namespace StreamRC.RPG.Equipment {
             return context.Database.LoadEntities<EquipmentItem>().Where(i => i.PlayerID == playerid && i.Slot == slot).Execute().FirstOrDefault();
         }
 
-        void Compare(string service, string user, string[] arguments, bool isWhispered)
+        public void Compare(string service, string channel, string user, string[] arguments)
         {
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, user);
             if (player == null)
@@ -132,25 +99,25 @@ namespace StreamRC.RPG.Equipment {
             Item item = context.GetModule<ItemModule>().GetItem(arguments);
             if (item == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"Unknown item '{string.Join(" ", arguments)}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"Unknown item '{string.Join(" ", arguments)}'.");
                 return;
             }
 
             EquipmentSlot slot = item.GetTargetSlot();
             if(slot==EquipmentSlot.None) {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"'{item.Name}' can not be equipped.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"'{item.Name}' can not be equipped.");
                 return;
             }
 
             
             EquipmentItem equipment = GetEquipment(player.UserID, slot);
             if(equipment == null) {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"You have nothing equipped on your '{slot}'. {item.Name} is most likely better than nothing.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"You have nothing equipped on your '{slot}'. {item.Name} is most likely better than nothing.");
                 return;
             }
 
             if(equipment.ItemID == item.ID) {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"You have already equipped {item.Name.GetPreposition()}{item.Name} on your '{slot}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"You have already equipped {item.Name.GetPreposition()}{item.Name} on your '{slot}'.");
                 return;
             }
 
@@ -160,25 +127,25 @@ namespace StreamRC.RPG.Equipment {
                 case ItemType.Armor:
                     int armordifference = item.Armor - bonus.Armor;
                     if(armordifference > 0) {
-                        context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} prevents {armordifference} more damage in a fight.");
+                        context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} prevents {armordifference} more damage in a fight.");
                     }
                     else if(armordifference < 0) {
-                        context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} prevents {-armordifference} less damage in a fight.");
+                        context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} prevents {-armordifference} less damage in a fight.");
                     }
-                    else context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} has exactly the same effect as your current equipment.");
+                    else context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} has exactly the same effect as your current equipment.");
                     break;
                 case ItemType.Weapon:
                     int weapondifference = item.Damage - bonus.Damage;
                     if(weapondifference>0)
-                        context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} does {weapondifference} more damage in a fight.");
+                        context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} does {weapondifference} more damage in a fight.");
                     else if(weapondifference<0)
-                        context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} does {weapondifference} less damage in a fight.");
-                    else context.GetModule<StreamModule>().SendMessage(service, user, $"{item.Name} has exactly the same effect as your current equipment.");
+                        context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} does {weapondifference} less damage in a fight.");
+                    else context.GetModule<StreamModule>().SendMessage(service, channel, user, $"{item.Name} has exactly the same effect as your current equipment.");
                     break;
             }
         }
 
-        public void TakeOff(string service, string username, string itemorslotname) {
+        public void TakeOff(string service, string channel, string username, string itemorslotname) {
             User user = context.GetModule<UserModule>().GetExistingUser(service, username);
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, username);
             if (player == null)
@@ -192,17 +159,17 @@ namespace StreamRC.RPG.Equipment {
                     slot = (EquipmentSlot)Enum.Parse(typeof(EquipmentSlot), itemorslotname, true);
                 }
                 catch (Exception) {
-                    context.GetModule<StreamModule>().SendMessage(service, username, $"'{itemorslotname}' is not an item or slotname.");
+                    context.GetModule<StreamModule>().SendMessage(service, channel, username, $"'{itemorslotname}' is not an item or slotname.");
                     return;
                 }
 
-                TakeOffSlot(service, username, player.UserID, slot);
+                TakeOffSlot(service, channel, username, player.UserID, slot);
                 return;
             }
 
             EquipmentItem currentequipment = context.Database.LoadEntities<EquipmentItem>().Where(i => i.PlayerID == player.UserID && i.ItemID==item.ID).Execute().FirstOrDefault();
             if(currentequipment == null) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"You don't have equipped any '{item.Name}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"You don't have equipped any '{item.Name}'.");
             }
             else {
                 context.GetModule<InventoryModule>().AddItem(player.UserID, item.ID, 1,  true);
@@ -213,10 +180,10 @@ namespace StreamRC.RPG.Equipment {
             }
         }
 
-        void TakeOffSlot(string service, string username, long playerid, EquipmentSlot slot) {
+        void TakeOffSlot(string service, string channel, string username, long playerid, EquipmentSlot slot) {
             EquipmentItem currentequipment = context.Database.LoadEntities<EquipmentItem>().Where(i => i.PlayerID == playerid && i.Slot == slot).Execute().FirstOrDefault();
             if(currentequipment == null) {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"UUh ... you have nothing equipped on '{slot}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"UUh ... you have nothing equipped on '{slot}'.");
                 return;
             }
 
@@ -238,31 +205,31 @@ namespace StreamRC.RPG.Equipment {
         /// <param name="username">user which owns player</param>
         /// <param name="player">player to equip an item to</param>
         /// <param name="item">item to equip</param>
-        public void Equip(string service, string username, Player player, Item item) {
+        public void Equip(string service, string channel, string username, Player player, Item item) {
             if (player.Level < item.LevelRequirement)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"You need to be level {item.LevelRequirement} to equip {item.Name}.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"You need to be level {item.LevelRequirement} to equip {item.Name}.");
                 return;
             }
 
             InventoryItem inventoryitem = context.GetModule<InventoryModule>().GetItem(player.UserID, item.ID);
             if (inventoryitem == null)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"{item.Name} not found in your inventory.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"{item.Name} not found in your inventory.");
                 return;
             }
 
             EquipmentSlot slot = item.GetTargetSlot();
             if (slot == EquipmentSlot.None)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"You don't really know where to equip that {item.Name}.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"You don't really know where to equip that {item.Name}.");
                 return;
             }
 
             EquipmentItem currentequipment = context.Database.LoadEntities<EquipmentItem>().Where(i => i.PlayerID == player.UserID && i.Slot == slot).Execute().FirstOrDefault();
             if (item.ID == currentequipment?.ItemID)
             {
-                context.GetModule<StreamModule>().SendMessage(service, username, $"So you want to exchange your {item.Name} with {item.GetEnumerationName()}? Think again ....");
+                context.GetModule<StreamModule>().SendMessage(service, channel, username, $"So you want to exchange your {item.Name} with {item.GetEnumerationName()}? Think again ....");
                 return;
             }
 
@@ -316,26 +283,35 @@ namespace StreamRC.RPG.Equipment {
         /// <param name="service">service user is registered to</param>
         /// <param name="user">username</param>
         /// <param name="itemname">name of item to equip</param>
-        public void Equip(string service, string user, string itemname) {
+        public void Equip(string service, string channel, string user, string itemname) {
             Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, user);
             if(player == null)
                 throw new Exception($"Player for '{service}/{user}' does not exist.");
 
             Item item = context.GetModule<ItemModule>().GetItem(itemname);
             if(item == null) {
-                context.GetModule<StreamModule>().SendMessage(service, user, $"Unknown item '{itemname}'.");
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, $"Unknown item '{itemname}'.");
                 return;
 
             }
 
-            Equip(service, user, player, item);
+            Equip(service, channel, user, player, item);
         }
 
-        public void Start() {
+        void IRunnableModule.Start() {
             messagemodule = context.GetModule<RPGMessageModule>();
+
+            context.GetModule<StreamModule>().RegisterCommandHandler("equip", new EquipCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("equipment", new ShowEquipmentCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("takeoff", new TakeoffCommandHandler(this));
+            context.GetModule<StreamModule>().RegisterCommandHandler("compare", new CompareEquipmentCommandHandler(this));
         }
 
-        public void Stop() {
+        void IRunnableModule.Stop() {
+            context.GetModule<StreamModule>().UnregisterCommandHandler("equip");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("equipment");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("takeoff");
+            context.GetModule<StreamModule>().UnregisterCommandHandler("compare");
         }
     }
 }

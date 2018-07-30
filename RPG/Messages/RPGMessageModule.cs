@@ -1,4 +1,5 @@
 ﻿using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Emotions;
 using StreamRC.RPG.Items;
@@ -6,8 +7,8 @@ using StreamRC.RPG.Shops;
 
 namespace StreamRC.RPG.Messages {
 
-    [Dependency(nameof(ItemImageModule), DependencyType.Type)]
-    [Dependency(nameof(GameMessageModule), DependencyType.Type)]
+    [Dependency(nameof(ItemImageModule))]
+    [Dependency(nameof(GameMessageModule))]
     public class RPGMessageModule : IRunnableModule {
         readonly Context context;
         GameMessageModule messages;

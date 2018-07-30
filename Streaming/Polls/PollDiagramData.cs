@@ -51,8 +51,8 @@ namespace StreamRC.Streaming.Polls {
                     votecount[valuegroup.Key] = valuegroup.Sum(v => v.Value.Status);
                 if(options != null) {
                     foreach(PollOption option in options)
-                        if(!votecount.ContainsKey(option.Key))
-                            votecount[option.Key] = 0;
+                        if(!votecount.ContainsKey(option.Description))
+                            votecount[option.Description] = 0;
                 }
             }
 

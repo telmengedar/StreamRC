@@ -6,6 +6,7 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -17,8 +18,8 @@ namespace StreamRC.Streaming.Notifications {
     /// <summary>
     /// http service used to provide notifications for web display
     /// </summary>
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
-    [Dependency(nameof(NotificationModule), DependencyType.Type)]
+    [Dependency(nameof(TimerModule))]
+    [Dependency(nameof(NotificationModule))]
     public class NotificationsHttpService : IHttpService, IRunnableModule, ITimerService, IInitializableModule {
         readonly Context context;
 

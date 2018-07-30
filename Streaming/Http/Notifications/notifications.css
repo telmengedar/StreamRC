@@ -53,6 +53,12 @@
 	display: inline;
 }
 
+img.element {
+	min-height: 1em;
+	max-height: 1em;
+	vertical-align: middle;
+}
+
 .element {
 	padding-right: 5px;
 }

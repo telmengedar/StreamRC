@@ -11,9 +11,9 @@ using NightlyCode.Core.Randoms;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
-using StreamRC.Core.Messages;
-using StreamRC.RPG.Data;
+using StreamRC.RPG.Items.Commands;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.Streaming.Stream;
 
@@ -22,9 +22,9 @@ namespace StreamRC.RPG.Items {
     /// <summary>
     /// module managing game items
     /// </summary>
-    [Dependency(nameof(ItemImageModule), DependencyType.Type)]
-    [Dependency("stream", DependencyType.Key)]
-    public class ItemModule : IInitializableModule, IStreamCommandHandler {
+    [Dependency(nameof(ItemImageModule))]
+    [Dependency("stream", SpecifierType.Key)]
+    public class ItemModule : IInitializableModule, IRunnableModule {
         readonly Context context;
 
         ItemImageModule images;
@@ -38,23 +38,8 @@ namespace StreamRC.RPG.Items {
             this.context = context;
         }
 
-        /// <summary>
-        /// formats an item in a <see cref="MessageBuilder"/>
-        /// </summary>
-        /// <param name="builder">messagebuilder to fill</param>
-        /// <param name="item">item to represent</param>
-        /// <param name="quantity">quantity of item</param>
-        public MessageBuilder Format(MessageBuilder builder, Item item, int quantity = 1) {
-            builder.Bold();
-            if(item.Type == ItemType.Gold)
-                builder.Color(AdventureColors.Gold).Text(quantity.ToString());
-            else
-                builder.Color(AdventureColors.Item).Text(item.GetCountName(quantity));
-            return builder.Image(images.GetImagePath(item.Name)).Reset();
-        }
-
         public long GetRandomItemID() {
-            return context.Database.Load<Item>(i => i.ID).Where(i => i.Type != ItemType.Gold).OrderBy(DBFunction.Random).Limit(1).ExecuteScalar<long>();
+            return context.Database.Load<Item>(i => i.ID).Where(i => i.Type != ItemType.Gold).OrderBy(new OrderByCriteria(DBFunction.Random)).Limit(1).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -181,7 +166,6 @@ namespace StreamRC.RPG.Items {
             context.Database.UpdateSchema<Item>();
             images = context.GetModule<ItemImageModule>();
             Task.Run(() => InitializeItems());
-            context.GetModuleByKey<IStreamModule>("stream").RegisterCommandHandler(this, "iteminfo");
         }
 
         void InitializeItems() {
@@ -216,23 +200,15 @@ namespace StreamRC.RPG.Items {
                 Logger.Info(this, "Item Information changed", log.ToString());
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "iteminfo":
-                    PrintItemInfo(command.Service, command.User, command.Arguments, command.IsWhispered);
-                    break;
-            }
-        }
-
-        void PrintItemInfo(string service, string user, string[] arguments, bool iswhispered) {
+        public void PrintItemInfo(string service, string channel, string user, string[] arguments) {
             if(arguments.Length == 0) {
-                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, user, "You have to provide the name of the item to get info about.", iswhispered);
+                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, "You have to provide the name of the item to get info about.");
                 return;
             }
 
             Item item = GetItem(arguments);
             if(item == null) {
-                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, user, $"There is no item by the name {string.Join(" ", arguments)}.", iswhispered);
+                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, $"There is no item by the name {string.Join(" ", arguments)}.");
                 return;
             }
 
@@ -254,16 +230,15 @@ namespace StreamRC.RPG.Items {
             if(item.LevelRequirement > 0)
                 iteminfo.Append($" Required Level: {item.LevelRequirement}");
 
-            context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, user, iteminfo.ToString(), iswhispered);
+            context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, iteminfo.ToString());
         }
 
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "iteminfo":
-                    return "Provides info about an item in the chat. Syntax: !iteminfo <itemname>";
-                default:
-                    throw new StreamCommandException($"{command} not handled by this module.");
-            }
+        void IRunnableModule.Start() {
+            context.GetModuleByKey<IStreamModule>("stream").RegisterCommandHandler("iteminfo", new ItemInfoCommandHandler(this));
+        }
+
+        void IRunnableModule.Stop() {
+            context.GetModuleByKey<IStreamModule>("stream").UnregisterCommandHandler("iteminfo");
         }
     }
 }

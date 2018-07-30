@@ -2,9 +2,12 @@
 using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
+using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Ads {
 
@@ -12,10 +15,12 @@ namespace StreamRC.Streaming.Ads {
     /// module used to display ads in chat
     /// </summary>
     [ModuleKey("ads")]
-    [Dependency(nameof(StreamModule), DependencyType.Type)]
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
+    [Dependency(nameof(StreamModule))]
+    [Dependency(nameof(TimerModule))]
+    [Dependency(nameof(UserModule))]
     public class AdModule : IInitializableModule, ICommandModule, IRunnableModule, ITimerService {
         readonly Context context;
+        UserModule usermodule;
 
         readonly CircularList<Ad> ads = new CircularList<Ad>();
         TimeSpan interval;
@@ -100,17 +105,21 @@ namespace StreamRC.Streaming.Ads {
         }
 
         void IRunnableModule.Start() {
-            context.GetModule<TimerModule>().AddService(this, Interval.TotalSeconds);
+            //context.GetModule<TimerModule>().AddService(this, Interval.TotalSeconds);
+            usermodule = context.GetModule<UserModule>();
         }
 
         void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
+            //context.GetModule<TimerModule>().RemoveService(this);
         }
 
         void ITimerService.Process(double time) {
+            if(usermodule.ActiveUserCount == 0)
+                return;
+
             Ad ad = ads.NextItem;
             if(ad != null)
-                context.GetModule<StreamModule>().BroadcastMessage(ad.Text);
+                context.GetModule<StreamModule>().GetChannels(ChannelFlags.Notification).Foreach(c => c.SendMessage(ad.Text));
         }
     }
 }

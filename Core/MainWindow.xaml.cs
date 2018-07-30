@@ -19,7 +19,7 @@ namespace StreamRC.Core
     [ModuleKey(ModuleKeys.MainWindow)]
     public partial class MainWindow : Window, IInitializableModule, IRunnableModule, IMainWindow {
         readonly Context context;
-        IMessageSender messagesender;
+        IChatMessageSender chat;
 
         readonly List<string> commandhistory=new List<string>();
         int index = -1;
@@ -127,10 +127,6 @@ namespace StreamRC.Core
             currentcollection.Add(new Separator());
         }
 
-        public void RegisterMessageSender(IMessageSender sender) {
-            this.messagesender = sender;
-        }
-
         void OnLogMessage(MessageType type, string sender, string message, string details)
         {
             Color messagecolor;
@@ -186,21 +182,32 @@ namespace StreamRC.Core
             if(e.Key == Key.Enter || e.Key == Key.Return) {
                 string message = txtMessage.Text;
                 if(message.StartsWith("$")) {
-                    string[] arguments = Commands.SplitArguments(message.Substring(1)).ToArray();
-                    switch(arguments[0]) {
-                        default:
-                            try
-                            {
-                                context.ExecuteCommand(arguments[0], arguments[1], arguments.Skip(2).ToArray());
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Error(this, "Error executing command", ex);
-                            }
-                            break;
+                    if(message.Length > 2 && message[1] == '$') {
+                        try {
+                            context.ExecuteCommand(message.Substring(2));
+                            Logger.Info(this, "Command executed");
+                        }
+                        catch(Exception ex) {
+                            Logger.Error(this, "Error executing command", ex);
+                        }
+                    }
+                    else {
+                        string[] arguments = Commands.SplitArguments(message.Substring(1)).ToArray();
+                        switch(arguments[0]) {
+                            default:
+                                try {
+                                    context.ExecuteCommand(arguments[0], arguments[1], arguments.Skip(2).ToArray());
+                                }
+                                catch(Exception ex) {
+                                    Logger.Error(this, "Error executing command", ex);
+                                }
+                                break;
+                        }
                     }
                 }
-                else messagesender?.SendMessage(txtMessage.Text);
+                else {
+                    chat?.SendChatMessage(message);
+                }
 
                 AddToHistory(message);
                 
@@ -237,6 +244,7 @@ namespace StreamRC.Core
 
         void IRunnableModule.Start() {
             Show();
+            chat = context.Modules.FirstOrDefault(m => m.Module is IChatMessageSender)?.Module as IChatMessageSender;
         }
 
         void IRunnableModule.Stop() {

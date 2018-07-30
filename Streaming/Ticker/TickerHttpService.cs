@@ -6,6 +6,7 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -17,8 +18,8 @@ namespace StreamRC.Streaming.Ticker {
     /// <summary>
     /// manages http display for <see cref="TickerMessage"/>s
     /// </summary>
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
-    [Dependency(nameof(TickerModule), DependencyType.Type)]
+    [Dependency(nameof(TimerModule))]
+    [Dependency(nameof(TickerModule))]
     public class TickerHttpService : IHttpService, IRunnableModule, ITimerService {
         readonly Context context;
 

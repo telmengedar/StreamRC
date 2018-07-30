@@ -7,13 +7,14 @@ using NightlyCode.Core.Data;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions;
 using StreamRC.RPG.Items;
 
 namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
 
-    [Dependency(nameof(ItemModule), DependencyType.Type)]
+    [Dependency(nameof(ItemModule))]
     public class MonsterModule : IInitializableModule {
         readonly Context context;
         Monster[] monsters;

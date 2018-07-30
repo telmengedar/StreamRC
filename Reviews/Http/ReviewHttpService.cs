@@ -5,6 +5,7 @@ using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -12,8 +13,8 @@ using StreamRC.Core.Http;
 
 namespace StreamRC.Reviews.Http {
 
-    [Dependency(nameof(ReviewModule), DependencyType.Type)]
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(ReviewModule))]
+    [Dependency(nameof(HttpServiceModule))]
     public class ReviewHttpService : IRunnableModule, IHttpService {
         readonly Context context;
         bool available = false;

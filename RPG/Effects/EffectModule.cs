@@ -2,9 +2,11 @@
 using System.Globalization;
 using System.Linq;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
 using StreamRC.RPG.Effects.Battle;
+using StreamRC.RPG.Effects.Commands;
 using StreamRC.RPG.Effects.Modifiers;
 using StreamRC.RPG.Effects.Status;
 using StreamRC.RPG.Inventory;
@@ -15,10 +17,10 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Effects {
 
-    [Dependency(nameof(TimerModule), DependencyType.Type)]
-    [Dependency(nameof(PlayerModule), DependencyType.Type)]
+    [Dependency(nameof(TimerModule))]
+    [Dependency(nameof(PlayerModule))]
     [ModuleKey("effects")]
-    public class EffectModule : IRunnableModule, ITimerService, IStreamCommandHandler, ICommandModule, IItemCommandModule {
+    public class EffectModule : IRunnableModule, ITimerService, ICommandModule, IItemCommandModule {
         readonly Context context;
         readonly object effectlock = new object();
         readonly List<ITemporaryEffect> monstereffects = new List<ITemporaryEffect>();
@@ -110,39 +112,20 @@ namespace StreamRC.RPG.Effects {
             }
         }
 
-        void IStreamCommandHandler.ProcessStreamCommand(StreamCommand command) {
-            switch(command.Command) {
-                case "effects":
-                    ListEffects(command.Service, command.User, command.IsWhispered);
-                    break;
-                default:
-                    throw new StreamCommandException($"'{command.Command}' not handled by this module");
-            }
-        }
-
-        void ListEffects(string service, string user, bool whispered) {
+        public void ListEffects(string service, string channel, string user) {
             string effects = string.Join(", ", GetActivePlayerEffects(context.GetModule<PlayerModule>().GetExistingPlayer(service, user).UserID));
             if(string.IsNullOrEmpty(effects))
-                context.GetModule<StreamModule>().SendMessage(service, user, "No active effects", whispered);
-            else context.GetModule<StreamModule>().SendMessage(service, user, $"Active effects: {effects}", whispered);
-        }
-
-        string IStreamCommandHandler.ProvideHelp(string command) {
-            switch(command) {
-                case "effects":
-                    return "Lists all active effects on rpg player";
-                default:
-                    throw new StreamCommandException($"'{command}' not handled by this module");
-            }
+                context.GetModule<StreamModule>().SendMessage(service, channel, user, "No active effects");
+            else context.GetModule<StreamModule>().SendMessage(service, channel, user, $"Active effects: {effects}");
         }
 
         void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().RegisterCommandHandler(this, "effects");
+            context.GetModule<StreamModule>().RegisterCommandHandler("effects", new ListEffectsCommandHandler(this));
             context.GetModule<TimerModule>().AddService(this, 1.0);
         }
 
         void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().UnregisterCommandHandler(this);
+            context.GetModule<StreamModule>().UnregisterCommandHandler("effects");
             context.GetModule<TimerModule>().RemoveService(this);
         }
 

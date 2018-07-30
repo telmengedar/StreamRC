@@ -1,0 +1,92 @@
+﻿html, body {
+	margin: 0;
+	overflow: hidden;
+	counter-reset: element
+}
+
+.box {
+	display: flex;
+	flex-direction: column;
+	width: 100vw;
+	height: 100vh;
+
+	opacity: 0.7;
+	-webkit-transition: opacity 1000ms linear;
+    transition: opacity 1000ms linear;
+
+	border-style: solid;
+	border-width: 2px;
+	border-color: rgba(40, 40, 40, 0.9);
+
+	background: linear-gradient(to bottom, rgba(80, 80, 80, 0.6), rgba(0, 0, 0, 0.9));
+}
+
+.title {
+	line-height: 0;
+	display: flex;
+	flex-direction: row;
+
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	vertical-align: middle;
+
+	color: white;
+	width: 100%;
+	vertical-align: central;
+	font-size: x-large;
+	text-align: center;
+	text-shadow:
+	        3px 3px 0 #000,
+	        -1px -1px 0 #000,
+	        1px -1px 0 #000,
+	        -1px 1px 0 #000,
+	        1px 1px 0 #000;
+}
+
+.text {
+	line-height: 0;
+	display: flex;
+	flex-direction: row;
+
+	align-items: center;
+	justify-content: center;
+
+	text-align: center;
+	vertical-align: middle;
+
+	color: white;
+	width: 100%;
+	height: 100%;
+
+	vertical-align: central;
+
+	text-align: center;
+	text-shadow:
+	        3px 3px 0 #000,
+	        -1px -1px 0 #000,
+	        1px -1px 0 #000,
+	        -1px 1px 0 #000,
+	        1px 1px 0 #000;
+}
+
+.pre {
+	margin: 0;
+}
+
+.element {
+	display: inline-block;
+}
+
+.content {
+	display: inline;
+}
+
+img.element {
+	min-height: 1em;
+	max-height: 1em;
+	vertical-align: middle;
+	top: 0;
+	bottom: 0;
+	margin: auto;
+}

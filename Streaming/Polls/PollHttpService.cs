@@ -4,6 +4,7 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
 using NightlyCode.StreamRC.Modules;
@@ -11,8 +12,8 @@ using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Polls {
 
-    [Dependency(nameof(PollModule), DependencyType.Type)]
-    [Dependency(nameof(HttpServiceModule), DependencyType.Type)]
+    [Dependency(nameof(PollModule))]
+    [Dependency(nameof(HttpServiceModule))]
     public class PollHttpService : IRunnableModule, IHttpService {
         readonly Context context;
         PollHttpResponse response;

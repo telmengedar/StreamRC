@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using NightlyCode.Core.Collections;
 using StreamRC.Streaming.Polls.Management;
+using StreamRC.Streaming.Statistics;
 
 namespace StreamRC.Streaming.Collections.Management
 {
@@ -19,7 +20,7 @@ namespace StreamRC.Streaming.Collections.Management
         string selectedcollection = null;
 
         /// <summary>
-        /// creates a new <see cref="PollManagementWindow"/>
+        /// creates a new <see cref="Statistics.PollManagementWindow"/>
         /// </summary>
         /// <param name="module">collection module</param>
         public CollectionManagementWindow(CollectionModule module) {

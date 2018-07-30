@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using NightlyCode.Modules;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
-using StreamRC.Streaming.Stream;
 
 namespace StreamRC.Streaming.Notifications {
 
@@ -11,7 +9,7 @@ namespace StreamRC.Streaming.Notifications {
     /// module routing notifications
     /// </summary>
     [ModuleKey("notifications")]
-    public class NotificationModule : IModule, ICommandModule {
+    public class NotificationModule : IModule {
         readonly Context context;
 
         /// <summary>
@@ -35,21 +33,34 @@ namespace StreamRC.Streaming.Notifications {
             Notification?.Invoke(notification);
         }
 
-        void ICommandModule.ProcessCommand(string command, params string[] arguments) {
-            switch(command) {
-                case "show":
-                    ShowNotification(arguments);
-                    break;
-                default:
-                    throw new StreamCommandException($"Command '{command}' not supported by this module.");
-            }
+        /// <summary>
+        /// shows a notification
+        /// </summary>
+        /// <param name="title">notification title</param>
+        /// <param name="text">notification text</param>
+        public void ShowNotification(Message title, Message text) {
+            ShowNotification(new Notification {
+                Title = title,
+                Text = text
+            });
         }
 
-        void ShowNotification(string[] arguments) {
-            ShowNotification(new Notification {
-                Title = arguments[0],
-                Content = Message.Parse(arguments[1])
-            });
+        /// <summary>
+        /// shows a notification
+        /// </summary>
+        /// <param name="title">notification title</param>
+        /// <param name="text">notification text</param>
+        /// <param name="formatted">whether strings are in message format</param>
+        public void ShowNotification(string title, string text, bool formatted=false) {
+            if(formatted) {
+                ShowNotification(Message.Parse(title), Message.Parse(text));
+            }
+            else {
+                ShowNotification(
+                    new Message(new[] {new MessageChunk(MessageChunkType.Text, title)}),
+                    new Message(new[] {new MessageChunk(MessageChunkType.Text, text)})
+                    );
+            }
         }
     }
 }

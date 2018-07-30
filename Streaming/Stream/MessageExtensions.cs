@@ -2,9 +2,66 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Media;
+using NightlyCode.Core.Conversion;
+using StreamRC.Core.Messages;
+using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Stream {
     public static class MessageExtensions {
+
+        static System.Drawing.Color ColorOrDefault(string color) {
+            try {
+                if(string.IsNullOrEmpty(color))
+                    return System.Drawing.Color.White;
+
+                return Converter.Convert<System.Drawing.Color>(color);
+            }
+            catch(Exception) {
+                return System.Drawing.Color.White;
+            }
+        }
+
+        public static MessageBuilder User(this MessageBuilder builder, User user, Func<User, long> avatarid) {
+            return User(builder, user, avatarid(user));
+        }
+
+        public static MessageBuilder User(this MessageBuilder builder, User user, long avatarid=-1) {
+            if(avatarid > 0)
+                builder.Image(avatarid);
+            return builder.Bold().Color(ColorOrDefault(user.Color).FixColor()).Text(user.Name).Reset();
+        }
+
+        /// <summary>
+        /// fixes color to represent a minimum brightness
+        /// </summary>
+        /// <param name="color">color to fix</param>
+        /// <param name="minbrightness">minimum brightness for a color to have</param>
+        /// <returns>color value</returns>
+        public static Color FixColor(this Color color, float minbrightness = 0.5f) {
+            float value = color.R + color.G + color.B;
+            if(value >= 768 * minbrightness)
+                return color;
+
+            int basevalue = (int)(256 * minbrightness);
+            return Color.FromRgb((byte)(basevalue + color.R * (1.0f - minbrightness)), (byte)(basevalue + color.G * (1.0f - minbrightness)), (byte)(basevalue + color.B * (1.0f - minbrightness)));
+        }
+
+        /// <summary>
+        /// fixes color to represent a minimum brightness
+        /// </summary>
+        /// <param name="color">color to fix</param>
+        /// <param name="minbrightness">minimum brightness for a color to have</param>
+        /// <returns>color value</returns>
+        public static System.Drawing.Color FixColor(this System.Drawing.Color color, float minbrightness = 0.5f)
+        {
+            float value = color.R + color.G + color.B;
+            if (value >= 768 * minbrightness)
+                return color;
+
+            int basevalue = (int)(256 * minbrightness);
+            return System.Drawing.Color.FromArgb((byte)(basevalue + color.R * (1.0f - minbrightness)), (byte)(basevalue + color.G * (1.0f - minbrightness)), (byte)(basevalue + color.B * (1.0f - minbrightness)));
+        }
 
         public static string CreateEnumeration(this IEnumerable<string> objects) {
             if(!objects.Any())
