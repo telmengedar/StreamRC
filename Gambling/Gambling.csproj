@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{398DB412-65D1-42BA-96B1-8BF48878A135}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>StreamRC.Gambling</RootNamespace>
+    <AssemblyName>StreamRC.Gambling</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NightlyCode.Core">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Modules">
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BlackJack\BlackJackBoard.cs" />
+    <Compile Include="BlackJack\BlackJackGame.cs" />
+    <Compile Include="BlackJack\BlackJackLogic.cs" />
+    <Compile Include="BlackJack\BlackJackModule.cs" />
+    <Compile Include="BlackJack\HitCardCommand.cs" />
+    <Compile Include="BlackJack\SplitCommand.cs" />
+    <Compile Include="BlackJack\StandBoardCommand.cs" />
+    <Compile Include="BlackJack\StartBlackJackGameCommand.cs" />
+    <Compile Include="Cards\CardImageModule.cs" />
+    <Compile Include="Cards\Board.cs" />
+    <Compile Include="Cards\Card.cs" />
+    <Compile Include="Cards\CardRank.cs" />
+    <Compile Include="Cards\CardResourceHttpService.cs" />
+    <Compile Include="Cards\CardStack.cs" />
+    <Compile Include="Cards\CardSuit.cs" />
+    <Compile Include="Poker\VideoPokerContext.cs" />
+    <Compile Include="Poker\VideoPokerDrawCommand.cs" />
+    <Compile Include="Poker\VideoPokerModule.cs" />
+    <Compile Include="Poker\Evaluation\HandEvaluation.cs" />
+    <Compile Include="Poker\Evaluation\HandEvaluator.cs" />
+    <Compile Include="Poker\Evaluation\HandRank.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Roulette\BetType.cs" />
+    <Compile Include="Roulette\RouletteBet.cs" />
+    <Compile Include="Roulette\RouletteColor.cs" />
+    <Compile Include="Roulette\RouletteCommandHandler.cs" />
+    <Compile Include="Roulette\RouletteField.cs" />
+    <Compile Include="Roulette\RouletteModule.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Cards\Images\Card1.png" />
+    <EmbeddedResource Include="Cards\Images\Card10.png" />
+    <EmbeddedResource Include="Cards\Images\Card11.png" />
+    <EmbeddedResource Include="Cards\Images\Card12.png" />
+    <EmbeddedResource Include="Cards\Images\Card13.png" />
+    <EmbeddedResource Include="Cards\Images\Card14.png" />
+    <EmbeddedResource Include="Cards\Images\Card15.png" />
+    <EmbeddedResource Include="Cards\Images\Card16.png" />
+    <EmbeddedResource Include="Cards\Images\Card17.png" />
+    <EmbeddedResource Include="Cards\Images\Card18.png" />
+    <EmbeddedResource Include="Cards\Images\Card19.png" />
+    <EmbeddedResource Include="Cards\Images\Card2.png" />
+    <EmbeddedResource Include="Cards\Images\Card20.png" />
+    <EmbeddedResource Include="Cards\Images\Card21.png" />
+    <EmbeddedResource Include="Cards\Images\Card22.png" />
+    <EmbeddedResource Include="Cards\Images\Card23.png" />
+    <EmbeddedResource Include="Cards\Images\Card24.png" />
+    <EmbeddedResource Include="Cards\Images\Card25.png" />
+    <EmbeddedResource Include="Cards\Images\Card26.png" />
+    <EmbeddedResource Include="Cards\Images\Card27.png" />
+    <EmbeddedResource Include="Cards\Images\Card28.png" />
+    <EmbeddedResource Include="Cards\Images\Card29.png" />
+    <EmbeddedResource Include="Cards\Images\Card3.png" />
+    <EmbeddedResource Include="Cards\Images\Card30.png" />
+    <EmbeddedResource Include="Cards\Images\Card31.png" />
+    <EmbeddedResource Include="Cards\Images\Card32.png" />
+    <EmbeddedResource Include="Cards\Images\Card33.png" />
+    <EmbeddedResource Include="Cards\Images\Card34.png" />
+    <EmbeddedResource Include="Cards\Images\Card35.png" />
+    <EmbeddedResource Include="Cards\Images\Card36.png" />
+    <EmbeddedResource Include="Cards\Images\Card37.png" />
+    <EmbeddedResource Include="Cards\Images\Card38.png" />
+    <EmbeddedResource Include="Cards\Images\Card39.png" />
+    <EmbeddedResource Include="Cards\Images\Card4.png" />
+    <EmbeddedResource Include="Cards\Images\Card40.png" />
+    <EmbeddedResource Include="Cards\Images\Card41.png" />
+    <EmbeddedResource Include="Cards\Images\Card42.png" />
+    <EmbeddedResource Include="Cards\Images\Card43.png" />
+    <EmbeddedResource Include="Cards\Images\Card44.png" />
+    <EmbeddedResource Include="Cards\Images\Card45.png" />
+    <EmbeddedResource Include="Cards\Images\Card46.png" />
+    <EmbeddedResource Include="Cards\Images\Card47.png" />
+    <EmbeddedResource Include="Cards\Images\Card48.png" />
+    <EmbeddedResource Include="Cards\Images\Card49.png" />
+    <EmbeddedResource Include="Cards\Images\Card5.png" />
+    <EmbeddedResource Include="Cards\Images\Card50.png" />
+    <EmbeddedResource Include="Cards\Images\Card51.png" />
+    <EmbeddedResource Include="Cards\Images\Card52.png" />
+    <EmbeddedResource Include="Cards\Images\Card6.png" />
+    <EmbeddedResource Include="Cards\Images\Card7.png" />
+    <EmbeddedResource Include="Cards\Images\Card8.png" />
+    <EmbeddedResource Include="Cards\Images\Card9.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{49e63bf7-b832-42ec-98fc-68dcac446338}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RPG\RPG.csproj">
+      <Project>{8281ecbd-b3c7-422c-b546-5e458c35291d}</Project>
+      <Name>RPG</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Streaming\Streaming.csproj">
+      <Project>{eb1a1823-3d2b-4279-b58c-1c78904ed7d0}</Project>
+      <Name>Streaming</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StreamRC\StreamRC.csproj">
+      <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
+      <Name>StreamRC</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\StreamRC\bin\$(Configuration)\modules\" />
+  </Target>
+</Project>

@@ -105,12 +105,12 @@ namespace StreamRC.Streaming.Ads {
         }
 
         void IRunnableModule.Start() {
-            //context.GetModule<TimerModule>().AddService(this, Interval.TotalSeconds);
+            context.GetModule<TimerModule>().AddService(this, Interval.TotalSeconds);
             usermodule = context.GetModule<UserModule>();
         }
 
         void IRunnableModule.Stop() {
-            //context.GetModule<TimerModule>().RemoveService(this);
+            context.GetModule<TimerModule>().RemoveService(this);
         }
 
         void ITimerService.Process(double time) {

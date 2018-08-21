@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -19,6 +20,7 @@ namespace NightlyCode.StreamRC
 
         protected override void OnStartup(StartupEventArgs e) {
             base.OnStartup(e);
+            AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             Current.DispatcherUnhandledException += OnUnhandledDispatcherException;
             Dispatcher.UnhandledException += OnUnhandledDispatcherException;
@@ -33,6 +35,13 @@ namespace NightlyCode.StreamRC
 
             context.Start();
             Logger.Info(this, "StreamRC started");
+        }
+
+        Assembly OnAssemblyResolve(object sender, ResolveEventArgs args) {
+            string assemblypath = Path.Combine(PathExtensions.GetApplicationDirectory(), "modules", new AssemblyName(args.Name).Name + ".dll");
+            if (!File.Exists(assemblypath))
+                return null;
+            return Assembly.LoadFrom(assemblypath);
         }
 
         void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {

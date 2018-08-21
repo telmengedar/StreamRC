@@ -13,6 +13,10 @@ using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Messages {
+
+    /// <summary>
+    /// <see cref="MessageBuilder"/> which is used to build messages in a game context
+    /// </summary>
     public class RPGMessageBuilder : MessageBuilder {
         readonly Context context;
         readonly GameMessageModule messagemodule;
@@ -20,6 +24,14 @@ namespace StreamRC.RPG.Messages {
         readonly EmotionImageModule emotionimages;
         readonly ShopImageModule shopimages;
 
+        /// <summary>
+        /// creates a new <see cref="RPGMessageBuilder"/>
+        /// </summary>
+        /// <param name="context">access to modules</param>
+        /// <param name="messagemodule">modules used to send messages</param>
+        /// <param name="itemimages">images for items</param>
+        /// <param name="emotionimages">images for emotes</param>
+        /// <param name="shopimages">images for shop</param>
         public RPGMessageBuilder(Context context, GameMessageModule messagemodule, ItemImageModule itemimages, EmotionImageModule emotionimages, ShopImageModule shopimages) {
             this.context = context;
             this.messagemodule = messagemodule;
@@ -38,8 +50,8 @@ namespace StreamRC.RPG.Messages {
 
         public RPGMessageBuilder Gold(int quantity) {
             if(quantity <= 0)
-                return Image(itemimages.GetImagePath("Gold"), "Gold");
-            return Bold().Color(AdventureColors.Gold).Text(quantity.ToString()).Image(itemimages.GetImagePath("Gold"), "Gold").Reset();
+                return Image(itemimages.GetImagePath("Gold"), " Gold");
+            return Bold().Color(AdventureColors.Gold).Text(quantity.ToString()).Image(itemimages.GetImagePath("Gold"), " Gold").Reset();
         }
 
         /// <summary>
