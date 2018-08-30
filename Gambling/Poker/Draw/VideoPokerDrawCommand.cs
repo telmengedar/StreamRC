@@ -2,7 +2,6 @@
 using System.Linq;
 using NightlyCode.Core.Collections;
 using StreamRC.Gambling.Cards;
-using StreamRC.Gambling.Cards.Evaluation;
 using StreamRC.Gambling.Poker.Evaluation;
 using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
@@ -10,7 +9,7 @@ using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
 
-namespace StreamRC.Gambling.Poker {
+namespace StreamRC.Gambling.Poker.Draw {
 
     /// <summary>
     /// executes the draw command for video poker games
@@ -19,7 +18,7 @@ namespace StreamRC.Gambling.Poker {
         readonly VideoPokerModule pokermodule;
         readonly PlayerModule playermodule;
         readonly RPGMessageModule messagemodule;
-        CardImageModule imagemodule;
+        readonly CardImageModule imagemodule;
 
         public VideoPokerDrawCommand(VideoPokerModule pokermodule, PlayerModule playermodule, RPGMessageModule messagemodule, CardImageModule imagemodule) {
             this.pokermodule = pokermodule;
@@ -32,25 +31,25 @@ namespace StreamRC.Gambling.Poker {
             switch(evaluation.Rank) {
                 case HandRank.RoyalFlush:
                     if(ismaxbet)
-                        return 4000;
-                    return 250;
+                        return 4001;
+                    return 251;
                 case HandRank.StraightFlush:
-                    return 50;
+                    return 51;
                 case HandRank.FourOfAKind:
-                    return 25;
+                    return 26;
                 case HandRank.FullHouse:
-                    return 9;
+                    return 10;
                 case HandRank.Flush:
-                    return 6;
+                    return 7;
                 case HandRank.Straight:
-                    return 4;
+                    return 5;
                 case HandRank.ThreeOfAKind:
-                    return 3;
+                    return 4;
                 case HandRank.TwoPair:
-                    return 2;
+                    return 3;
                 case HandRank.Pair:
                     if(evaluation.HighCard >= CardRank.Jack)
-                        return 1;
+                        return 2;
                     return 0;
                 default:
                     return 0;
@@ -58,7 +57,7 @@ namespace StreamRC.Gambling.Poker {
         }
 
         public override void ExecuteCommand(IChatChannel channel, StreamCommand command) {
-            VideoPokerContext game = pokermodule.GetGame(command.Service, command.User);
+            VideoPokerGame game = pokermodule.GetGame(command.Service, command.User);
             long userid = playermodule.GetPlayer(command.Service, command.User).UserID;
             HandEvaluation evaluation;
 

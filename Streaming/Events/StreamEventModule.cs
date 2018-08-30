@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using NightlyCode.Core.Logs;
+using System.Linq;
+using System.Linq.Expressions;
+using NightlyCode.Core.Conversion;
 using NightlyCode.DB.Entities.Operations;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
-using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
+using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
 
-namespace StreamRC.Streaming.Events {
+namespace StreamRC.Streaming.Events
+{
 
     /// <summary>
     /// module managing stream events
@@ -43,7 +46,13 @@ namespace StreamRC.Streaming.Events {
             streammodule.MicroPresent += OnMicroPresent;
             streammodule.NewFollower += OnFollow;
             streammodule.NewSubscriber += OnSubscription;
+            streammodule.ChatMessage += OnChatMessage;
             context.GetModule<UserModule>().UserFlagsChanged += OnUserFlagsChanged;
+        }
+
+        void OnChatMessage(ChatMessage message) {
+            long userid = context.GetModule<UserModule>().GetUserID(message.Service, message.User);
+            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e => e.Timestamp, e => e.Multiplicator).Values(StreamEventType.Chat, userid, 1, DateTime.Now, 0.02).Execute();
         }
 
         void OnUserFlagsChanged(User user) {
@@ -108,7 +117,7 @@ namespace StreamRC.Streaming.Events {
                     value = 2499;
                     break;
             }
-            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e => e.Timestamp).Values(StreamEventType.Subscription, userid, value, DateTime.Now).Execute();
+            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e=>e.Multiplicator, e => e.Timestamp).Values(StreamEventType.Subscription, userid, value, 2.0, DateTime.Now).Execute();
             EventValue?.Invoke(userid, (int)(value * 10));
         }
 
@@ -160,7 +169,7 @@ namespace StreamRC.Streaming.Events {
 
         public void AddHost(long userid, int viewers) {
             double value = viewers <= 0 ? 0.5 : viewers;
-            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e=>e.Value, e => e.Timestamp).Values(StreamEventType.Host, userid, value, DateTime.Now).Execute();
+            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e=>e.Value, e=>e.Multiplicator, e => e.Timestamp).Values(StreamEventType.Host, userid, value, 1.0, DateTime.Now).Execute();
             EventValue?.Invoke(userid, (int)(value * 10));
         }
 
@@ -177,7 +186,7 @@ namespace StreamRC.Streaming.Events {
 
         public void AddRaid(long userid, int raiders) {
             double value = raiders <= 0 ? 0.8 : raiders * 1.3;
-            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e => e.Timestamp).Values(StreamEventType.Raid, userid, value, DateTime.Now).Execute();
+            context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e=>e.Multiplicator, e => e.Timestamp).Values(StreamEventType.Raid, userid, value, 1.0, DateTime.Now).Execute();
             EventValue?.Invoke(userid, (int)(value * 10));
         }
 
@@ -185,8 +194,24 @@ namespace StreamRC.Streaming.Events {
             context.Database.Insert<StreamEvent>().Columns(e => e.Title, e => e.Message, e=>e.Timestamp).Values(JSON.WriteString(title), JSON.WriteString(message), DateTime.Now).Execute();
         }
 
-        public IEnumerable<StreamEvent> GetLastEvents(int count) {
-            return context.Database.LoadEntities<StreamEvent>().OrderBy(new OrderByCriteria(EntityField.Create<StreamEvent>(e => e.Timestamp), false)).Limit(count).Execute();
+        /// <summary>
+        /// get the last events which occured in this stream
+        /// </summary>
+        /// <param name="count">number of events to return</param>
+        /// <returns>stream events</returns>
+        public IEnumerable<StreamEvent> GetLastEvents(int count, params StreamEventType[] types) {
+            if(types.Length == 0) {
+                return context.Database.LoadEntities<StreamEvent>()
+                    .Where(e => e.Type != StreamEventType.Chat)
+                    .OrderBy(new OrderByCriteria(EntityField.Create<StreamEvent>(e => e.Timestamp), false))
+                    .Limit(count)
+                    .Execute();
+            }
+            return context.Database.LoadEntities<StreamEvent>()
+                .Where(e => types.Contains(e.Type))
+                .OrderBy(new OrderByCriteria(EntityField.Create<StreamEvent>(e => e.Timestamp), false))
+                .Limit(count)
+                .Execute();
         }
 
         public long GetBiggestHoster() {
@@ -199,9 +224,64 @@ namespace StreamRC.Streaming.Events {
             return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => (e.Type == StreamEventType.Subscription || e.Type==StreamEventType.Donation) && e.Timestamp > lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value*s.Multiplicator)), false)).Limit(1).ExecuteScalar<long>();
         }
 
-        public long GetUserOfTheMonth() {
-            DateTime lastmonth = DateTime.Now - TimeSpan.FromDays(30);
-            return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => e.Timestamp > lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false)).Limit(1).ExecuteScalar<long>();
+        /// <summary>
+        /// get user which scored the highest score the last month
+        /// </summary>
+        /// <returns>event score for leader of last month</returns>
+        public EventScore GetUserOfTheMonth() {
+            DateTime now = DateTime.Now;
+            DateTime thismonth = new DateTime(now.Year, now.Month, 1);
+            now=now.AddMonths(-1);
+            DateTime lastmonth = new DateTime(now.Year, now.Month, 1);
+
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+                .Where(e => e.Timestamp >= lastmonth && e.Timestamp < thismonth)
+                .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
+                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .Limit(1)
+                .ExecuteType<EventScore>((r, t) => {
+                    t.UserID = Converter.Convert<long>(r[0]);
+                    t.Score = Converter.Convert<double>(r[1]);
+                }).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// get event score for a user leading in score of a event type
+        /// </summary>
+        /// <param name="type">type of event to evaluate</param>
+        /// <returns>event score of last month or null if no data matches</returns>
+        public EventScore GetLeader(params StreamEventType[] types) {
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+                .Where(e=>types.Contains(e.Type))
+                .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
+                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .Limit(1)
+                .ExecuteType<EventScore>((r, t) => {
+                    t.UserID = Converter.Convert<long>(r[0]);
+                    t.Score = Converter.Convert<double>(r[1]);
+                }).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// get event score for a user leading in score of a event type of the last month
+        /// </summary>
+        /// <param name="type">type of event to evaluate</param>
+        /// <returns>event score of last month or null if no data matches</returns>
+        public EventScore GetLastMonthLeader(params StreamEventType[] types) {
+            DateTime now = DateTime.Now;
+            DateTime thismonth = new DateTime(now.Year, now.Month, 1);
+            now = now.AddMonths(-1);
+            DateTime lastmonth = new DateTime(now.Year, now.Month, 1);
+
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+                .Where(e => types.Contains(e.Type) && e.Timestamp >= lastmonth && e.Timestamp < thismonth)
+                .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
+                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .Limit(1)
+                .ExecuteType<EventScore>((r, t) => {
+                    t.UserID = Converter.Convert<long>(r[0]);
+                    t.Score = Converter.Convert<double>(r[1]);
+                }).FirstOrDefault();
         }
     }
 }

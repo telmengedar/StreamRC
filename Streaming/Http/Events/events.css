@@ -9,7 +9,6 @@
 	width: 100vw;
 	height: 100vh;
 
-	opacity: 0;
 	-webkit-transition: opacity 1000ms linear;
     transition: opacity 1000ms linear;
 }
@@ -22,12 +21,36 @@
 	min-width: 100px;
 	max-width: 300px;
 
-	border-style: solid;
-	border-width: 2px;
-	border-color: rgba(0, 0, 0, 0.9);
-
-	background: linear-gradient(to bottom, rgba(50, 50, 50, 0.6), rgba(0, 0, 0, 0.9));
+	border-bottom-right-radius: 5px;
+	border-bottom-left-radius: 5px;
 }	
+
+.result:nth-child(odd) {
+	background: linear-gradient(to bottom, rgba(24, 24, 24, 0.7), rgba(0, 0, 0, 0.3));
+}
+
+.result:nth-child(even) {
+	background: linear-gradient(to bottom, rgba(80, 80, 80, 0.7), rgba(0, 0, 0, 0.3));
+}
+
+.lastresult {
+	counter-increment: element;
+	display: flex;
+	flex-direction: column;
+	min-width: 100px;
+	max-width: 300px;
+
+	border-bottom-right-radius: 5px;
+	border-bottom-left-radius: 5px;
+}	
+
+.lastresult:nth-child(odd) {
+	background: linear-gradient(to bottom, rgba(0, 0, 60, 0.7), rgba(0, 0, 0, 0.3));
+}
+
+.lastresult:nth-child(even) {
+	background: linear-gradient(to bottom, rgba(0, 0, 90, 0.7), rgba(0, 0, 0, 0.3));
+}
 
 .title {
 	line-height: 0;
@@ -38,14 +61,15 @@
 	justify-content: center;
 
 	vertical-align: central;
-	font-size: x-large;
 	text-align: center;
 	text-shadow:
 	        3px 3px 0 #000,
 	        -1px -1px 0 #000,
 	        1px -1px 0 #000,
 	        -1px 1px 0 #000,
-	        1px 1px 0 #000;	
+	        1px 1px 0 #000;
+
+	background: rgba(0, 0, 0, 0.3);
 }
 
 .text {
@@ -78,6 +102,8 @@
 
 .content {
 	display: inline;
+	margin-left: 5px;
+	margin-right: 5px;
 }
 
 img.element {

@@ -78,9 +78,12 @@
     <Compile Include="Collections\Commands\CollectionInfoCommandHandler.cs" />
     <Compile Include="Collections\Commands\ListCollectionsCommandHandler.cs" />
     <Compile Include="Collections\Commands\RemoveCollectionItemCommandHandler.cs" />
+    <Compile Include="Events\EventScore.cs" />
+    <Compile Include="Events\MessageExtensions.cs" />
     <Compile Include="Events\StreamEvent.cs" />
     <Compile Include="Events\StreamEventHttpModule.cs" />
     <Compile Include="Events\StreamEventModule.cs" />
+    <Compile Include="Events\StreamHttpEvents.cs" />
     <Compile Include="Events\StreamEventType.cs" />
     <Compile Include="Events\StreamHttpEvent.cs" />
     <Compile Include="Games\CurrentlyPlayedGame.cs" />
@@ -150,7 +153,6 @@
     <Compile Include="Stream\MessageExtensions.cs" />
     <Compile Include="Stream\MicroPresent.cs" />
     <Compile Include="Stream\RaidInformation.cs" />
-    <Compile Include="Stream\StreamHttpEventResponse.cs" />
     <Compile Include="Stream\StreamNotificationModule.cs" />
     <Compile Include="Stream\SubscriberInformation.cs" />
     <Compile Include="Text\Font\FontDescription.cs" />

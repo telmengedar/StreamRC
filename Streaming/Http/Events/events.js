@@ -1,8 +1,4 @@
-﻿var decay = 1.0;
-var isnew = false;
-
-var timer = true;
-var itemcount = 5;
+﻿var itemcount = 5;
 var notransparency = false;
 
 function loadSettings() {
@@ -33,26 +29,13 @@ function loadSettings() {
         itemcount = parseInt(params.get('items'), 10);
 }
 
-function initialize() {
+/*function initialize() {
     if (!notransparency) {
         for (var i = 0; i < 5; ++i) {
             document.getElementById('result' + i).style.opacity = 0.25 + (1.0 - i / 4) * 0.5;
         }
     }
-}
-
-function refresh() {
-    if (timer)
-        //decay -= 1.0;
-
-    if (decay <= 0.0) {
-        document.getElementById("box").style.opacity = 0;
-    }
-    else if (isnew) {
-        document.getElementById("box").style.opacity = 255;
-        isnew = false;
-    }
-}
+}*/
 
 function loadEventData() {
     var xhr = new XMLHttpRequest();
@@ -73,33 +56,25 @@ function clearElement(parent) {
     }
 }
 
-function createEvents(data) {
-    var i;
-    for (i = 0; i < data.events.length; ++i) {
-        var item = data.events[i];
-        clearElement(document.getElementById("titlecontent" + i));
-        clearElement(document.getElementById("textcontent" + i));
-        createMessageElement(item.title.chunks, document.getElementById("titlecontent" + i));
-        createMessageElement(item.message.chunks, document.getElementById("textcontent" + i));
-        document.getElementById("result" + i).style.visibility = "visible";
-    }
-    for (i = data.events.length; i < 5; ++i) {
-        clearElement(document.getElementById("titlecontent" + i));
-        clearElement(document.getElementById("textcontent" + i));
-        document.getElementById("result" + i).style.visibility = "hidden";
-    }
+function createEvent(event, id) {
+    clearElement(document.getElementById(id + "titlecontent"));
+    clearElement(document.getElementById(id + "textcontent"));
+    createMessageElement(event.title.chunks, document.getElementById(id + "titlecontent"));
+    createMessageElement(event.message.chunks, document.getElementById(id + "textcontent"));
+}
 
-    decay = 30.0;
-    isnew = true;
+function createEvents(data) {
+    createEvent(data.leader, "leader");
+    createEvent(data.donor, "donor");
+    createEvent(data.hoster, "hoster");
+    createEvent(data.social, "social");
+    createEvent(data.support, "support");
+    createEvent(data.lastevent, "lastevent");
+    createEvent(data.lastdonation, "lastdonation");
 }
 
 loadSettings();
-initialize();
-
-if(timer)
-    setInterval(refresh, 1000);
-else
-    document.getElementById("box").style.opacity = 255;
+//initialize();
 
 loadEventData();
 setInterval(loadEventData, 60000);

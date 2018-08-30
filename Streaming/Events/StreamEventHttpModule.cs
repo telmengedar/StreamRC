@@ -21,10 +21,12 @@ namespace StreamRC.Streaming.Events {
     [Dependency(nameof(UserModule))]
     [Dependency(nameof(ImageCacheModule))]
     [Dependency(nameof(HttpServiceModule))]
+    [Dependency(nameof(StreamEventModule))]
     public class StreamEventHttpModule : IRunnableModule, IHttpService {
         readonly Context context;
         UserModule usermodule;
         ImageCacheModule imagemodule;
+        StreamEventModule streameventmodule;
 
         public StreamEventHttpModule(Context context) {
             this.context = context;
@@ -33,6 +35,7 @@ namespace StreamRC.Streaming.Events {
         void IRunnableModule.Start() {
             usermodule = context.GetModule<UserModule>();
             imagemodule = context.GetModule<ImageCacheModule>();
+            streameventmodule = context.GetModule<StreamEventModule>();
             context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events", this);
             context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events.css", this);
             context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events.js", this);
@@ -66,41 +69,12 @@ namespace StreamRC.Streaming.Events {
                 case "/streamrc/events.js":
                     client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.js"), ".js");
                     break;
-                case "/streamrc/highlight":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.highlight.html"), ".html");
-                    break;
-                case "/streamrc/highlight.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.highlight.css"), ".css");
-                    break;
-                case "/streamrc/highlight.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.highlight.js"), ".js");
-                    break;
                 case "/streamrc/events/data":
                     ServeEvents(client, request);
-                    break;
-                case "/streamrc/highlight/data":
-                    ServeHighlight(client, request);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
-        }
-
-        StreamHttpEvent CreateUserOfTheMonth() {
-            long userid = context.GetModule<StreamEventModule>().GetUserOfTheMonth();
-            if(userid >= 0) {
-                User user = usermodule.GetUser(userid);
-
-                return new StreamHttpEvent {
-                    Message = new MessageBuilder().Text("User of the ").Text("Month", Color.FromArgb(255, 118, 87), FontWeight.Bold).BuildMessage(),
-                    Title = new MessageBuilder().User(user, u => imagemodule.AddImage(u.Avatar)).BuildMessage()
-                };
-            }
-
-            return new StreamHttpEvent {
-                Message = new MessageBuilder().Text("Biggest ").Text("Supporter", Color.FromArgb(255, 118, 87), FontWeight.Bold).BuildMessage(),
-                Title = new MessageBuilder().Text("None", Color.DarkGray).BuildMessage()
-            };
         }
 
         string GetCurrency(string service, string value) {
@@ -113,39 +87,55 @@ namespace StreamRC.Streaming.Events {
         }
 
         StreamHttpEvent Convert(StreamEvent streamevent) {
+            if(streamevent == null) {
+                return new StreamHttpEvent {
+                    Timestamp = DateTime.Now,
+                    Title = new MessageBuilder().Title("Last Event").BuildMessage(),
+                    Message = new MessageBuilder().None().BuildMessage()
+                };
+            }
+
             StreamHttpEvent httpevent = new StreamHttpEvent {
                 Timestamp = streamevent.Timestamp
             };
 
-            if(streamevent.Type == StreamEventType.Custom || !string.IsNullOrEmpty(streamevent.Title))
-                httpevent.Title = JSON.Read<Message>(streamevent.Title);
-            else httpevent.Title = new MessageBuilder().User(usermodule.GetUser(streamevent.UserID), u => imagemodule.AddImage(u.Avatar)).BuildMessage();
-
-            if(!string.IsNullOrEmpty(streamevent.Message)) {
+            if(streamevent.Type == StreamEventType.Custom || !string.IsNullOrEmpty(streamevent.Message))
                 httpevent.Message = JSON.Read<Message>(streamevent.Message);
+            else {
+                MessageBuilder message = new MessageBuilder().User(usermodule.GetUser(streamevent.UserID), u => imagemodule.AddImage(u.Avatar));
+                int score = (int)(streamevent.Value * streamevent.Multiplicator);
+                if(score > 0)
+                    message.Score(score);
+                httpevent.Message = message.BuildMessage();
+            }
+
+            if(!string.IsNullOrEmpty(streamevent.Title)) {
+                httpevent.Title = JSON.Read<Message>(streamevent.Message);
             }
             else {
                 switch(streamevent.Type) {
                     default:
-                        httpevent.Message = JSON.Read<Message>(streamevent.Message);
+                        if(!string.IsNullOrEmpty(streamevent.Title))
+                            httpevent.Title = JSON.Read<Message>(streamevent.Title);
+                        else httpevent.Title = new MessageBuilder().EventTitle("<unknown>").BuildMessage();
                         break;
                     case StreamEventType.Follow:
-                        httpevent.Message = new MessageBuilder().Text("Follow").BuildMessage();
+                        httpevent.Title = new MessageBuilder().EventTitle("New Follower").BuildMessage();
                         break;
                     case StreamEventType.Subscription:
-                        httpevent.Message = new MessageBuilder().Text("Subscription").BuildMessage();
+                        httpevent.Title = new MessageBuilder().EventTitle("New Subscription").BuildMessage();
                         break;
                     case StreamEventType.Host:
-                        MessageBuilder hostbuilder = new MessageBuilder().Text("Host");
-                        if(streamevent.Value >= 1.0)
-                            hostbuilder.Text($" ({streamevent.Value})");
-                        httpevent.Message = hostbuilder.BuildMessage();
+                        httpevent.Title = new MessageBuilder().EventTitle("New Host").BuildMessage();
                         break;
                     case StreamEventType.Donation:
-                        httpevent.Message = CreateDonationMessage(streamevent);
+                        httpevent.Title = CreateDonationMessage(streamevent);
                         break;
                     case StreamEventType.BugReport:
-                        httpevent.Message = new MessageBuilder().Text("Bugreport", Color.PaleTurquoise).Text(": ").Text(streamevent.Argument, Color.LightGoldenrodYellow).BuildMessage();
+                        httpevent.Title = new MessageBuilder().EventTitle("New Bugreport").BuildMessage();
+                        break;
+                    case StreamEventType.Chat:
+                        httpevent.Title = new MessageBuilder().EventTitle("New Message").BuildMessage();
                         break;
                 }
             }
@@ -186,7 +176,30 @@ namespace StreamRC.Streaming.Events {
                 }
             }
 
-            return new MessageBuilder().Text("Donated ").Text(value, Color.FromArgb(255, 246, 97), FontWeight.Bold).Text(currency, Color.FromArgb(255, 246, 97)).BuildMessage();
+            return new MessageBuilder().Text(value, Color.FromArgb(255, 246, 97), FontWeight.Bold).Text(currency, Color.FromArgb(255, 246, 97)).EventTitle(" Donated").BuildMessage();
+        }
+
+        StreamHttpEvent Convert(string title, EventScore score) {
+            if(score == null) {
+                return new StreamHttpEvent {
+                    Timestamp = DateTime.Now,
+                    Title = new MessageBuilder().Text(title, Color.White, FontWeight.Bold).BuildMessage(),
+                    Message = new MessageBuilder().Text("<none>", Color.LightGray).BuildMessage()
+                };
+            }
+
+            return new StreamHttpEvent {
+                Timestamp = DateTime.Now,
+                Title = new MessageBuilder().Text(title, Color.White, FontWeight.Bold).BuildMessage(),
+                Message = new MessageBuilder().User(usermodule.GetUser(score.UserID), u => imagemodule.AddImage(u.Avatar)).Score((int)score.Score).BuildMessage()
+            };
+        }
+
+        EventScore GetEvent(params StreamEventType[] types) {
+            EventScore score = streameventmodule.GetLastMonthLeader(types);
+            if(score == null)
+                score = streameventmodule.GetLeader(types);
+            return score;
         }
 
         void ServeEvents(HttpClient client, HttpRequest request) {
@@ -195,25 +208,20 @@ namespace StreamRC.Streaming.Events {
                 count = request.GetParameter<int>("count");
 
             using (MemoryStream ms = new MemoryStream()) {
-                StreamHttpEventResponse response = new StreamHttpEventResponse {
-                    Events = context.GetModule<StreamEventModule>().GetLastEvents(count).Select(Convert).ToArray()
+                StreamHttpEvents events = new StreamHttpEvents {
+                    Leader = Convert("Divinity", streameventmodule.GetUserOfTheMonth()),
+                    Donor = Convert("Financial Pillar", GetEvent(StreamEventType.Donation, StreamEventType.Subscription)),
+                    Hoster = Convert("Heart of Gold", GetEvent(StreamEventType.Host, StreamEventType.Raid)),
+                    Support = Convert("Quality Assurance", GetEvent(StreamEventType.BugReport)),
+                    Social = Convert("Social Force", GetEvent(StreamEventType.Chat)),
+                    LastEvent = Convert(streameventmodule.GetLastEvents(1, StreamEventType.BugReport, StreamEventType.Custom, StreamEventType.Follow, StreamEventType.Host, StreamEventType.Raid).FirstOrDefault()),
+                    LastDonation = Convert(streameventmodule.GetLastEvents(1, StreamEventType.Donation, StreamEventType.Subscription).FirstOrDefault())
                 };
 
-                JSON.Write(response, ms);
+                JSON.Write(events, ms);
                 client.ServeData(ms.ToArray(), ".json");
             }
 
         }
-
-        void ServeHighlight(HttpClient client, HttpRequest request)
-        {
-
-            using (MemoryStream ms = new MemoryStream()) {
-                StreamHttpEvent response = CreateUserOfTheMonth();
-                JSON.Write(response, ms);
-                client.ServeData(ms.ToArray(), ".json");
-            }
-        }
-
     }
 }

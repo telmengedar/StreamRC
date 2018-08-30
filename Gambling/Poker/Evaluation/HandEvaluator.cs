@@ -1,6 +1,6 @@
-﻿using StreamRC.Gambling.Poker.Evaluation;
+﻿using StreamRC.Gambling.Cards;
 
-namespace StreamRC.Gambling.Cards.Evaluation
+namespace StreamRC.Gambling.Poker.Evaluation
 {
 
     /// <summary>
@@ -19,14 +19,23 @@ namespace StreamRC.Gambling.Cards.Evaluation
             int[] rankindex = { -1, -1, -1 };
             int i, k;
 
+            // count number of same rank cards and suits
             foreach (Card c in cards)
             {
                 i = ++rankcount[(int)c.Rank];
                 if (i > maxrankcount) 
                     ++maxrankcount;
-                if (i > 1 && i<5 && rankindex[i - 2] < (int)c.Rank) rankindex[i - 2] = (int)c.Rank;
-
                 if (++suitcount[(int)c.Suit] > maxsuitcount) ++maxsuitcount;
+            }
+
+            // determine rank of pairs,threeofakinds and quads
+            for(i = 12; i >= 0; --i) {
+                if(rankcount[i] >= 4 && rankindex[2] == -1)
+                    rankindex[2] = i;
+                else if(rankcount[i] == 3 && rankindex[1] == -1)
+                    rankindex[1] = i;
+                else if(rankcount[i] == 2 && rankindex[0] == -1)
+                    rankindex[0] = i; 
             }
 
             CardRank highrank = CardRank.Deuce;

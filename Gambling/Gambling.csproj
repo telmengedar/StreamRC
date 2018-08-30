@@ -66,9 +66,14 @@
     <Compile Include="Cards\CardResourceHttpService.cs" />
     <Compile Include="Cards\CardStack.cs" />
     <Compile Include="Cards\CardSuit.cs" />
-    <Compile Include="Poker\VideoPokerContext.cs" />
-    <Compile Include="Poker\VideoPokerDrawCommand.cs" />
-    <Compile Include="Poker\VideoPokerModule.cs" />
+    <Compile Include="Poker\Holdem\CallCommand.cs" />
+    <Compile Include="Poker\Holdem\FoldCommand.cs" />
+    <Compile Include="Poker\Holdem\HoldemCommand.cs" />
+    <Compile Include="Poker\Holdem\HoldemGame.cs" />
+    <Compile Include="Poker\Holdem\HoldemModule.cs" />
+    <Compile Include="Poker\Draw\VideoPokerGame.cs" />
+    <Compile Include="Poker\Draw\VideoPokerDrawCommand.cs" />
+    <Compile Include="Poker\Draw\VideoPokerModule.cs" />
     <Compile Include="Poker\Evaluation\HandEvaluation.cs" />
     <Compile Include="Poker\Evaluation\HandEvaluator.cs" />
     <Compile Include="Poker\Evaluation\HandRank.cs" />

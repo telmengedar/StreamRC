@@ -1,11 +1,11 @@
 ﻿using StreamRC.Gambling.Cards;
 
-namespace StreamRC.Gambling.Poker {
+namespace StreamRC.Gambling.Poker.Draw {
 
     /// <summary>
     /// context for a video poker game
     /// </summary>
-    public class VideoPokerContext {
+    public class VideoPokerGame {
 
         /// <summary>
         /// deck of cards used

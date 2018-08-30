@@ -38,6 +38,11 @@
         /// <summary>
         /// user raided the stream
         /// </summary>
-        Raid=6
+        Raid=6,
+
+        /// <summary>
+        /// user chattet in stream
+        /// </summary>
+        Chat=7
     }
 }

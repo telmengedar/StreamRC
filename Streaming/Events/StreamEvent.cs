@@ -11,6 +11,7 @@ namespace StreamRC.Streaming.Events {
         /// <summary>
         /// time when event happened
         /// </summary>
+        [Index("time")]
         public DateTime Timestamp { get; set; }
 
         /// <summary>

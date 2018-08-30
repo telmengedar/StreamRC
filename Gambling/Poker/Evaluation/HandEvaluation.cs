@@ -1,5 +1,4 @@
 ﻿using StreamRC.Gambling.Cards;
-using StreamRC.Gambling.Cards.Evaluation;
 
 namespace StreamRC.Gambling.Poker.Evaluation
 {
