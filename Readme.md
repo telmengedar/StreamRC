@@ -34,13 +34,13 @@ Chat messages for the overlay are served under **<root>/chat** (default: **http:
 
 Selected events like new followers or donations are registered by the bot and written to the database.
 Currently supported events are:
-	- Hosts
-	- New Followers
-	- Subscriptions
-	- Donations
-	- Bug Reports
-	- Raids
-	- Chat Messages
+* Hosts
+* New Followers
+* Subscriptions
+* Donations
+* Bug Reports
+* Raids
+* Chat Messages
 
 ### Http
 
