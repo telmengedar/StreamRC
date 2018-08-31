@@ -1,7 +1,12 @@
 using NightlyCode.Modules;
 
 namespace NightlyCode.StreamRC.Modules {
+
+    /// <summary>
+    /// interface for an application settings accessor
+    /// </summary>
     public interface ISettings {
+
         /// <summary>
         /// get a setting of a module
         /// </summary>

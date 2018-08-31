@@ -77,6 +77,7 @@
     <Compile Include="Modules\ISettings.cs" />
     <Compile Include="Modules\ModuleKeys.cs" />
     <Compile Include="Modules\Context.cs" />
+    <Compile Include="Modules\ModuleSettings.cs" />
     <Compile Include="Modules\ModuleWindow.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="App.xaml.cs">

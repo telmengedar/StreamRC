@@ -1,0 +1,15 @@
+﻿<Window x:Class="StreamRC.Discord.Configuration.DiscordSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:StreamRC.Discord.Configuration"
+             mc:Ignorable="d" d:DesignWidth="300" Title="Discord Settings" WindowStyle="ToolWindow" Height="116.614">
+    <Grid>
+        <Label x:Name="lblToken" Content="Bot Token" HorizontalAlignment="Left" Height="29" Margin="10,10,0,0" VerticalAlignment="Top" Width="77"/>
+        <TextBox x:Name="txtToken" Height="29" Margin="92,10,10,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" ToolTip="Provide the token of your bot on discord here. This token is used to connect to discord and impersonate the bot."/>
+        <Label x:Name="lblChannel" Content="Channel ID" HorizontalAlignment="Left" Height="29" Margin="10,44,0,0" VerticalAlignment="Top" Width="77"/>
+        <TextBox x:Name="txtChannel" Height="29" Margin="92,44,10,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" ToolTip="Provide the token of your bot on discord here. This token is used to connect to discord and impersonate the bot."/>
+
+    </Grid>
+</Window>
