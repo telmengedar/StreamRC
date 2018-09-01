@@ -53,6 +53,10 @@
       <Project>{49e63bf7-b832-42ec-98fc-68dcac446338}</Project>
       <Name>Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RPG\RPG.csproj">
+      <Project>{8281ecbd-b3c7-422c-b546-5e458c35291d}</Project>
+      <Name>RPG</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Streaming\Streaming.csproj">
       <Project>{eb1a1823-3d2b-4279-b58c-1c78904ed7d0}</Project>
       <Name>Streaming</Name>
@@ -70,4 +74,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\StreamRC\bin\Debug\modules\" />
+  </Target>
 </Project>

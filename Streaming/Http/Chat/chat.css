@@ -2,12 +2,12 @@
 
 .title {
 	width: 100%;
-	font-size: 150%;
+	font-size: 130%;
 	font-weight: bold;
 	text-align: center;
 	color: #FFFFFF;
 
-	background: linear-gradient(to right, rgba(0, 0, 0, 1.0), rgba(60, 60, 60, 0.5));
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(60, 60, 60, 0.4));
 
 	text-shadow:
 	           3px 3px 0 #000,
@@ -15,10 +15,6 @@
 	           1px -1px 0 #000,
 	           -1px 1px 0 #000,
 	           1px 1px 0 #000;
-
-	border-style: none none solid none;
-	border-width: 2px;
-	border-color: rgba(0, 0, 0, 0.6);
 }
 
 .messages {
@@ -27,13 +23,13 @@
 
 	-webkit-transition: opacity 1000ms ease-in-out;
     transition: opacity 1000ms ease-in-out;
+
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
 }
 
 .message {
 	width: 100%;
-	font-size: 130%;
-
-	background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(80, 80, 80, 0.4));
+	font-size: 120%;
 
 	opacity: 0;
 	-webkit-transition: opacity 1000ms ease-in-out;
@@ -45,6 +41,10 @@
 	           1px -1px 0 #000,
 	           -1px 1px 0 #000,
 	           1px 1px 0 #000;
+}
+
+.message:nth-child(odd) {
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(80, 80, 80, 0.4));
 }
 
 p {

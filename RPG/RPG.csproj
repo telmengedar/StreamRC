@@ -179,6 +179,7 @@
     <Compile Include="Shops\Commands\SellCommandHandler.cs" />
     <Compile Include="Shops\Commands\ShowStockCommandHandler.cs" />
     <Compile Include="Shops\FullShopItem.cs" />
+    <Compile Include="Shops\MessageEvaluator.cs" />
     <Compile Include="Shops\ShopImageModule.cs" />
     <Compile Include="Shops\ShopEventType.cs" />
     <Compile Include="Shops\ShopItem.cs" />

@@ -24,5 +24,33 @@ namespace Gambling.Tests {
             Assert.AreEqual(data.Item2, evaluation.Rank);
         }
 
+        [Test]
+        public void TestQuadsKickerEvaluation() {
+            HandEvaluation first = HandEvaluator.Evaluate(Board.Parse("4d4s4h4c2s8sJc"));
+            HandEvaluation second = HandEvaluator.Evaluate(Board.Parse("4d4s4h4c2sKc6s"));
+            Assert.That(second > first);
+        }
+
+        [Test]
+        public void TestTripsKickerEvaluation() {
+            HandEvaluation first = HandEvaluator.Evaluate(Board.Parse("Qd7d9dQcQs8sJc"));
+            HandEvaluation second = HandEvaluator.Evaluate(Board.Parse("Qd7d9dQcQsKc6s"));
+            Assert.That(second > first);
+        }
+
+        [Test]
+        public void TestTwoPairKickerEvaluation()
+        {
+            HandEvaluation first = HandEvaluator.Evaluate(Board.Parse("4d4s3h3c2s8sJc"));
+            HandEvaluation second = HandEvaluator.Evaluate(Board.Parse("4d4s3h3c2sKc6s"));
+            Assert.That(second > first);
+        }
+
+        [Test]
+        public void TestPairKickerEvaluation() {
+            HandEvaluation first = HandEvaluator.Evaluate(Board.Parse("4d4s3h5c2s8sJc"));
+            HandEvaluation second = HandEvaluator.Evaluate(Board.Parse("4d4s3h5c2sKc6s"));
+            Assert.That(second > first);
+        }
     }
 }

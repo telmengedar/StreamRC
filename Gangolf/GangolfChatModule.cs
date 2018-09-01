@@ -1,15 +1,20 @@
 ﻿using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
+using StreamRC.RPG.Messages;
+using StreamRC.RPG.Shops;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
+using StreamRC.Streaming.Users;
 
 namespace NightlyCode.StreamRC.Gangolf
 {
 
-    [Dependency(nameof(StreamModule),SpecifierType.Type)]
+    [Dependency(nameof(RPGMessageModule))]
+    [Dependency(nameof(StreamModule))]
     public class GangolfChatModule : IRunnableModule {
         readonly Context context;
+        readonly MessageEvaluator messageevaluator=new MessageEvaluator();
 
         public GangolfChatModule(Context context) {
             this.context = context;
@@ -26,7 +31,14 @@ namespace NightlyCode.StreamRC.Gangolf
 
         void OnChatMessage(ChatMessage message)
         {
-            throw new System.NotImplementedException();
+            if(messageevaluator.HasInsult(message.Message)) {
+                RPGMessageBuilder response = context.GetModule<RPGMessageModule>().Create();
+                response.ShopKeeper().Text(" thinks ")
+                    .User(context.GetModule<UserModule>().GetUser(message.Service, message.User))
+                    .Text("'s mother is a ")
+                    .Text(messageevaluator.CreateInsult())
+                    .Send();
+            }
         }
 
     }

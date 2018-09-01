@@ -150,10 +150,9 @@ namespace StreamRC.Gambling.Poker.Evaluation
                 kickers = new CardRank[2];
                 for (i = 12; i >= 0; --i)
                 {
-                    if (i != (int)highrank)
-                    {
+                    if(rankcount[i] == 1) {
                         kickers[kickercounter++] = (CardRank)i;
-                        if (kickercounter == 2)
+                        if(kickercounter == 2)
                             return new HandEvaluation(HandRank.ThreeOfAKind, highrank, highrank, kickers);
                     }
                 }
@@ -177,7 +176,7 @@ namespace StreamRC.Gambling.Poker.Evaluation
                 kickers = new CardRank[straightcounter];
                 for (i = 12; i >= 0; --i)
                 {
-                    if (i != (int)highrank && i != (int)lowrank)
+                    if (rankcount[i]==1)
                     {
                         kickers[kickercounter++] = (CardRank)i;
                         if (kickercounter == straightcounter)

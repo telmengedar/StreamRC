@@ -41,9 +41,7 @@ namespace StreamRC.RPG.Shops {
         TravelingMerchant travelingmerchant;
         double mood;
 
-        readonly string[] insultkeywords = {
-            "ass", "fuck", "bitch", "cunt", "whore", "penis", "arse", "butt", "retard", "bum", "shit", "idiot", "dildo", "dick", "cock", "suck"
-        };
+        readonly MessageEvaluator messageevaluator=new MessageEvaluator();
 
         /// <summary>
         /// creates a new <see cref="ShopModule"/>
@@ -181,7 +179,7 @@ namespace StreamRC.RPG.Shops {
                 return;
             }
 
-            bool insulted = DetermineInsult(arguments, argumentindex);
+            bool insulted = messageevaluator.HasInsult(arguments, argumentindex);
             if(!insulted) {
                 if(Mood < 0.5) {
                     context.GetModule<StreamModule>().SendMessage(service, channel, username, "The shopkeeper is not in the mood to do business.");
@@ -245,15 +243,6 @@ namespace StreamRC.RPG.Shops {
             return Math.Max(0.0, 1.0 - amount / 1000.0);
         }
 
-        bool DetermineInsult(string[] arguments, int argumentindex) {
-            for(int i = argumentindex; i < arguments.Length; ++i) {
-                string caseless = arguments[i].ToLower();
-                if(insultkeywords.Any(w => caseless.Contains(w)))
-                    return true;
-            }
-            return false;
-        }
-
         public void Buy(string service, string channel, string username, string[] arguments) {
             int argumentindex=0;
             int quantity = arguments.RecognizeQuantity(ref argumentindex);
@@ -277,7 +266,7 @@ namespace StreamRC.RPG.Shops {
                 return;
             }
 
-            bool insulted = DetermineInsult(arguments, argumentindex);
+            bool insulted = messageevaluator.HasInsult(arguments, argumentindex);
 
             User user = context.GetModule<UserModule>().GetExistingUser(service, username);
             Player player = context.GetModule<PlayerModule>().GetPlayer(service, username);
