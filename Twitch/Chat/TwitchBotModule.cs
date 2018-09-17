@@ -350,12 +350,15 @@ namespace StreamRC.Twitch.Chat {
             try {
                 foreach(UserInformation follower in GetFollowers()) {
                     usermodule.SetInitialized(TwitchConstants.ServiceKey, follower.Username);
+
+                    if(!string.IsNullOrEmpty(follower.Avatar)) {
+                        User user = usermodule.GetUser(TwitchConstants.ServiceKey, follower.Username);
+                        if (user.Avatar != follower.Avatar)
+                            usermodule.UpdateUserAvatar(user, follower.Avatar);
+                    }
+
                     if (usermodule.GetUserStatus(TwitchConstants.ServiceKey, follower.Username) >= UserStatus.Follower)
                         continue;
-
-                    User user = usermodule.GetUser(TwitchConstants.ServiceKey, follower.Username);
-                    if(!string.IsNullOrEmpty(follower.Avatar) && user.Avatar != follower.Avatar)
-                        usermodule.UpdateUserAvatar(user, follower.Avatar);
 
                     if(usermodule.SetUserStatus(TwitchConstants.ServiceKey, follower.Username, UserStatus.Follower))
                         NewFollower?.Invoke(follower);
@@ -376,12 +379,15 @@ namespace StreamRC.Twitch.Chat {
             {
                 foreach(SubscriberInformation subscriber in GetSubscribers()) {
                     usermodule.SetInitialized(TwitchConstants.ServiceKey, subscriber.Username);
+
+                    if(!string.IsNullOrEmpty(subscriber.Avatar)) {
+                        User user = usermodule.GetUser(TwitchConstants.ServiceKey, subscriber.Username);
+                        if (user.Avatar != subscriber.Avatar)
+                            usermodule.UpdateUserAvatar(user, subscriber.Avatar);
+                    }
+
                     if (usermodule.GetUserStatus(TwitchConstants.ServiceKey, subscriber.Username) >= subscriber.Status)
                         continue;
-
-                    User user = usermodule.GetUser(TwitchConstants.ServiceKey, subscriber.Username);
-                    if (!string.IsNullOrEmpty(subscriber.Avatar) && user.Avatar != subscriber.Avatar)
-                        usermodule.UpdateUserAvatar(user, subscriber.Avatar);
 
                     if(usermodule.SetUserStatus(TwitchConstants.ServiceKey, subscriber.Username, subscriber.Status))
                         NewSubscriber?.Invoke(subscriber);

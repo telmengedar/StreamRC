@@ -7,13 +7,14 @@ using NightlyCode.DB.Clients;
 using NightlyCode.DB.Entities;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Context;
 
 namespace NightlyCode.StreamRC.Modules {
 
     /// <summary>
     /// module context
     /// </summary>
-    public class Context : ModuleManager<ModuleInformation> {
+    public class Context : ModuleContext<ModuleInformation> {
         readonly IEntityManager entitymanager = new EntityManager(DBClient.CreateSQLite("twitchrc.db3"));
         readonly HashSet<string> openwindows = new HashSet<string>();
         bool isstarted;

@@ -44,7 +44,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -60,6 +60,10 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NightlyCode.Japi, Version=0.8.6758.28565, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Compiled\Unity\NightlyCode.Japi.dll</HintPath>
+    </Reference>
     <Reference Include="NightlyCode.Modules">
       <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
     </Reference>
@@ -81,43 +85,13 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CamModule.cs" />
-    <Compile Include="Capture\BitmapInfoHeader.cs" />
-    <Compile Include="Capture\CaptureDevice.cs" />
-    <Compile Include="Capture\IBaseFilter.cs" />
-    <Compile Include="Capture\ICreateDevEnum.cs" />
-    <Compile Include="Capture\IEnumPins.cs" />
-    <Compile Include="Capture\IFilterGraph.cs" />
-    <Compile Include="Capture\IMediaControl.cs" />
-    <Compile Include="Capture\IPin.cs" />
-    <Compile Include="Capture\IPropertyBag.cs" />
-    <Compile Include="Capture\ISampleGrabber.cs" />
-    <Compile Include="Capture\ISampleGrabberCB.cs" />
-    <Compile Include="Capture\IVideoWindow.cs" />
-    <Compile Include="Capture\PinDirection.cs" />
-    <Compile Include="Capture\PinInfo.cs" />
-    <Compile Include="Capture\RECT.cs" />
-    <Compile Include="Capture\VideoInfoHeader.cs" />
-    <Compile Include="ScaleConverter.cs" />
-    <Page Include="CaptureWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="MediaSubTypes.cs" />
-    <Compile Include="MediaTypes.cs" />
-    <Compile Include="Native.cs" />
-    <Compile Include="CaptureWindow.xaml.cs">
-      <DependentUpon>CaptureWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
+    <Compile Include="CameraDevice.cs" />
+    <Compile Include="CameraModule.cs" />
+    <Compile Include="CameraPortal.xaml.cs">
+      <DependentUpon>CameraPortal.xaml</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Capture\CapPlayer.cs" />
-    <Compile Include="Capture\CapDevice.cs" />
-    <Compile Include="Capture\CapHelper.cs" />
-    <Compile Include="Capture\IGraphBuilder.cs" />
-    <Compile Include="Capture\AMMediaType.cs" />
-    <Compile Include="FilterInfo.cs" />
+    <Compile Include="DeviceInfo.cs" />
+    <Compile Include="Platform.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -131,7 +105,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="Capture\CapGrabber.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -154,6 +127,20 @@
       <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
       <Name>StreamRC</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="CameraPortal.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="cam\CameraDisplay_x64.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="cam\CameraDisplay_x86.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

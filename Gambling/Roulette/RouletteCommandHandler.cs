@@ -42,6 +42,9 @@ namespace StreamRC.Gambling.Roulette {
                 return;
             }
 
+            if(gold <= 0)
+                gold = 1;
+
             if(playermodule.GetPlayerGold(playermodule.GetExistingPlayer(command.Service, command.User).UserID) < gold) {
                 SendMessage(channel, command.User, $"You don't have {gold} gold");
                 return;

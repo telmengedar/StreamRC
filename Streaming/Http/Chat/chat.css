@@ -25,6 +25,9 @@
     transition: opacity 1000ms ease-in-out;
 
 	background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+
+	border-top-right-radius: 8px;
+	border-bottom-right-radius: 8px;
 }
 
 .message {
@@ -45,6 +48,14 @@
 
 .message:nth-child(odd) {
 	background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(80, 80, 80, 0.4));
+}
+
+.message:first-child {
+	border-top-right-radius: 8px;
+}
+
+.message:last-child {
+	border-bottom-right-radius: 8px;
 }
 
 p {

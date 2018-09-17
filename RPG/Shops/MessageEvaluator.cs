@@ -35,8 +35,7 @@ namespace StreamRC.RPG.Shops {
         /// <param name="message"></param>
         /// <returns></returns>
         public bool HasInsult(string message) {
-            string lowercase = message.ToLower();
-            return insultkeywords.Any(w => lowercase.Contains(w));
+            return HasInsult(message.Split(' '));
         }
 
         /// <summary>
@@ -50,7 +49,7 @@ namespace StreamRC.RPG.Shops {
             for (int i = argumentindex; i < arguments.Length; ++i)
             {
                 string caseless = arguments[i].ToLower();
-                if (insultkeywords.Any(w => caseless.Contains(w)))
+                if (insultkeywords.Any(w => caseless.StartsWith(w) || caseless.EndsWith(w)))
                     return true;
             }
             return false;

@@ -46,7 +46,7 @@ namespace StreamRC.Gambling.BlackJack {
 
             int bet;
             int.TryParse(command.Arguments[0], out bet);
-            if (bet == 0)
+            if (bet <= 0)
             {
                 SendMessage(channel, command.User, $"{command.Arguments[0]} is no valid bet");
                 return;
@@ -55,6 +55,13 @@ namespace StreamRC.Gambling.BlackJack {
             if (bet > playermodule.GetPlayerGold(userid))
             {
                 SendMessage(channel, command.User, "You can't bet more than you have.");
+                return;
+            }
+
+            int maxbet = playermodule.GetLevel(userid) * 40;
+            if (bet > maxbet)
+            {
+                SendMessage(channel, command.User, $"On your level you're only allowed to bet up to {maxbet} gold.");
                 return;
             }
 

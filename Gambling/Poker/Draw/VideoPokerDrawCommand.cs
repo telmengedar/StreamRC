@@ -69,7 +69,7 @@ namespace StreamRC.Gambling.Poker.Draw {
 
                 int bet;
                 int.TryParse(command.Arguments[0], out bet);
-                if(bet == 0) {
+                if(bet <= 0) {
                     SendMessage(channel, command.User, $"{command.Arguments[0]} is no valid bet");
                     return;
                 }

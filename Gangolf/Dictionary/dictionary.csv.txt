@@ -1,0 +1,202 @@
+Text	Class	Insultive	Romantic	Product	ProductTool	Producer	Color
+butt	Noun	true				true	
+arse	Noun|Descriptive	true				true	
+cunt	Noun	true					
+penis	Noun	true				true	
+whore	Noun	true					
+dick	Noun|Descriptive	true				true	
+cheese	Noun			true			
+bum	Noun	true					
+dildo	Noun	true					
+cock	Noun	true				true	
+fucked	Adjective	true					
+fucking	Adjective	true					
+bitchy	Adjective	true					
+whoring	Adjective	true					
+retarded	Adjective	true					
+shitting	Adjective	true					
+sucking	Adjective	true					
+ass	Descriptive	true				true	
+fuck	Noun|Descriptive	true					
+shit	Descriptive	true		true			
+faggot	Noun|Descriptive	true					
+pirate	Noun						
+sponge	Noun						
+gooch	Noun	true					
+moat	Noun						
+goblin	Noun						
+cornhole	Noun	true					
+cornholing	Adjective	true					
+monkeyspank	Noun	true					
+fart	Noun|Descriptive	true		true			
+knocker	Noun				true		
+schlong	Noun	true				true	
+puke	Noun|Descriptive	true		true			
+vomit	Noun|Descriptive	true		true			
+chocolate	Noun						
+hole	Noun					true	
+black	Adjective						true
+brown	Adjective						true
+yellow	Adjective						true
+red	Adjective						true
+white	Adjective						true
+blue	Adjective						true
+violet	Adjective						true
+green	Adjective						true
+mango	Noun			true			
+melon	Noun			true			
+dumb	Adjective	true					
+weed	Noun						
+dill	Noun			true			
+bull	Noun|Descriptive						
+douche	Noun	true					
+bag	Noun						
+sack	Noun						
+blowjob	Noun	true					
+licker	Noun						
+shitty	Adjective	true					
+lovely	Adjective		true				
+face	Noun					true	
+coffee	Noun			true			
+aids	Noun	true					
+cancer	Noun	true					
+salami	Noun			true			
+wiener	Noun			true			
+butter	Noun			true			
+dish	Noun						
+sweet	Adjective		true				
+awful	Adjective						
+well	Noun					true	
+beautiful	Adjective		true				
+glorious	Adjective		true				
+blood	Noun					true	
+pure	Adjective		true				
+slut	Noun	true					
+skank	Noun	true					
+skcunt	Noun	true					
+maggot	Noun	true					
+mobile	Noun						
+vehicle	Noun						
+cuntzilla	Noun	true					
+masturbating	Adjective	true					
+wanking	Adjective	true					
+jerking	Adjective	true					
+slapping	Adjective	true					
+raping	Adjective	true					
+pumping	Adjective						
+shotgun	Noun						
+cum	Noun	true		true			
+jizz	Noun	true		true			
+lobber	Noun						
+spunk	Noun	true		true			
+discharge	Noun					true	
+polyp	Noun|Descriptive						
+cyst	Noun|Descriptive						
+fetus	Noun|Descriptive						
+vaginal	Adjective						
+nozzle	Noun						
+tornado	Noun|Descriptive					true	
+hose	Noun						
+boil	Noun						
+gash	Noun	true				true	
+slit	Noun	true				true	
+fisting	Adjective	true					
+caring	Adjective		true				
+passionate	Adjective		true				
+generous	Adjective		true				
+endearing	Adjective		true				
+flower	Noun		true				
+flowering	Adjective		true				
+erecting	Adjective	true					
+crap	Noun	true					
+sacrificing	Adjective						
+sacrifice	Noun						
+cactus	Noun						
+loving	Adjective		true				
+description	Noun						
+god	Noun						
+drop	Noun						
+accident	Noun						
+fat	Adjective	true					
+abortion	Noun|Descriptive						
+farter	Noun						
+thief	Noun						
+mouth	Noun|Descriptive						
+farting	Adjective						
+flumpkin	Noun	true					
+flushing	Adjective						
+smart	Adjective						
+boner	Noun	true					
+woodrow	Noun	true					
+testicle	Noun	true					
+sack	Noun						
+leaking	Adjective						
+sloppy	Adjective						
+dripping	Adjective						
+tight	Adjective						
+pussy	Noun|Descriptive	true					
+head	Noun						
+nut	Noun|Descriptive	true					
+seed	Noun						
+twat	Noun	true					
+fucker	Noun	true					
+mother	Noun|Descriptive						
+father	Noun|Descriptive						
+sucker	Noun	true					
+butler	Noun						
+probing	Adjective						
+tit	Noun	true					
+bastard	Noun	true					
+spastic	Adjective						
+voyeur	Noun						
+enormous	Adjective						
+semen	Noun|Descriptive	true					
+blender	Noun						
+bloated	Adjective						
+one-balled	Adjective	true					
+shaft	Noun						
+force	Noun|Descriptive						
+fondler	Noun						
+sniffer	Noun						
+old	Adjective						
+young	Adjective						
+fresh	Adjective						
+expired	Adjective						
+excrement	Noun|Descriptive	true		true			
+collector	Noun						
+nugget	Noun|Descriptive						
+experiment	Noun						
+experimental	Adjective						
+irrelevant	Adjective						
+shark	Noun						
+infidel	Noun	true					
+shiner	Noun						
+graduate	Noun						
+cockroach	Noun	true					
+handler	Noun						
+long	Adjective						
+short	Adjective						
+professor	Noun						
+herder	Noun						
+stain	Noun						
+cocking	Adjective						
+clusterfuck	Noun	true					
+thistle	Noun						
+senile	Adjective	true					
+gay	Noun	true					
+lord	Noun						
+dictator	Noun						
+rider	Noun						
+cocksplurt	Noun	true					
+dog	Noun						
+piss	Noun	true					
+pipe	Noun						
+failed	Adjective						
+extractor	Noun						
+fan	Noun						
+diarrhea	Noun	true					
+waffle	Noun						
+biscuit	Noun						
+lover	Noun						
+undead	Adjective						
+detector	Noun						

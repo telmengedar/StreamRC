@@ -208,6 +208,12 @@
     <Compile Include="Stream\StreamCommandException.cs" />
     <Compile Include="Stream\StreamModule.cs" />
     <Compile Include="Stream\UserInformation.cs" />
+    <Compile Include="Users\Commands\CreateCustomCommandHandler.cs" />
+    <Compile Include="Users\Commands\CustomCommand.cs" />
+    <Compile Include="Users\Commands\CustomCommandHandler.cs" />
+    <Compile Include="Users\Commands\CustomCommandModule.cs" />
+    <Compile Include="Users\Permissions\UserPermission.cs" />
+    <Compile Include="Users\Permissions\UserPermissionModule.cs" />
     <Compile Include="Users\User.cs" />
     <Compile Include="Users\UserCacheEntry.cs" />
     <Compile Include="Users\UserExtensions.cs" />

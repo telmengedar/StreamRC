@@ -217,7 +217,6 @@ namespace StreamRC.RPG.Players {
         }
 
         void OnUserJoined(UserInformation user) {
-            Player player = GetPlayer(user.Service, user.Username);
             SetActive(GetPlayer(user.Service, user.Username).UserID, true);
         }
 

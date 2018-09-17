@@ -31,6 +31,11 @@ namespace StreamRC.Streaming.Users {
         /// <summary>
         /// user is obviously a racist
         /// </summary>
-        Racist=0x00000008
+        Racist=0x00000008,
+
+        /// <summary>
+        /// user being able to modify statistics
+        /// </summary>
+        Bureaucrat=0x00000010
     }
 }

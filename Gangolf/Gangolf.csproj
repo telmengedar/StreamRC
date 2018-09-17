@@ -30,6 +30,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NightlyCode.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.DB, Version=0.7.6815.32201, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Compiled\Library\NightlyCode.DB.dll</HintPath>
+    </Reference>
     <Reference Include="NightlyCode.Modules">
       <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
     </Reference>
@@ -43,8 +51,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Chat\MessageExtensions.cs" />
+    <Compile Include="Chat\ChatFactory.cs" />
     <Compile Include="Chat\MessageContent.cs" />
     <Compile Include="Chat\MessageTarget.cs" />
+    <Compile Include="Dictionary\Dictionary.cs" />
+    <Compile Include="Dictionary\Word.cs" />
+    <Compile Include="Dictionary\WordAttribute.cs" />
+    <Compile Include="Dictionary\WordClass.cs" />
     <Compile Include="GangolfChatModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -65,6 +79,9 @@
       <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
       <Name>StreamRC</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Dictionary\dictionary.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

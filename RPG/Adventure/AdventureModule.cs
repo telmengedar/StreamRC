@@ -32,7 +32,7 @@ namespace StreamRC.RPG.Adventure {
     [Dependency(nameof(MonsterModule))]
     [Dependency(nameof(ImageCacheModule))]
     [ModuleKey("adventure")]
-    public class AdventureModule : IRunnableModule, ITimerService, ICommandModule {
+    public class AdventureModule : IRunnableModule, ITimerService {
         readonly Context context;
 
         readonly object adventurerlock = new object();
@@ -214,6 +214,7 @@ namespace StreamRC.RPG.Adventure {
                 activeplayers.Add(player.UserID);
 
                 PlayerActiveChanged?.Invoke(player.UserID, true);
+                context.GetModule<RPGMessageModule>().Create().User(player.UserID).Text(" went out to adventure.").Send();
             }
         }
 
@@ -224,39 +225,31 @@ namespace StreamRC.RPG.Adventure {
         public void RemoveAdventurer(long playerid) {
             lock(adventurerlock) {
                 activeplayers.Remove(playerid);
-                if(adventurers.RemoveAll(p => p.Player == playerid) > 0)
+                if(adventurers.RemoveAll(p => p.Player == playerid) > 0) {
                     PlayerActiveChanged?.Invoke(playerid, false);
+                    context.GetModule<RPGMessageModule>().Create().User(playerid).Text(" stopped adventuring.").Send();
+                }
             }
         }
 
-        void ICommandModule.ProcessCommand(string command, params string[] arguments) {
-            PlayerModule playermodule = context.GetModule<PlayerModule>();
-            switch (command) {
-                case "start":
-                    AddAdventurer(playermodule.GetExistingPlayer(arguments[0], arguments[1]));
-                    break;
-                case "stop":
-                    RemoveAdventurer(playermodule.GetExistingPlayer(arguments[0], arguments[1]).UserID);
-                    break;
-                case "stimuli":
-                    lock(adventurerlock)
-                    adventurers.FirstOrDefault(a => {
-                        User user = context.GetModule<UserModule>().GetUser(a.Player);
-                        if(user.Service == arguments[0] && user.Name == arguments[1])
-                            return true;
-                        return false;
-                    }).Cooldown = 0.0;
-                    break;
-                case "status":
-                    lock(adventurerlock)
-                        ChangeStatus(adventurers.FirstOrDefault(a => {
-                            User user = context.GetModule<UserModule>().GetUser(a.Player);
-                            if(user.Service == arguments[0] && user.Name == arguments[1])
-                                return true;
-                            return false;
-                        }), (AdventureStatus)Enum.Parse(typeof(AdventureStatus), arguments[2], true), arguments.Length > 3 ? arguments[3] : null);
-                    break;
-            }
+        public void StartAdventure(string service, string username) {
+            AddAdventurer(context.GetModule<PlayerModule>().GetExistingPlayer(service, username));
+        }
+
+        public void StopAdventure(string service, string username) {
+            RemoveAdventurer(context.GetModule<UserModule>().GetUserID(service, username));
+        }
+
+        public void Stimulate(string service, string username) {
+            User user = context.GetModule<UserModule>().GetUser(service, username);
+            lock (adventurerlock)
+                adventurers.FirstOrDefault(a => a.Player==user.ID).Cooldown = 0.0;
+        }
+
+        public void ChangeStatus(string service, string username, AdventureStatus status) {
+            User user = context.GetModule<UserModule>().GetUser(service, username);
+            lock (adventurerlock)
+                ChangeStatus(adventurers.FirstOrDefault(a => a.Player == user.ID), status);
         }
 
         /// <summary>
