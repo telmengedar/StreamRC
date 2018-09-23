@@ -15,6 +15,9 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         [Index("attributes")]
         public WordAttribute Attributes { get; set; }
 
+        [Index("group")]
+        public int Group { get; set; }
+
         public override string ToString() {
             return Text;
         }

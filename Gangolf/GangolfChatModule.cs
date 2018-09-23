@@ -1,4 +1,5 @@
-﻿using NightlyCode.Core.Randoms;
+﻿using System.Linq;
+using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Gangolf.Chat;
@@ -20,6 +21,10 @@ namespace NightlyCode.StreamRC.Gangolf
     public class GangolfChatModule : IRunnableModule {
         readonly Context context;
         ChatFactory factory;
+
+        readonly string[] statictriggers = {
+            "sorry", "sory", "gangolf", "gasgolf", "gamgolf"
+        };
 
         /// <summary>
         /// creates a new <see cref="GangolfChatModule"/>
@@ -153,7 +158,8 @@ namespace NightlyCode.StreamRC.Gangolf
         }
 
         void OnChatMessage(ChatMessage message) {
-            if(message.Message.ToLower().Contains("sorry") || message.Message.ToLower().Contains("gangolf") || RNG.XORShift64.NextFloat() < 0.27f && factory.ContainsInsult(message.Message))
+            string lowermessage = message.Message.ToLower();
+            if(statictriggers.Any(t => lowermessage.Contains(t)) || RNG.XORShift64.NextFloat() < 0.27f && factory.ContainsInsult(message.Message))
                 CreateFreeInsult(message.Service, message.User);
         }
     }

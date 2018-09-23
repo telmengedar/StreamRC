@@ -44,7 +44,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 adjective = dictionary.GetRandomWord(w => (w.Class & WordClass.Adjective) == WordClass.Adjective
                                                           && (w.Attributes & attributefilter) == WordAttribute.None
                                                           && !usedids.Contains(w.ID));
-                chance *= 0.25;
+                chance *= chance;
             }
             while(RNG.XORShift64.NextDouble() < chance);
             text.Append(adjective).Append(' ');
@@ -65,9 +65,9 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
 
             if(used.Count > 0) {
                 usedids = used.ToArray();
-                noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && w.ID != usedids[0]);
+                noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None && w.ID != usedids[0]);
             }
-            else noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None);
+            else noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None);
 
             used.Add(noun.ID);
 
@@ -80,6 +80,11 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             usedids = used.ToArray();
             Word descriptive = dictionary.GetRandomWord(w => (w.Class & WordClass.Noun) != WordClass.None && (w.Attributes & predicate) == predicate && !usedids.Contains(w.ID));
             text.Append($"{descriptive.Text}{noun.Text}");
+            if(noun.Class==WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
+                Word postposition = dictionary.GetRandomWord(w => (w.Class & WordClass.Postposition) == WordClass.Postposition && (w.Group & noun.Group) != 0);
+                if(postposition != null)
+                    text.Append(postposition);
+            }
             return text.ToString();
         }
     }

@@ -15,6 +15,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         Producer=16,
         Color=32,
         Political=128,
-        Descriptive=256
+        Descriptive=256,
+        Object=512
     }
 }

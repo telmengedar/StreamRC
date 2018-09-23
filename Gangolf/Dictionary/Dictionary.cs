@@ -40,9 +40,16 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
                 if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Descriptive")))
                     attributes |= WordAttribute.Descriptive;
 
+                int group;
+                int.TryParse(data.TryGetValue<string>(row, "Conjunktion"), out group);
+
                 foreach(Tuple<string, WordClass> word in ExtractWord(data, row)) {
-                    dictionary.Insert<Word>().Columns(w => w.Text, w => w.Class, w => w.Attributes)
-                        .Values(word.Item1, word.Item2, attributes)
+                    WordAttribute termattributes = attributes;
+                    if(word.Item2 == WordClass.Subject)
+                        termattributes |= WordAttribute.Object;
+
+                    dictionary.Insert<Word>().Columns(w => w.Text, w => w.Class, w => w.Attributes, w => w.Group)
+                        .Values(word.Item1, word.Item2, termattributes, group)
                         .Execute();
                 }
             }

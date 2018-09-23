@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using NightlyCode.Core.Logs;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
 using NightlyCode.StreamRC.Modules;
@@ -34,10 +35,16 @@ namespace StreamRC.Cam {
             });
         }
 
-        private void OnPortalClosing(object sender, CancelEventArgs e) {
+        void OnPortalClosing(object sender, CancelEventArgs e) {
             CameraDevice device = ((CameraPortal)sender).SelectedDevice;
-            if(device != null)
-                ShowDevice(device);
+            if(device != null) {
+                try {
+                    ShowDevice(device);
+                }
+                catch(Exception ex) {
+                    Logger.Error(this, "Unable to open camera window", ex);
+                }
+            }
         }
 
         void IRunnableModule.Stop() {
@@ -46,8 +53,14 @@ namespace StreamRC.Cam {
         }
 
         void ShowDevice(CameraDevice device) {
-            if(currentprocess != null)
-                currentprocess.Kill();
+            if(currentprocess != null && !currentprocess.HasExited) {
+                try {
+                    currentprocess.Kill();
+                }
+                catch(Exception ex) {
+                    Logger.Error(this, "Unable to close existing camera process", ex);
+                }
+            }
 
             current = device;
             context.Settings.Set(this, "lastdevice", JSON.WriteString(device));

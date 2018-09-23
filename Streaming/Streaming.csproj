@@ -98,6 +98,8 @@
     <Compile Include="Polls\Commands\RevokeCommandHandler.cs" />
     <Compile Include="Polls\Commands\UserVoteCommandHandler.cs" />
     <Compile Include="Polls\Commands\VoteCommandHandler.cs" />
+    <Compile Include="Shouts\Shout.cs" />
+    <Compile Include="Shouts\ShoutModule.cs" />
     <Compile Include="Statistics\HttpStatistic.cs" />
     <Compile Include="Statistics\StatisticManagementInvoker.cs" />
     <Compile Include="Statistics\StatisticManagementWindow.xaml.cs">
@@ -221,6 +223,9 @@
     <Compile Include="Users\UserKey.cs" />
     <Compile Include="Users\UserModule.cs" />
     <Compile Include="Users\UserStatus.cs" />
+    <Compile Include="Videos\StreamVideo.cs" />
+    <Compile Include="Videos\VideoResponse.cs" />
+    <Compile Include="Videos\VideoServiceModule.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Statistics\StatisticManagementWindow.xaml">
@@ -350,6 +355,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Users\Flags\racist.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Http\Video\videoplayer.css" />
+    <EmbeddedResource Include="Http\Video\videoplayer.html" />
+    <EmbeddedResource Include="Http\Video\videoplayer.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

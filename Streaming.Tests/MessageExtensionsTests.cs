@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using StreamRC.Streaming.Stream;
 
 namespace Streaming.Tests
 {
-    [TestClass]
+    [TestFixture]
     public class MessageExtensionsTests
     {
         IEnumerable<string> Messages
@@ -18,7 +18,7 @@ namespace Streaming.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void SplitMessages() {
             foreach(string message in Messages) {
                 string[] split = message.SplitMessage(500).ToArray();

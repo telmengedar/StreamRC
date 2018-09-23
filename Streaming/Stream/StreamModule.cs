@@ -369,7 +369,7 @@ namespace StreamRC.Streaming.Stream {
         }
 
         public void SendMessage(string service, string channel, string user, string message) {
-            GetChannel(service, channel).SendMessage($"{user}: {message}");
+            GetChannel(service, channel)?.SendMessage($"{user}: {message}");
         }
 
         void IChatMessageSender.SendChatMessage(string message) {

@@ -45,12 +45,13 @@ namespace StreamRC.Discord
 
         void OnMessage(Message message) {
             // don't process bot messages or messages coming from a channel not flagged for display
-            if(message.Author.Bot || message.ChannelID != chatchannel)
+            if(message.Author.Bot || (message.ChannelID != chatchannel && message.ChannelID != rpgchannel))
                 return;
 
             DiscordChatChannel channel;
             if(!channels.TryGetValue(message.ChannelID, out channel)) {
-                channel = new DiscordChatChannel(discord, message.ChannelID, message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.Chat);
+                ChannelFlags flags = ChannelFlags.Chat | (message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.None);
+                channel = new DiscordChatChannel(discord, message.ChannelID, flags);
                 channels[message.ChannelID] = channel;
                 context.GetModule<StreamModule>().AddChannel(channel);
             }
@@ -60,6 +61,16 @@ namespace StreamRC.Discord
 
         void OnConnected() {
             Connected?.Invoke();
+        }
+
+        public void SetRPGChannel(string key)
+        {
+            if (rpgchannel == key)
+                return;
+
+            rpgchannel = key;
+            context.Settings.Set(this, "rpgchannel", key);
+            Logger.Info(this, $"Grabbed rpg channel was changed to '{key}'");
         }
 
         public void SetChatChannel(string key) {
@@ -95,6 +106,7 @@ namespace StreamRC.Discord
         }
 
         void IRunnableModule.Start() {
+            rpgchannel = context.Settings.Get<string>(this, "rpgchannel");
             chatchannel = context.Settings.Get<string>(this, "chatchannel");
             SetToken(context.Settings.Get<string>(this, "bottoken"));
 
