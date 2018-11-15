@@ -4,27 +4,19 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Polls {
 
-    [Dependency(nameof(PollModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    public class PollHttpService : IRunnableModule, IHttpService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class PollHttpService : IHttpService {
+        readonly PollModule polls;
         PollHttpResponse response;
 
-        public PollHttpService(Context context) {
-            this.context = context;
-        }
-
-        public void Start() {
-            HttpServiceModule httpmodule = context.GetModule<HttpServiceModule>();
-
+        public PollHttpService(HttpServiceModule httpmodule, PollModule polls) {
+            this.polls = polls;
             httpmodule.AddServiceHandler("/streamrc/polls", this);
             httpmodule.AddServiceHandler("/streamrc/polls.css", this);
             httpmodule.AddServiceHandler("/streamrc/polls.js", this);
@@ -33,15 +25,15 @@ namespace StreamRC.Streaming.Polls {
             httpmodule.AddServiceHandler("/streamrc/polls-h.js", this);
             httpmodule.AddServiceHandler("/streamrc/polls/data", this);
 
-            context.GetModule<PollModule>().PollShown += OnPollShown;
+            polls.PollShown += OnPollShown;
         }
 
         void PreparePollData(Poll poll) {
             if (poll.Name == response?.Name)
                 return;
 
-            PollDiagramData diagramdata = new PollDiagramData(context.GetModule<PollModule>().GetWeightedVotes(poll.Name));
-            diagramdata.AddOptions(context.GetModule<PollModule>().GetOptions(poll.Name));
+            PollDiagramData diagramdata = new PollDiagramData(polls.GetWeightedVotes(poll.Name));
+            diagramdata.AddOptions(polls.GetOptions(poll.Name));
             response = new PollHttpResponse
             {
                 Name = poll.Name,
@@ -52,17 +44,6 @@ namespace StreamRC.Streaming.Polls {
 
         void OnPollShown(Poll poll) {
             PreparePollData(poll);
-        }
-
-        public void Stop() {
-            HttpServiceModule httpmodule = context.GetModule<HttpServiceModule>();
-
-            httpmodule.RemoveServiceHandler("/streamrc/polls");
-            httpmodule.RemoveServiceHandler("/streamrc/polls.css");
-            httpmodule.RemoveServiceHandler("/streamrc/polls.js");
-            httpmodule.RemoveServiceHandler("/streamrc/polls/data");
-
-            context.GetModule<PollModule>().PollShown -= OnPollShown;
         }
 
         public void ProcessRequest(HttpClient client, HttpRequest request) {
@@ -94,7 +75,7 @@ namespace StreamRC.Streaming.Polls {
         void ServePollData(HttpRequest request, HttpClient client) {
             if(response == null) {
                 if(request.GetParameter<bool>("init")) {
-                    Poll poll = context.GetModule<PollModule>().GetPolls().RandomItem(RNG.XORShift64);
+                    Poll poll = polls.GetPolls().RandomItem(RNG.XORShift64);
                     if(poll != null)
                         PreparePollData(poll);
                 }

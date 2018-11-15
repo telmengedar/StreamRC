@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Contexts;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using StreamRC.Core;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
 
@@ -12,17 +11,21 @@ namespace StreamRC.Streaming.Stream.Alias {
     /// <summary>
     /// module which handles aliases for commands
     /// </summary>
-    [Dependency(nameof(StreamModule), SpecifierType.Type)]
     [Module(Key="alias")]
-    public class CommandAliasModule : IRunnableModule, IStreamCommandHandler, IInitializableModule {
-        readonly Context context;
+    public class CommandAliasModule : IStreamCommandHandler {
+        readonly DatabaseModule database;
+        readonly StreamModule stream;
 
         /// <summary>
         /// creates a new <see cref="CommandAliasModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public CommandAliasModule(Context context) {
-            this.context = context;
+        public CommandAliasModule(DatabaseModule database, StreamModule stream) {
+            this.database = database;
+            this.stream = stream;
+            database.Database.UpdateSchema<CommandAlias>();
+            foreach (CommandAlias alias in database.Database.LoadEntities<CommandAlias>().Execute())
+                stream.RegisterCommandHandler(alias.Alias, this);
         }
 
         /// <summary>
@@ -31,11 +34,11 @@ namespace StreamRC.Streaming.Stream.Alias {
         /// <param name="alias">alias used to trigger a command</param>
         /// <param name="command">command to be executed</param>
         public void Add(string alias, string command) {
-            if(context.GetModule<StreamModule>().HasCommandHandler(alias))
+            if(stream.HasCommandHandler(alias))
                 throw new Exception("Alias already in use");
 
-            context.Database.Insert<CommandAlias>().Columns(a => a.Alias, a => a.Command).Values(alias, command).Execute();
-            context.GetModule<StreamModule>().RegisterCommandHandler(alias, this);
+            database.Database.Insert<CommandAlias>().Columns(a => a.Alias, a => a.Command).Values(alias, command).Execute();
+            stream.RegisterCommandHandler(alias, this);
             Logger.Info(this, $"Alias '{alias}' -> '{command}' added");
         }
 
@@ -44,30 +47,20 @@ namespace StreamRC.Streaming.Stream.Alias {
         /// </summary>
         /// <param name="alias">name of alias to be removed</param>
         public void Remove(string alias) {
-            if(context.Database.Delete<CommandAlias>().Where(a => a.Alias == alias).Execute() > 0) {
-                context.GetModule<StreamModule>().UnregisterCommandHandler(alias);
+            if(database.Database.Delete<CommandAlias>().Where(a => a.Alias == alias).Execute() > 0) {
+                stream.UnregisterCommandHandler(alias);
                 Logger.Info(this, $"Alias '{alias}' removed");
             }
             else Logger.Info(this, $"Alias '{alias}' not found");
         }
 
-        void IRunnableModule.Start() {
-            foreach(CommandAlias alias in context.Database.LoadEntities<CommandAlias>().Execute())
-                context.GetModule<StreamModule>().RegisterCommandHandler(alias.Alias, this);
-        }
-
-        void IRunnableModule.Stop() {
-            foreach(CommandAlias alias in context.Database.LoadEntities<CommandAlias>().Execute())
-                context.GetModule<StreamModule>().UnregisterCommandHandler(alias.Alias);
-        }
-
         void IStreamCommandHandler.ExecuteCommand(IChatChannel channel, StreamCommand command) {
-            CommandAlias alias = context.Database.LoadEntities<CommandAlias>().Where(a => a.Alias == command.Command).Execute().FirstOrDefault();
+            CommandAlias alias = database.Database.LoadEntities<CommandAlias>().Where(a => a.Alias == command.Command).Execute().FirstOrDefault();
             if(alias==null)
                 throw new StreamCommandException($"{command.Command} not handled by this module");
 
             string[] split = alias.Command.Split(' ');
-            context.GetModule<StreamModule>().ExecuteCommand(channel, new StreamCommand {
+            stream.ExecuteCommand(channel, new StreamCommand {
                 Service = command.Service,
                 Channel = command.Channel,
                 User = command.User,
@@ -81,9 +74,5 @@ namespace StreamRC.Streaming.Stream.Alias {
         }
 
         public ChannelFlags RequiredFlags => ChannelFlags.None;
-
-        void IInitializableModule.Initialize() {
-            context.Database.Create<CommandAlias>();
-        }
     }
 }

@@ -65,7 +65,7 @@
     </Reference>
     <Reference Include="NightlyCode.Japi, Version=0.8.6758.28565, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Compiled\Unity\NightlyCode.Japi.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>

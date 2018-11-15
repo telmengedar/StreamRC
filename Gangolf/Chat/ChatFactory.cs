@@ -6,20 +6,20 @@ using NightlyCode.Core.Helpers;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Gangolf.Dictionary;
-using NightlyCode.StreamRC.Modules;
 
 namespace NightlyCode.StreamRC.Gangolf.Chat {
 
-    [Dependency(nameof(DictionaryModule))]
-    public class ChatFactory : IModule, IRunnableModule {
-        readonly Context context;
+    [Module]
+    public class ChatFactory {
         readonly HashSet<string> insults = new HashSet<string>();
-        DictionaryModule dictionary;
+        readonly DictionaryModule dictionary;
 
-        public ChatFactory(Context context) {
-            this.context = context;
+        public ChatFactory(DictionaryModule dictionary) {
+            this.dictionary = dictionary;
+
+            dictionary.WordAdded += OnWordAdded;
+            ReloadInsults();
         }
 
         public void LoadDictionary() {
@@ -147,19 +147,9 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 insults.Add(insult.Text.ToLower());
         }
 
-        void IRunnableModule.Start() {
-            dictionary=context.GetModule<DictionaryModule>();
-            dictionary.WordAdded += OnWordAdded;
-            ReloadInsults();
-        }
-
         void OnWordAdded(Word word) {
             if((word.Attributes & WordAttribute.Insultive) != WordAttribute.None)
                 ReloadInsults();
-        }
-
-        void IRunnableModule.Stop() {
-            dictionary.WordAdded -= OnWordAdded;
         }
     }
 }

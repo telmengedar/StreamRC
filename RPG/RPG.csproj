@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>StreamRC.RPG</RootNamespace>
     <AssemblyName>StreamRC.RPG</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,31 +31,27 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.DB">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.DB.dll</HintPath>
+    <Reference Include="Nightlycode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Japi">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Math">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Math.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Math.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite, Version=1.0.97.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Extern\SQLite\x64\System.Data.SQLite.dll</HintPath>
-    </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -304,6 +301,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\snakelevels.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

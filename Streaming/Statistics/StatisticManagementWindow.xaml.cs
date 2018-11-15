@@ -1,13 +1,10 @@
 ﻿using System.Windows;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Streaming.Statistics
 {
     /// <summary>
     /// Interaction logic for PollManagementWindow.xaml
     /// </summary>
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
     public partial class StatisticManagementWindow : Window {
         readonly StatisticModule statisticmodule;
 

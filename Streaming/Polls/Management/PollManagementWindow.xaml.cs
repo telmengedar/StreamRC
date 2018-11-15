@@ -3,18 +3,16 @@ using System.Linq;
 using System.Windows;
 using NightlyCode.Core.Collections;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
-using StreamRC.Streaming.Statistics;
+using StreamRC.Core.UI;
 
 namespace StreamRC.Streaming.Polls.Management
 {
     /// <summary>
     /// Interaction logic for PollManagementWindow.xaml
     /// </summary>
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    public partial class PollManagementWindow : Window, IRunnableModule {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public partial class PollManagementWindow : Window {
+        readonly PollModule pollmodule;
 
         readonly NotificationList<PollEditor> polls=new NotificationList<PollEditor>();
         readonly NotificationList<PollOptionEditor> options=new NotificationList<PollOptionEditor>();
@@ -23,11 +21,11 @@ namespace StreamRC.Streaming.Polls.Management
         string selectedpoll;
 
         /// <summary>
-        /// creates a new <see cref="Statistics.PollManagementWindow"/>
+        /// creates a new <see cref="PollManagementWindow"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public PollManagementWindow(Context context) {
-            this.context = context;
+        public PollManagementWindow(IMainWindow mainwindow, PollModule pollmodule) {
+            this.pollmodule = pollmodule;
             InitializeComponent();
 
             polls.ItemChanged += OnEditCollectionItemChanged;
@@ -41,6 +39,21 @@ namespace StreamRC.Streaming.Polls.Management
                 Visibility = Visibility.Hidden;
                 args.Cancel = true;
             };
+
+            pollmodule.PollCreated += OnPollAdded;
+            pollmodule.PollRemoved += OnPollRemoved;
+            pollmodule.PollCleared += OnPollCleared;
+            pollmodule.OptionAdded += OnOptionAdded;
+            pollmodule.OptionRemoved += OnOptionRemoved;
+
+            pollmodule.VoteAdded += OnVoteAdded;
+            pollmodule.VoteRemoved += OnVoteRemoved;
+
+            polls.Clear();
+            foreach (Poll poll in pollmodule.GetPolls())
+                polls.Add(new PollEditor(poll));
+
+            mainwindow.AddMenuItem("Manage.Polls", (sender, args) => Show());
         }
 
         void OnPollCleared(Poll poll) {
@@ -58,16 +71,16 @@ namespace StreamRC.Streaming.Polls.Management
                 case "Key":
                     if(string.IsNullOrEmpty(option.OldKey)) {
                         option.Poll = selectedpoll;
-                        context.GetModule<PollModule>().CreatePollOption(option.Poll, option.Key, option.Description);
+                        pollmodule.CreatePollOption(option.Poll, option.Key, option.Description);
                     }
-                    else context.GetModule<PollModule>().ChangePollOption(option.Poll, option.OldKey, option.Key, option.Description);
+                    else pollmodule.ChangePollOption(option.Poll, option.OldKey, option.Key, option.Description);
                     votes.Where(v => v.Vote == option.OldKey).ToArray().Foreach(v => v.Vote = option.Key);
                     break;
                 case "Locked":
-                    context.GetModule<PollModule>().LockOption(option.Poll, option.Key, option.Locked);
+                    pollmodule.LockOption(option.Poll, option.Key, option.Locked);
                     break;
                 default:
-                    context.GetModule<PollModule>().ChangePollOption(option.Poll, option.OldKey, option.Key, option.Description);
+                    pollmodule.ChangePollOption(option.Poll, option.OldKey, option.Key, option.Description);
                     break;
             }
             option.Apply();
@@ -77,12 +90,12 @@ namespace StreamRC.Streaming.Polls.Management
             switch(property) {
                 case "Name":
                     if(string.IsNullOrEmpty(poll.OldName))
-                        context.GetModule<PollModule>().CreatePoll(poll.Name, poll.Description);
-                    else context.GetModule<PollModule>().ChangePoll(poll.OldName, poll.Name, poll.Description);
+                        pollmodule.CreatePoll(poll.Name, poll.Description);
+                    else pollmodule.ChangePoll(poll.OldName, poll.Name, poll.Description);
                     ReloadPollData(poll);                    
                     break;
                 default:
-                    context.GetModule<PollModule>().ChangePoll(poll.OldName, poll.Name, poll.Description);
+                    pollmodule.ChangePoll(poll.OldName, poll.Name, poll.Description);
                     break;
             }
             poll.Apply();
@@ -157,9 +170,9 @@ namespace StreamRC.Streaming.Polls.Management
             }
 
             selectedpoll = poll.Name;
-            foreach (PollVote vote in context.GetModule<PollModule>().GetVotes(poll.Name))
+            foreach (PollVote vote in pollmodule.GetVotes(poll.Name))
                 votes.Add(vote);
-            foreach (PollOption option in context.GetModule<PollModule>().GetOptions(poll.Name))
+            foreach (PollOption option in pollmodule.GetOptions(poll.Name))
                 options.Add(new PollOptionEditor(option));
 
             ctxRemovePoll.IsEnabled = true;
@@ -171,7 +184,7 @@ namespace StreamRC.Streaming.Polls.Management
             if (option == null)
                 return;
 
-            context.GetModule<PollModule>().RemovePollOption(option.Poll, option.Key);
+            pollmodule.RemovePollOption(option.Poll, option.Key);
         }
 
         void Context_RemovePoll(object sender, RoutedEventArgs e) {
@@ -179,59 +192,24 @@ namespace StreamRC.Streaming.Polls.Management
             if(poll == null)
                 return;
 
-            context.GetModule<PollModule>().RemovePoll(poll.Name);
+            pollmodule.RemovePoll(poll.Name);
         }
 
         void grdPollOptions_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            PollOptionEditor item = grdPollOptions.SelectedItem as PollOptionEditor;
-            ctxRemoveOption.IsEnabled = item != null;
+            ctxRemoveOption.IsEnabled = grdPollOptions.SelectedItem is PollOptionEditor;
         }
 
         void Context_ClearPoll(object sender, RoutedEventArgs e) {
-            PollEditor poll = grdPolls.SelectedItem as PollEditor;
-            if (poll == null)
+            if (!(grdPolls.SelectedItem is PollEditor poll))
                 return;
 
-            context.GetModule<PollModule>().ClearPoll(poll.Name);
+            pollmodule.ClearPoll(poll.Name);
         }
 
         void Context_ClearCollection(object sender, RoutedEventArgs e) {
-            PollEditor poll = grdPolls.SelectedItem as PollEditor;
-            if(poll != null)
-                context.GetModule<PollModule>().ClearPoll(poll.Name);
-        }
-
-        public void Start() {
-            PollModule module = context.GetModule<PollModule>();
-
-            module.PollCreated += OnPollAdded;
-            module.PollRemoved += OnPollRemoved;
-            module.PollCleared += OnPollCleared;
-            module.OptionAdded += OnOptionAdded;
-            module.OptionRemoved += OnOptionRemoved;
-
-            module.VoteAdded += OnVoteAdded;
-            module.VoteRemoved += OnVoteRemoved;
-
-            polls.Clear();
-            foreach (Poll poll in module.GetPolls())
-                polls.Add(new PollEditor(poll));
-
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Manage.Polls", (sender, args) => Show());
-        }
-
-        public void Stop() {
-            PollModule module = context.GetModule<PollModule>();
-
-            module.PollCreated -= OnPollAdded;
-            module.PollRemoved -= OnPollRemoved;
-            module.PollCleared -= OnPollCleared;
-            module.OptionAdded -= OnOptionAdded;
-            module.OptionRemoved -= OnOptionRemoved;
-
-            module.VoteAdded -= OnVoteAdded;
-            module.VoteRemoved -= OnVoteRemoved;
+            if(grdPolls.SelectedItem is PollEditor poll)
+                pollmodule.ClearPoll(poll.Name);
         }
     }
 }

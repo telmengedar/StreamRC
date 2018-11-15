@@ -5,9 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using NightlyCode.Twitch.Chat;
+using StreamRC.Core.Settings;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users;
@@ -17,12 +16,12 @@ namespace StreamRC.Twitch.Chat {
     /// <summary>
     /// module connecting userchat
     /// </summary>
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(ImageCacheModule))]
-    [Dependency(nameof(StreamModule))]
-    [ModuleKey("twitchchat")]
-    public class TwitchChatModule : IRunnableModule {
-        readonly Context context;
+    [Module(Key="twitchchat")]
+    public class TwitchChatModule {
+        readonly StreamModule stream;
+        readonly UserModule usermodule;
+        readonly ImageCacheModule imagecache;
+        readonly ISettings settings;
         readonly ChatClient chatclient = new ChatClient();
 
         string username;
@@ -37,8 +36,11 @@ namespace StreamRC.Twitch.Chat {
         /// creates a new <see cref="TwitchChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public TwitchChatModule(Context context) {
-            this.context = context;
+        public TwitchChatModule(StreamModule stream, UserModule usermodule, ImageCacheModule imagecache, TwitchBotModule botmodule, ISettings settings) {
+            this.stream = stream;
+            this.usermodule = usermodule;
+            this.imagecache = imagecache;
+            this.settings = settings;
             chatclient.Disconnected += () => Disconnect(true);
             chatclient.Reconnect += () => {
                 Logger.Info(this, "Reconnect message received");
@@ -47,6 +49,10 @@ namespace StreamRC.Twitch.Chat {
 
             chatclient.ChannelJoined += OnChannelJoined;
             chatclient.ChannelLeft += OnChannelLeft;
+
+            username = settings.Get<string>(this, "username", null);
+            accesstoken = settings.Get<string>(this, "token", null);
+            botmodule.LiveStatusChanged += OnLiveChanged;
         }
 
         public string Username => username;
@@ -54,7 +60,7 @@ namespace StreamRC.Twitch.Chat {
         public string AccessToken => accesstoken;
 
         void Disconnect(bool reconnect) {
-            context.GetModule<StreamModule>().RemoveChannels(c => c is TwitchUserChat);
+            stream.RemoveChannels(c => c is TwitchUserChat);
             isconnected = false;
 
             if(reconnect && !isreconnecting)
@@ -79,17 +85,17 @@ namespace StreamRC.Twitch.Chat {
         {
             if(channelsource.Name.ToLower() == username.ToLower()) {
                 Logger.Info(this, $"Connected to primary user channel '{channelsource.Name}'");
-                TwitchAccountChat chat = new TwitchAccountChat(channelsource, context.GetModule<UserModule>(), context.GetModule<ImageCacheModule>());
+                TwitchAccountChat chat = new TwitchAccountChat(channelsource, usermodule, imagecache);
                 chat.Subscription += OnSubscription;
                 channels.Add(chat);
-                context.GetModule<StreamModule>().AddChannel(chat);
+                stream.AddChannel(chat);
             }
             else {
                 Logger.Info(this, $"Connected to '{channelsource.Name}'");
-                TwitchUserChat chat = new TwitchUserChat(channelsource, context.GetModule<UserModule>(), context.GetModule<ImageCacheModule>());
+                TwitchUserChat chat = new TwitchUserChat(channelsource, usermodule, imagecache);
                 chat.Subscription += OnSubscription;
                 channels.Add(chat);
-                context.GetModule<StreamModule>().AddChannel(chat);
+                stream.AddChannel(chat);
             }
         }
 
@@ -109,7 +115,7 @@ namespace StreamRC.Twitch.Chat {
         }
 
         void OnSubscription(Subscription subscription) {
-            context.GetModule<StreamModule>().AddSubscriber(new SubscriberInformation {
+            stream.AddSubscriber(new SubscriberInformation {
                 Service = TwitchConstants.ServiceKey,
                 Username = subscription.User,
                 PlanName = subscription.PlanName,
@@ -126,13 +132,7 @@ namespace StreamRC.Twitch.Chat {
                 chat.Subscription -= OnSubscription;
                 channels.Remove(chat);
             }
-            context.GetModule<StreamModule>().RemoveChannel(TwitchConstants.ServiceKey, channelsource.Name);
-        }
-
-        void IRunnableModule.Start() {
-            username = context.Settings.Get<string>(this, "username", null);
-            accesstoken = context.Settings.Get<string>(this, "token", null);
-            context.GetModule<TwitchBotModule>().LiveStatusChanged += OnLiveChanged;
+            stream.RemoveChannel(TwitchConstants.ServiceKey, channelsource.Name);
         }
 
         void OnLiveChanged(bool status) {
@@ -143,10 +143,6 @@ namespace StreamRC.Twitch.Chat {
             else {
                 Disconnect(false);
             }
-        }
-
-        void IRunnableModule.Stop() {
-            Disconnect(false);
         }
 
         /// <summary>
@@ -161,8 +157,8 @@ namespace StreamRC.Twitch.Chat {
             username = chatuser;
             accesstoken = chataccesstoken;
 
-            context.Settings.Set(this, "username", chatuser);
-            context.Settings.Set(this, "token", chataccesstoken);
+            settings.Set(this, "username", chatuser);
+            settings.Set(this, "token", chataccesstoken);
             if(!string.IsNullOrEmpty(chatuser) && !string.IsNullOrEmpty(chataccesstoken))
                 Connect();
         }

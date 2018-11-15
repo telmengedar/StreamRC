@@ -1,6 +1,6 @@
-﻿using NightlyCode.DB.Entities.Attributes;
+﻿using NightlyCode.Database.Entities.Attributes;
 
-namespace Youtube {
+namespace StreamRC.Youtube {
     public class YoutubeAccount {
 
         /// <summary>

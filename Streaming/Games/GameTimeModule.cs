@@ -1,27 +1,23 @@
 ﻿using System;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Streaming.Statistics;
 
 namespace StreamRC.Streaming.Games {
 
-    [Dependency(nameof(StatisticModule), SpecifierType.Type)]
-    [ModuleKey("gametime")]
-    public class GameTimeModule : IModule, IRunnableModule {
-        readonly Context context;
-
+    [Module(Key="gametime")]
+    public class GameTimeModule : IDisposable {
+        readonly StatisticModule statistics;
         bool running = false;
         DateTime start = DateTime.Now;
 
-        public GameTimeModule(Context context) {
-            this.context = context;
+        public GameTimeModule(StatisticModule statistics) {
+            this.statistics = statistics;
         }
 
         public void StartGame() {
             start = DateTime.Now;
-            if(!context.GetModule<StatisticModule>().Exists("Game Time"))
-                context.GetModule<StatisticModule>().Set("Game Time", 0);
+            if(!statistics.Exists("Game Time"))
+                statistics.Set("Game Time", 0);
             running = true;
         }
 
@@ -31,12 +27,9 @@ namespace StreamRC.Streaming.Games {
             return TimeSpan.Zero;
         }
 
-        void IRunnableModule.Start() {
-        }
-
-        void IRunnableModule.Stop() {
+        void IDisposable.Dispose() {
             if(running)
-                context.GetModule<StatisticModule>().Increase("Game Time", GetTime());
+                statistics.Increase("Game Time", GetTime());
             running = false;
         }
     }

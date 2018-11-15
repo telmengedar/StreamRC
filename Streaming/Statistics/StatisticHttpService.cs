@@ -2,17 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
-using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Games;
 
 namespace StreamRC.Streaming.Statistics
@@ -21,26 +19,23 @@ namespace StreamRC.Streaming.Statistics
     /// <summary>
     /// provides an html window for chat messages
     /// </summary>
-    [Dependency(nameof(HttpServiceModule))]
-    [Dependency(nameof(StatisticModule))]
-    [Dependency(nameof(GameTimeModule))]
-    public class StatisticHttpService : IInitializableModule, IHttpService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class StatisticHttpService : IHttpService {
+        readonly GameTimeModule gametime;
+        readonly StatisticModule statistics;
 
         /// <summary>
         /// creates a new <see cref="StatisticHttpService"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public StatisticHttpService(Context context) {
-            this.context = context;
-        }
-
-        void IInitializableModule.Initialize() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/statistics", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/statistics.css", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/statistics.js", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/statistics/data", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/statistics/image", this);
+        public StatisticHttpService(HttpServiceModule httpservice, GameTimeModule gametime, StatisticModule statistics) {
+            this.gametime = gametime;
+            this.statistics = statistics;
+            httpservice.AddServiceHandler("/streamrc/statistics", this);
+            httpservice.AddServiceHandler("/streamrc/statistics.css", this);
+            httpservice.AddServiceHandler("/streamrc/statistics.js", this);
+            httpservice.AddServiceHandler("/streamrc/statistics/data", this);
+            httpservice.AddServiceHandler("/streamrc/statistics/image", this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
@@ -74,7 +69,7 @@ namespace StreamRC.Streaming.Statistics
                 case "Game Time":
                     TimeSpan time = TimeSpan.FromTicks(statistic.Value);
                     
-                    time += context.GetModule<GameTimeModule>().GetTime();
+                    time += gametime.GetTime();
                     yield return new MessageChunk(MessageChunkType.Emoticon, "http://localhost/streamrc/statistics/image?name=gametime");
                     yield return new MessageChunk(MessageChunkType.Text, (int)time.TotalHours + time.ToString("\\:mm"));
                     break;
@@ -108,7 +103,7 @@ namespace StreamRC.Streaming.Statistics
         void ServeMessages(HttpClient client, HttpRequest request) {
             using(MemoryStream ms = new MemoryStream()) {
                 StatisticsHttpResponse response = new StatisticsHttpResponse {
-                    Statistics = context.GetModule<StatisticModule>().Get().Select(CreateStatistic).ToArray()
+                    Statistics = statistics.Get().Select(CreateStatistic).ToArray()
                 };
                 JSON.Write(response, ms);
                 client.ServeData(ms.ToArray(), ".json");

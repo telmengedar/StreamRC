@@ -4,17 +4,17 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 
-namespace Discord {
-    public class DiscordOAuth2Module : IRunnableModule, IHttpService {
-        readonly Context context;
+namespace StreamRC.Discord {
+
+    [Module(AutoCreate = true)]
+    public class DiscordOAuth2Module : IHttpService {
 
         const string discordurl = "https://discordapp.com/api/oauth2/authorize?client_id=410528978936266764&permissions=8&redirect_uri=http%3A%2F%2Flocalhost%2Fstreamrc%2Fdiscord%2Foauth2&scope=bot";
 
-        public DiscordOAuth2Module(Context context) {
-            this.context = context;
+        public DiscordOAuth2Module(HttpServiceModule httpservice) {
+            httpservice.AddServiceHandler("/streamrc/discord/oauth2", this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
@@ -41,14 +41,6 @@ namespace Discord {
                 using (StreamWriter writer = new StreamWriter(client.GetStream()))
                     writer.Write(page);
             }
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/discord/oauth2", this);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/discord/oauth2");
         }
     }
 }

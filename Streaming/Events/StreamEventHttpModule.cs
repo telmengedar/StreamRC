@@ -82,7 +82,7 @@ namespace StreamRC.Streaming.Events {
             if(streamevent.Type == StreamEventType.Custom || !string.IsNullOrEmpty(streamevent.Message))
                 httpevent.Message = JSON.Read<Message>(streamevent.Message);
             else {
-                MessageBuilder message = new MessageBuilder().User(usermodule.GetUser(streamevent.UserID), u => imagemodule.AddImage(u.Avatar));
+                MessageBuilder message = new MessageBuilder().User(usermodule.GetUser(streamevent.UserID), u => imagemodule.GetImageByUrl(u.Avatar));
                 int score = (int)(streamevent.Value * streamevent.Multiplicator);
                 if(score > 0)
                     message.Score(score);
@@ -171,7 +171,7 @@ namespace StreamRC.Streaming.Events {
             return new StreamHttpEvent {
                 Timestamp = DateTime.Now,
                 Title = new MessageBuilder().Text(title, Color.White, FontWeight.Bold).BuildMessage(),
-                Message = new MessageBuilder().User(usermodule.GetUser(score.UserID), u => imagemodule.AddImage(u.Avatar)).Score((int)score.Score).BuildMessage()
+                Message = new MessageBuilder().User(usermodule.GetUser(score.UserID), u => imagemodule.GetImageByUrl(u.Avatar)).Score((int)score.Score).BuildMessage()
             };
         }
 

@@ -4,9 +4,9 @@ using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
+using StreamRC.Core.Settings;
+using StreamRC.Core.UI;
 using StreamRC.Streaming.Polls;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Ticker;
@@ -16,13 +16,11 @@ namespace StreamRC.Streaming.Games {
     /// <summary>
     /// module managing games to be played next
     /// </summary>
-    [Dependency(nameof(TickerModule))]
-    [Dependency(nameof(PollModule))]
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    [ModuleKey("upcoming")]
-    public class UpcomingGamesModule : IInitializableModule, ICommandModule, ITickerMessageSource, IRunnableModule {
-        readonly Context context;
-
+    [Module(Key="upcoming", AutoCreate = true)]
+    public class UpcomingGamesModule : ICommandModule, ITickerMessageSource {
+        readonly TickerModule ticker;
+        readonly ISettings settings;
+        readonly PollModule polls;
         readonly object gameslock = new object();
         readonly NotificationList<Game> games=new NotificationList<Game>();
 
@@ -30,8 +28,19 @@ namespace StreamRC.Streaming.Games {
         /// creates a new <see cref="UpcomingGamesModule"/>
         /// </summary>
         /// <param name="context"></param>
-        public UpcomingGamesModule(Context context) {
-            this.context = context;
+        public UpcomingGamesModule(IMainWindow mainwindow, TickerModule ticker, ISettings settings, PollModule polls) {
+            this.ticker = ticker;
+            this.settings = settings;
+            this.polls = polls;
+            LoadList();
+            games.ListChanged += (sender, args) => {
+                OnGamesChanged();
+            };
+            games.ItemChanged += (game, property) => {
+                OnGamesChanged();
+            };
+            mainwindow.AddMenuItem("Manage.Upcoming Games", (sender, args) => new UpcomingGamesWindow(this).Show());
+            ticker.AddSource(this);
         }
 
         /// <summary>
@@ -64,32 +73,18 @@ namespace StreamRC.Streaming.Games {
         void LoadList() {
             lock(gameslock) {
                 games.Clear();
-                foreach(Game game in JSON.Read<Game[]>(context.Settings.Get(this, "games", "[]")))
+                foreach(Game game in JSON.Read<Game[]>(settings.Get(this, "games", "[]")))
                     AddGame(game.Name);
             }
         }
 
         void SaveList() {
             lock(gameslock)
-                context.Settings.Set(this, "games", JSON.WriteString(games.ToArray()));
-        }
-
-        /// <summary>
-        /// initializes the <see cref="T:NightlyCode.Modules.IModule"/> to prepare for start
-        /// </summary>
-        void IInitializableModule.Initialize() {
-            LoadList();
-            games.ListChanged += (sender, args) => {
-                OnGamesChanged();
-            };
-            games.ItemChanged += (game, property) => {
-                OnGamesChanged();
-            };
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Manage.Upcoming Games", (sender, args) => new UpcomingGamesWindow(this).Show());
+                settings.Set(this, "games", JSON.WriteString(games.ToArray()));
         }
 
         string GetUpcomingGames() {
-            WeightedVote[] votes = context.GetModule<PollModule>().GetWeightedVotes("next");
+            WeightedVote[] votes = polls.GetWeightedVotes("next");
             PollDiagramData diagramdata = new PollDiagramData(votes);
             DiagramItem nextgame = diagramdata.GetItems().FirstOrDefault();
             return nextgame?.Item;
@@ -130,7 +125,7 @@ namespace StreamRC.Streaming.Games {
                     Name = game
                 });
                 if (games.Count == 1)
-                    context.GetModule<TickerModule>().AddSource(this);
+                    ticker.AddSource(this);
             }
         }
 
@@ -165,14 +160,6 @@ namespace StreamRC.Streaming.Games {
                         .BuildMessage()
                 };
             }
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<TickerModule>().AddSource(this);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TickerModule>().RemoveSource(this);
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using System.Text;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
-using StreamRC.Streaming.Ads;
+using StreamRC.Core.Settings;
 using StreamRC.Streaming.Infos;
 using StreamRC.Streaming.Stream;
 
@@ -12,18 +10,20 @@ namespace StreamRC.Streaming.Games {
     /// <summary>
     /// configures the currently played game
     /// </summary>
-    [Dependency(nameof(InfoModule))]
-    [ModuleKey("current")]
-    public class CurrentlyPlayedModule : ICommandModule, IInitializableModule {
-        readonly Context context;
+    [Module(Key="current")]
+    public class CurrentlyPlayedModule : ICommandModule {
+        readonly ISettings settings;
+        readonly InfoModule infos;
         CurrentlyPlayedGame game;
 
         /// <summary>
         /// creates a new <see cref="CurrentlyPlayedModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public CurrentlyPlayedModule(Context context) {
-            this.context = context;
+        public CurrentlyPlayedModule(ISettings settings, InfoModule infos) {
+            this.settings = settings;
+            this.infos = infos;
+            game = JSON.Read<CurrentlyPlayedGame>(settings.Get<string>(this, "game", null));
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace StreamRC.Streaming.Games {
         /// clears game information
         /// </summary>
         public void Clear() {
-            context.GetModule<InfoModule>().RemoveInfo("current");
+            infos.RemoveInfo("current");
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace StreamRC.Streaming.Games {
                 sb.Append(" -> ").Append(url);
 
             string text = sb.ToString();
-            context.GetModule<InfoModule>().SetInfo("current", text);
+            infos.SetInfo("current", text);
             game = new CurrentlyPlayedGame {
                 Game = gamename,
                 Epithet = epithet,
@@ -79,7 +79,7 @@ namespace StreamRC.Streaming.Games {
                 Year = year,
                 MobyGames = url
             };
-            context.Settings.Set(this, "game", JSON.WriteString(game));
+            settings.Set(this, "game", JSON.WriteString(game));
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {
@@ -100,11 +100,7 @@ namespace StreamRC.Streaming.Games {
 
         void SetEpithet(string epithet) {
             game.Epithet = epithet;
-            context.Settings.Set(this, "game", JSON.WriteString(game));
-        }
-
-        void IInitializableModule.Initialize() {
-            game = JSON.Read<CurrentlyPlayedGame>(context.Settings.Get<string>(this, "game", null));
+            settings.Set(this, "game", JSON.WriteString(game));
         }
     }
 }

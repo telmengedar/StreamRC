@@ -1,5 +1,5 @@
 ﻿using System;
-using NightlyCode.DB.Entities.Attributes;
+using NightlyCode.Database.Entities.Attributes;
 
 namespace StreamRC.Streaming.Cache {
 
@@ -18,19 +18,8 @@ namespace StreamRC.Streaming.Cache {
         /// <summary>
         /// key for image identification
         /// </summary>
-        [Index("key")]
+        [Unique("key")]
         public string Key { get; set; }
-
-        /// <summary>
-        /// url to get image data
-        /// </summary>
-        [Unique]
-        public string URL { get; set; }
-
-        /// <summary>
-        /// time the item was updated
-        /// </summary>
-        public DateTime LastUpdate { get; set; }
 
         /// <summary>
         /// time when image expires

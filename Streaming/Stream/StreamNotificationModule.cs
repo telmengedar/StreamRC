@@ -27,7 +27,7 @@ namespace StreamRC.Streaming.Stream {
             stream.NewFollower += information => notifications.ShowNotification(
                 new MessageBuilder().Text("New Follower").BuildMessage(),
                 new MessageBuilder()
-                    .User(usermodule.GetExistingUser(information.Service, information.Username), u => imagemodule.AddImage(u.Avatar))
+                    .User(usermodule.GetExistingUser(information.Service, information.Username), u => imagemodule.GetImageByUrl(u.Avatar))
                     .Text(" started to follow.")
                     .BuildMessage()
             );
@@ -35,7 +35,7 @@ namespace StreamRC.Streaming.Stream {
             stream.NewSubscriber += information => notifications.ShowNotification(
                 new MessageBuilder().Text("New Subscriber").BuildMessage(),
                 new MessageBuilder()
-                    .User(usermodule.GetExistingUser(information.Service, information.Username), u => imagemodule.AddImage(u.Avatar))
+                    .User(usermodule.GetExistingUser(information.Service, information.Username), u => imagemodule.GetImageByUrl(u.Avatar))
                     .Text(" subscribed with ")
                     .Text(information.PlanName, StreamColors.Option, FontWeight.Bold)
                     .Text(" to this channel.")
@@ -45,8 +45,8 @@ namespace StreamRC.Streaming.Stream {
             stream.Hosted += information => notifications.ShowNotification(
                 new MessageBuilder().Text("New Host").BuildMessage(),
                 information.Viewers > 0 ?
-                    new MessageBuilder().User(usermodule.GetExistingUser(information.Service, information.Channel), u => imagemodule.AddImage(u.Avatar)).Text(" is hosting this channel to ").Text(information.Viewers.ToString(), StreamColors.Option, FontWeight.Bold).Text(" viewers.").BuildMessage() :
-                    new MessageBuilder().User(usermodule.GetExistingUser(information.Service, information.Channel), u => imagemodule.AddImage(u.Avatar)).Text(" is hosting this channel.").BuildMessage()
+                    new MessageBuilder().User(usermodule.GetExistingUser(information.Service, information.Channel), u => imagemodule.GetImageByUrl(u.Avatar)).Text(" is hosting this channel to ").Text(information.Viewers.ToString(), StreamColors.Option, FontWeight.Bold).Text(" viewers.").BuildMessage() :
+                    new MessageBuilder().User(usermodule.GetExistingUser(information.Service, information.Channel), u => imagemodule.GetImageByUrl(u.Avatar)).Text(" is hosting this channel.").BuildMessage()
             );
 
             stream.Raid += OnRaid;
@@ -57,8 +57,8 @@ namespace StreamRC.Streaming.Stream {
             notifications.ShowNotification(
                 new MessageBuilder().Text("New Raid").BuildMessage(),
                 raid.RaiderCount > 0 ?
-                    new MessageBuilder().User(user, imagemodule.AddImage(user.Avatar)).Text(" is raiding this channel with ").Text(raid.RaiderCount.ToString(), StreamColors.Option, FontWeight.Bold).Text(" raiders.").BuildMessage() :
-                    new MessageBuilder().User(user, imagemodule.AddImage(user.Avatar)).Text(" is raiding this channel.").BuildMessage()
+                    new MessageBuilder().User(user, imagemodule.GetImageByUrl(user.Avatar)).Text(" is raiding this channel with ").Text(raid.RaiderCount.ToString(), StreamColors.Option, FontWeight.Bold).Text(" raiders.").BuildMessage() :
+                    new MessageBuilder().User(user, imagemodule.GetImageByUrl(user.Avatar)).Text(" is raiding this channel.").BuildMessage()
                 );
         }
     }

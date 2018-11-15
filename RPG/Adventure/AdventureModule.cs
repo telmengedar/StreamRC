@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
-using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
 using StreamRC.RPG.Adventure.Commands;
 using StreamRC.RPG.Adventure.Exploration;
@@ -13,28 +11,18 @@ using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
 using StreamRC.RPG.Adventure.SpiritRealm;
 using StreamRC.RPG.Effects;
-using StreamRC.RPG.Items;
 using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
-using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Adventure {
 
-    [Dependency(nameof(MessageModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(PlayerModule))]
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(ItemModule))]
-    [Dependency(nameof(MonsterModule))]
-    [Dependency(nameof(ImageCacheModule))]
-    [ModuleKey("adventure")]
-    public class AdventureModule : IRunnableModule, ITimerService {
-        readonly Context context;
-
+    [Module(Key="adventure")]
+    public class AdventureModule : ITimerService {
+        readonly StreamModule stream;
+        readonly PlayerModule players;
         readonly object adventurerlock = new object();
         readonly List<Adventure> adventurers = new List<Adventure>();
         readonly HashSet<long> activeplayers=new HashSet<long>();
@@ -47,9 +35,19 @@ namespace StreamRC.RPG.Adventure {
         /// creates a new <see cref="AdventureModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public AdventureModule(Context context) {
-            this.context = context;
+        public AdventureModule(StreamModule stream, PlayerModule players, TimerModule timer) {
+            this.stream = stream;
+            this.players = players;
             explorationlogic = new ExplorationLogic(context);
+
+            players.PlayerLevelUp += OnLevelUp;
+            players.PlayerStatusChanged += OnStatusChanged;
+            stream.ChatMessage += OnChatMessage;
+            stream.Command += OnCommand;
+            stream.RegisterCommandHandler("explore", new ExploreCommandHandler(this, players));
+            stream.RegisterCommandHandler("rest", new RestCommandHandler(this, players));
+            stream.RegisterCommandHandler("rescue", new RescuePlayerCommandHandler(this));
+            timer.AddService(this, 0.5);
         }
 
         /// <summary>
@@ -105,17 +103,6 @@ namespace StreamRC.RPG.Adventure {
             PlayerModule playermodule = context.GetModule<PlayerModule>();
             Player player = playermodule.GetPlayer(message.Service, message.User);
             PlayerActiveTrigger?.Invoke(player.UserID);
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<PlayerModule>().PlayerLevelUp += OnLevelUp;
-            context.GetModule<PlayerModule>().PlayerStatusChanged += OnStatusChanged;
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
-            context.GetModule<StreamModule>().Command += OnCommand;
-            context.GetModule<StreamModule>().RegisterCommandHandler("explore", new ExploreCommandHandler(this, context.GetModule<PlayerModule>()));
-            context.GetModule<StreamModule>().RegisterCommandHandler("rest", new RestCommandHandler(this, context.GetModule<PlayerModule>()));
-            context.GetModule<StreamModule>().RegisterCommandHandler("rescue", new RescuePlayerCommandHandler(this));
-            context.GetModule<TimerModule>().AddService(this, 0.5);
         }
 
         void OnCommand(StreamCommand command) {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using NightlyCode.DB.Entities.Operations;
-using NightlyCode.StreamRC.Modules;
+using NightlyCode.Database.Entities.Operations.Fields;
+using StreamRC.Core;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Collections;
 using StreamRC.Streaming.Ticker;
@@ -14,7 +14,7 @@ namespace StreamRC.Streaming.Polls
     /// generates ticker messages for poll options
     /// </summary>
     public class PollTickerGenerator : ITickerMessageSource {
-        readonly Context context;
+        readonly DatabaseModule database;
         readonly object countlock = new object();
         long index = 0;
 
@@ -23,9 +23,9 @@ namespace StreamRC.Streaming.Polls
         /// </summary>
         /// <param name="context">module context</param>
         /// <param name="module">access to poll module</param>
-        public PollTickerGenerator(Context context, PollModule module)
+        public PollTickerGenerator(DatabaseModule database, PollModule module)
         {
-            this.context = context;
+            this.database = database;
             module.OptionAdded += option => Recount();
             module.OptionRemoved += option => Recount();
             module.PollCreated += poll => Recount();
@@ -36,7 +36,7 @@ namespace StreamRC.Streaming.Polls
         void Recount()
         {
             lock (countlock)
-                PollOptionCount = context.Database.Load<PollOption>(DBFunction.Count).Where(p=>!p.Locked).ExecuteScalar<long>();
+                PollOptionCount = database.Database.Load<PollOption>(DBFunction.Count).Where(p=>!p.Locked).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace StreamRC.Streaming.Polls
                 }
             }
 
-            PollOption option = context.Database.LoadEntities<PollOption>().Where(o => !o.Locked).Offset(index).Execute().FirstOrDefault();
+            PollOption option = database.Database.LoadEntities<PollOption>().Where(o => !o.Locked).Offset(index).Execute().FirstOrDefault();
             if (option != null) {
-                Poll poll = context.Database.LoadEntities<Poll>().Where(p => p.Name == option.Poll).Execute().FirstOrDefault();
+                Poll poll = database.Database.LoadEntities<Poll>().Where(p => p.Name == option.Poll).Execute().FirstOrDefault();
 
                 if(poll != null) {
                     return new TickerMessage {

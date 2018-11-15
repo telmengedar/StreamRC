@@ -10,8 +10,6 @@ using Google.Apis.YouTube.v3.Data;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Context;
-using NightlyCode.Modules.Dependencies;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Stream;
 
@@ -20,22 +18,25 @@ namespace StreamRC.Youtube {
     /// <summary>
     /// module providing basic connection details for youtube api
     /// </summary>
-    [Dependency(nameof(TimerModule))]
-    public class YoutubeModule : IInitializableModule, IRunnableModule, IStreamServiceModule, ITimerService
+    [Module(AutoCreate = true)]
+    public class YoutubeModule : IStreamServiceModule, ITimerService
     {
-        readonly IModuleContext context;
+        readonly StreamModule stream;
+        readonly TimerModule timer;
         readonly HashSet<YoutubeChatChannel> activestreams = new HashSet<YoutubeChatChannel>();
 
         /// <summary>
         /// creates a new <see cref="YoutubeModule"/>
         /// </summary>
         /// <param name="context">access to context</param>
-        public YoutubeModule(IModuleContext context) {
-            this.context = context;
+        public YoutubeModule(StreamModule stream, TimerModule timer) {
+            this.stream = stream;
+            this.timer = timer;
+            stream.AddService(YoutubeConstants.ServiceName, this);
         }
 
         public void Start() {
-            context.GetModule<TimerModule>().AddService(this, 60.0);
+            timer.AddService(this, 60.0);
             Connected?.Invoke();
             Process(0.0);
         }
@@ -77,21 +78,17 @@ namespace StreamRC.Youtube {
                 Logger.Info(this, $"Found new broadcast {broadcast.Id}");
                 YoutubeChatChannel chatchannel = new YoutubeChatChannel(service, broadcast);
                 activestreams.Add(chatchannel);
-                context.GetModule<StreamModule>().AddChannel(chatchannel);
-                context.GetModule<TimerModule>().LateAdd(chatchannel);
+                stream.AddChannel(chatchannel);
+                timer.LateAdd(chatchannel);
             }
 
             string[] activeids = response.Items.Select(b => b.Snippet.LiveChatId).ToArray();
             
             foreach(YoutubeChatChannel stoppedchannel in activestreams.Where(c => !activeids.Contains(c.Name)).ToArray()) {
-                context.GetModule<TimerModule>().RemoveService(stoppedchannel);
-                context.GetModule<StreamModule>().RemoveChannel(stoppedchannel);
+                timer.RemoveService(stoppedchannel);
+                stream.RemoveChannel(stoppedchannel);
                 activestreams.Remove(stoppedchannel);
             }
-        }
-
-        void IInitializableModule.Initialize() {
-            context.GetModule<StreamModule>().AddService(YoutubeConstants.ServiceName, this);
         }
     }
 }

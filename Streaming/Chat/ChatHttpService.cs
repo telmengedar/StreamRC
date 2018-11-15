@@ -54,7 +54,7 @@ namespace StreamRC.Streaming.Chat {
         }
 
         IEnumerable<MessageChunk> CreateMessageChunks(ChatMessage message) {
-            yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.AddImage($"http://localhost/streamrc/services/icon?service={message.Service}").ToString());
+            yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/services/icon?service={message.Service}");
 
             foreach(MessageChunk chunk in CreateUserChunks(message))
                 yield return chunk;
@@ -103,7 +103,7 @@ namespace StreamRC.Streaming.Chat {
 
                         long imageid = imagecache.ExtractIDFromUrl(attachement.URL);
                         if (imageid == -1)
-                            imageid = imagecache.AddImage(attachement.URL, DateTime.Now + TimeSpan.FromMinutes(5.0));
+                            imageid = imagecache.GetImageByUrl(attachement.URL);
 
                         messages.Add(new ChatHttpMessage {
                             Timestamp = DateTime.Now,
@@ -131,7 +131,7 @@ namespace StreamRC.Streaming.Chat {
 
         IEnumerable<MessageChunk> CreateUserChunks(ChatMessage message) {
             if(!string.IsNullOrEmpty(message.AvatarLink))
-                yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.AddImage(message.AvatarLink).ToString());
+                yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.GetImageByUrl(message.AvatarLink).ToString());
 
             if((users.GetUser(message.Service, message.User).Flags & UserFlags.Brainy) == UserFlags.Brainy)
                 yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=4");

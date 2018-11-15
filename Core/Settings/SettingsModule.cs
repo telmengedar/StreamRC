@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Database.Entities.Operations.Fields;
+using NightlyCode.Database.Entities.Operations.Prepared;
 using NightlyCode.Modules;
 
 namespace StreamRC.Core.Settings {
@@ -10,15 +11,21 @@ namespace StreamRC.Core.Settings {
     /// </summary>
     [Module(Key = "settings")]
     public class SettingsModule : ISettings {
-        readonly DatabaseModule database;
+        readonly PreparedLoadEntitiesOperation<Setting> loadsetting;
+        readonly PreparedLoadValuesOperation countsettings;
+        readonly PreparedOperation insertsetting;
+        readonly PreparedOperation updatesetting;
 
         /// <summary>
         /// creates a new <see cref="SettingsModule"/>
         /// </summary>
         /// <param name="database">access to database</param>
         public SettingsModule(DatabaseModule database) {
-            this.database = database;
             database.Database.UpdateSchema<Setting>();
+            loadsetting = database.Database.LoadEntities<Setting>().Where(s => s.Module == DBParameter.String && s.Key == DBParameter.String).Prepare();
+            countsettings = database.Database.Load<Setting>(s => DBFunction.Count).Where(s => s.Module == DBParameter.String && s.Key == DBParameter.String).Prepare();
+            insertsetting = database.Database.Insert<Setting>().Columns(s => s.Module, s => s.Key, s => s.Value).Prepare();
+            updatesetting = database.Database.Update<Setting>().Set(s => s.Value == DBParameter.String).Where(s => s.Module == DBParameter.String && s.Key == DBParameter.String).Prepare();
         }
 
         /// <summary>
@@ -53,7 +60,7 @@ namespace StreamRC.Core.Settings {
         /// <param name="defaultvalue">default value to return when setting is not found</param>
         /// <returns>value of setting or default value if setting is not found</returns>
         public T Get<T>(string module, string key, T defaultvalue) {
-            Setting setting = database.Database.LoadEntities<Setting>().Where(s => s.Module == module && s.Key == key).Execute().FirstOrDefault();
+            Setting setting = loadsetting.Execute(module, key).FirstOrDefault();
             if(setting == null)
                 return defaultvalue;
             return Converter.Convert<T>(setting.Value);
@@ -69,7 +76,7 @@ namespace StreamRC.Core.Settings {
         /// <returns>value of setting or default value if setting is not found</returns>
         public T Get<T>(object module, string key, T defaultvalue) {
             string modulename = module.GetType().Name;
-            Setting setting = database.Database.LoadEntities<Setting>().Where(s => s.Module == modulename && s.Key == key).Execute().FirstOrDefault();
+            Setting setting = loadsetting.Execute(modulename, key).FirstOrDefault();
             if (setting == null)
                 return defaultvalue;
             return Converter.Convert<T>(setting.Value);
@@ -82,11 +89,11 @@ namespace StreamRC.Core.Settings {
         /// <param name="key">key of setting to set</param>
         /// <param name="value">value to set</param>
         public void Set(string module, string key, object value) {
-            if(database.Database.Load<Setting>(DBFunction.Count).Where(s => s.Module == module && s.Key == key).ExecuteScalar<long>() == 0)
-                database.Database.Insert<Setting>().Columns(s => s.Module, s => s.Key, s => s.Value).Values(module, key, value?.ToString()).Execute();
+            if (countsettings.ExecuteScalar<long>(module, key) == 0)
+                insertsetting.Execute(module, key, value?.ToString());
             else {
                 string settingvalue = value?.ToString();
-                database.Database.Update<Setting>().Set(s => s.Value == settingvalue).Where(s => s.Module == module && s.Key == key).Execute();
+                updatesetting.Execute(settingvalue, module, key);
             }
         }
 
@@ -98,13 +105,7 @@ namespace StreamRC.Core.Settings {
         /// <param name="value">value to set</param>
         public void Set(object module, string key, object value) {
             string modulename = module.GetType().Name;
-            if (database.Database.Load<Setting>(DBFunction.Count).Where(s => s.Module == modulename && s.Key == key).ExecuteScalar<long>() == 0)
-                database.Database.Insert<Setting>().Columns(s => s.Module, s => s.Key, s => s.Value).Values(modulename, key, value?.ToString()).Execute();
-            else
-            {
-                string settingvalue = value?.ToString();
-                database.Database.Update<Setting>().Set(s => s.Value == settingvalue).Where(s => s.Module == modulename && s.Key == key).Execute();
-            }
+            Set(modulename, key, value);
         }
     }
 }

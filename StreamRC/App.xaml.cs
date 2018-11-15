@@ -24,7 +24,7 @@ namespace NightlyCode.StreamRC
             Current.DispatcherUnhandledException += OnUnhandledDispatcherException;
             Dispatcher.UnhandledException += OnUnhandledDispatcherException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
-            Logger.Message += new FileLogger(Path.Combine(PathExtensions.GetApplicationDirectory(), "logs/twitchrc.log")).Log;
+            Logger.Message += new FileLogger(Path.Combine(PathExtensions.GetApplicationDirectory(), "logs/streamrc.log")).Log;
             logcleaner = new LogFileCleaner(Path.Combine(PathExtensions.GetApplicationDirectory(), "logs"));
             logcleaner.Start(TimeSpan.FromMinutes(30.0f));
 

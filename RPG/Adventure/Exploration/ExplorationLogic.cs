@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
-using NightlyCode.StreamRC.Modules;
+using NightlyCode.Modules;
 using StreamRC.RPG.Emotions;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Items;
@@ -14,12 +14,29 @@ using StreamRC.RPG.Shops;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Adventure.Exploration {
+
+    [Module]
     public class ExplorationLogic : IAdventureLogic {
-        readonly Context context;
+        readonly ItemModule itemmodule;
+        readonly UserModule usermodule;
+        readonly RPGMessageModule messages;
+        readonly PlayerModule players;
+        readonly AdventureModule adventure;
+        readonly InventoryModule inventory;
+        readonly ShopModule shops;
+        readonly SkillModule skills;
+
         readonly AdventureEvent[] eventtypes = (AdventureEvent[])Enum.GetValues(typeof(AdventureEvent));
 
-        public ExplorationLogic(Context context) {
-            this.context = context;
+        public ExplorationLogic(ItemModule itemmodule, UserModule usermodule, RPGMessageModule messages, PlayerModule players, AdventureModule adventure, InventoryModule inventory, ShopModule shops, SkillModule skills) {
+            this.itemmodule = itemmodule;
+            this.usermodule = usermodule;
+            this.messages = messages;
+            this.players = players;
+            this.adventure = adventure;
+            this.inventory = inventory;
+            this.shops = shops;
+            this.skills = skills;
         }
 
         double GetEventTypeValue(AdventureEvent type, Player player)
@@ -44,7 +61,7 @@ namespace StreamRC.RPG.Adventure.Exploration {
             List<FoundItem> items=new List<FoundItem>();
 
             while(RNG.XORShift64.NextDouble() < chance) {
-                Item item = context.GetModule<ItemModule>().SelectItem(player.Level, player.Luck * 2);
+                Item item = itemmodule.SelectItem(player.Level, player.Luck * 2);
                 if (item == null)
                     return;
 
@@ -63,10 +80,10 @@ namespace StreamRC.RPG.Adventure.Exploration {
                 chance *= 0.8;
             }
 
-            User user = context.GetModule<UserModule>().GetUser(player.UserID);
+            User user = usermodule.GetUser(player.UserID);
 
             if (items.Count == 0) {
-                context.GetModule<RPGMessageModule>().Create().User(user).Text(" has found a chest ... which was empty.").Emotion(EmotionType.FuckYou).Send();
+                messages.Create().User(user).Text(" has found a chest ... which was empty.").Emotion(EmotionType.FuckYou).Send();
                 return;
             }
 
@@ -76,11 +93,11 @@ namespace StreamRC.RPG.Adventure.Exploration {
                 FoundItem item = items[i];
 
                 if(item.Item.Type == ItemType.Gold) {
-                    context.GetModule<PlayerModule>().UpdateGold(player.UserID, item.Quantity);
+                    players.UpdateGold(player.UserID, item.Quantity);
                     continue;
                 }
 
-                AddInventoryItemResult result = context.GetModule<InventoryModule>().AddItem(player.UserID, item.Item.ID, item.Quantity);
+                AddInventoryItemResult result = inventory.AddItem(player.UserID, item.Item.ID, item.Quantity);
                 if(result == AddInventoryItemResult.InvalidItem)
                     continue;
 
@@ -88,13 +105,13 @@ namespace StreamRC.RPG.Adventure.Exploration {
                     allresult = result;
 
                 if(result == AddInventoryItemResult.InventoryFull) {
-                    context.GetModule<ShopModule>().AddItem(item.Item.ID, item.Quantity);
+                    shops.AddItem(item.Item.ID, item.Quantity);
                     dropped.Add(item);
                     items.RemoveAt(i);
                 }
             }
 
-            RPGMessageBuilder message = context.GetModule<RPGMessageModule>().Create();
+            RPGMessageBuilder message = messages.Create();
             message.User(user).Text(" opened a chest ");
 
 
@@ -144,45 +161,45 @@ namespace StreamRC.RPG.Adventure.Exploration {
             message.Send();
 
             foreach(FoundItem item in items)
-                context.GetModule<AdventureModule>().TriggerItemFound(player.UserID, item.Item.ID, item.Quantity);
+                adventure.TriggerItemFound(player.UserID, item.Item.ID, item.Quantity);
         }
 
         void ExecuteItem(Player player)
         {
-            Item item = context.GetModule<ItemModule>().SelectItem(player.Level, player.Luck);
+            Item item = itemmodule.SelectItem(player.Level, player.Luck);
             if (item == null)
                 return;
 
-            User user = context.GetModule<UserModule>().GetUser(player.UserID);
+            User user = usermodule.GetUser(player.UserID);
 
             if (item.Type == ItemType.Gold) {
                 int quantity = 1 + player.Luck * 10 + RNG.XORShift64.NextInt((int)Math.Max(1, player.Level * player.Luck * 0.35));
-                context.Database.Update<Player>().Set(p => p.Gold == p.Gold + quantity).Where(p => p.UserID == player.UserID).Execute();
-                context.GetModule<RPGMessageModule>().Create().User(user).Text(" has found ").Item(item, quantity).Text(".").Send();
+                players.UpdateGold(player.UserID, quantity);
+                messages.Create().User(user).Text(" has found ").Item(item, quantity).Text(".").Send();
             }
             else
             {
-                switch (context.GetModule<InventoryModule>().AddItem(player.UserID, item.ID, 1))
+                switch (inventory.AddItem(player.UserID, item.ID, 1))
                 {
                     case AddInventoryItemResult.SuccessFull:
-                        context.GetModule<RPGMessageModule>().Create().User(user).Text(" has found ").Item(item).Text(" and is now encumbered.").Send();
-                        context.GetModule<AdventureModule>().TriggerItemFound(player.UserID, item.ID, 1);
+                        messages.Create().User(user).Text(" has found ").Item(item).Text(" and is now encumbered.").Send();
+                        adventure.TriggerItemFound(player.UserID, item.ID, 1);
                         break;
                     case AddInventoryItemResult.InventoryFull:
-                        context.GetModule<ShopModule>().AddItem(item.ID, 1);
-                        context.GetModule<RPGMessageModule>().Create().User(user).Text(" is encumbered and dropped ").Item(item).Text(".").Send();
+                        shops.AddItem(item.ID, 1);
+                        messages.Create().User(user).Text(" is encumbered and dropped ").Item(item).Text(".").Send();
                         break;
                     default:
-                        context.GetModule<RPGMessageModule>().Create().User(user).Text(" has found ").Item(item).Text(".").Send();                        
-                        context.GetModule<AdventureModule>().TriggerItemFound(player.UserID, item.ID, 1);
+                        messages.Create().User(user).Text(" has found ").Item(item).Text(".").Send();
+                        adventure.TriggerItemFound(player.UserID, item.ID, 1);
                         break;
                 }
             }
         }
 
         public AdventureStatus ProcessPlayer(long playerid) {
-            Player player = context.GetModule<PlayerModule>().GetPlayer(playerid);
-            context.GetModule<SkillModule>().ModifyPlayerStats(player);
+            Player player = players.GetPlayer(playerid);
+            skills.ModifyPlayerStats(player);
             AdventureEvent @event = eventtypes.RandomItem(a => GetEventTypeValue(a, player), RNG.XORShift64);
             switch (@event)
             {

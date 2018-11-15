@@ -6,10 +6,8 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
 
@@ -18,10 +16,8 @@ namespace StreamRC.Streaming.Notifications {
     /// <summary>
     /// http service used to provide notifications for web display
     /// </summary>
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(NotificationModule))]
-    public class NotificationsHttpService : IHttpService, IRunnableModule, ITimerService, IInitializableModule {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class NotificationsHttpService : IHttpService, ITimerService {
 
         readonly object notificationlock = new object();
         readonly List<NotificationHttpMessage> notifications=new List<NotificationHttpMessage>();
@@ -30,8 +26,13 @@ namespace StreamRC.Streaming.Notifications {
         /// creates a new <see cref="NotificationsHttpService"/>
         /// </summary>
         /// <param name="context"></param>
-        public NotificationsHttpService(Context context) {
-            this.context = context;
+        public NotificationsHttpService(HttpServiceModule httpservice, NotificationModule notifications, TimerModule timer) {
+            httpservice.AddServiceHandler("/streamrc/notifications", this);
+            httpservice.AddServiceHandler("/streamrc/notifications.css", this);
+            httpservice.AddServiceHandler("/streamrc/notifications.js", this);
+            httpservice.AddServiceHandler("/streamrc/notifications/data", this);
+            notifications.Notification += OnNotification;
+            timer.AddService(this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
@@ -70,16 +71,6 @@ namespace StreamRC.Streaming.Notifications {
 
         }
 
-        void IRunnableModule.Start() {
-            context.GetModule<NotificationModule>().Notification += OnNotification;
-            context.GetModule<TimerModule>().AddService(this);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<NotificationModule>().Notification -= OnNotification;
-            context.GetModule<TimerModule>().RemoveService(this);
-        }
-
         void OnNotification(Notification notification)
         {
             lock(notificationlock) {
@@ -98,13 +89,6 @@ namespace StreamRC.Streaming.Notifications {
                         notifications.RemoveAt(i);
                 }
             }
-        }
-
-        void IInitializableModule.Initialize() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/notifications", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/notifications.css", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/notifications.js", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/notifications/data", this);
         }
     }
 }

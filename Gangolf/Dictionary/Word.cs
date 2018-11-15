@@ -1,4 +1,4 @@
-﻿using NightlyCode.DB.Entities.Attributes;
+﻿using NightlyCode.Database.Entities.Attributes;
 
 namespace NightlyCode.StreamRC.Gangolf.Dictionary {
     public class Word {

@@ -7,8 +7,8 @@ using NightlyCode.Discord.Data;
 using NightlyCode.Discord.Rest;
 using NightlyCode.Discord.Websockets;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using StreamRC.Core.Timer;
+using StreamRC.Core.Settings;
+using StreamRC.Core.UI;
 using StreamRC.Discord.Configuration;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
@@ -19,14 +19,15 @@ namespace StreamRC.Discord
     /// <summary>
     /// module providing discord interaction to <see cref="StreamModule"/>
     /// </summary>
-    [Module(Key="discord")]
+    [Module(Key="discord", AutoCreate = true)]
     public class DiscordModule : IStreamServiceModule {
         readonly IStreamModule streammodule;
+        readonly ISettings settings;
         string bottoken;
         string chatchannel;
 
-        DiscordRest discord = null;
-        DiscordWebsocket websocket = null;
+        DiscordRest discord;
+        DiscordWebsocket websocket;
 
         readonly Dictionary<string, DiscordChatChannel> channels = new Dictionary<string, DiscordChatChannel>();
 
@@ -37,8 +38,23 @@ namespace StreamRC.Discord
         /// creates a new <see cref="DiscordModule"/>
         /// </summary>
         /// <param name="streammodule">access to modules</param>
-        public DiscordModule(IStreamModule streammodule) {
+        public DiscordModule(IStreamModule streammodule, ISettings settings, IMainWindow mainwindow) {
             this.streammodule = streammodule;
+            this.settings = settings;
+
+            rpgchannel = settings.Get<string>(this, "rpgchannel");
+            chatchannel = settings.Get<string>(this, "chatchannel");
+            SetToken(settings.Get<string>(this, "bottoken"));
+
+            streammodule.AddService(DiscordConstants.Service, this);
+            Connected?.Invoke();
+
+            mainwindow.AddMenuItem("Profiles.Discord.Connect", (sender, args) => {
+                DiscordSettings discordsettings = new DiscordSettings(bottoken, chatchannel);
+                discordsettings.Closed += OnSettingsClosed;
+                discordsettings.ShowDialog();
+            });
+
         }
 
         void OnMessage(Message message) {
@@ -46,8 +62,7 @@ namespace StreamRC.Discord
             if(message.Author.Bot || (message.ChannelID != chatchannel && message.ChannelID != rpgchannel && message.ChannelID!=commandchannel))
                 return;
 
-            DiscordChatChannel channel;
-            if(!channels.TryGetValue(message.ChannelID, out channel)) {
+            if(!channels.TryGetValue(message.ChannelID, out DiscordChatChannel channel)) {
                 ChannelFlags flags = (message.ChannelID != commandchannel ? ChannelFlags.Chat : ChannelFlags.Command) | (message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.None);
                 channel = new DiscordChatChannel(discord, message.ChannelID, flags);
                 channels[message.ChannelID] = channel;
@@ -67,7 +82,7 @@ namespace StreamRC.Discord
                 return;
 
             rpgchannel = key;
-            context.Settings.Set(this, "rpgchannel", key);
+            settings.Set(this, "rpgchannel", key);
             Logger.Info(this, $"Grabbed rpg channel was changed to '{key}'");
         }
 
@@ -75,7 +90,7 @@ namespace StreamRC.Discord
             if(chatchannel == key)
                 return;
             chatchannel = key;
-            context.Settings.Set(this, "chatchannel", key);
+            settings.Set(this, "chatchannel", key);
             Logger.Info(this, $"Grabbed chat channel was changed to '{key}'");
         }
 
@@ -91,7 +106,7 @@ namespace StreamRC.Discord
             }
 
             bottoken = token;
-            context.Settings.Set(this, "bottoken", token);
+            settings.Set(this, "bottoken", token);
 
             if(!string.IsNullOrEmpty(bottoken)) {
                 websocket = new DiscordWebsocket(bottoken);
@@ -103,32 +118,10 @@ namespace StreamRC.Discord
             }
         }
 
-        void IRunnableModule.Start() {
-            rpgchannel = context.Settings.Get<string>(this, "rpgchannel");
-            chatchannel = context.Settings.Get<string>(this, "chatchannel");
-            SetToken(context.Settings.Get<string>(this, "bottoken"));
-
-            context.GetModule<StreamModule>().AddService(DiscordConstants.Service, this);
-            Connected?.Invoke();
-
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Profiles.Discord.Connect", (sender, args) => {
-                DiscordSettings settings = new DiscordSettings(bottoken, chatchannel);
-                settings.Closed += OnSettingsClosed;
-                settings.ShowDialog();
-            });
-        }
-
         void OnSettingsClosed(object sender, EventArgs e) {
             DiscordSettings settings = (DiscordSettings)sender;
             SetToken(settings.BotToken);
             chatchannel = settings.ChatChannel;
-        }
-
-        void IRunnableModule.Stop() {
-            foreach(DiscordChatChannel channel in channels.Values)
-                context.GetModule<StreamModule>().RemoveChannel(channel);
-            channels.Clear();
-            //context.GetModule<TimerModule>().RemoveService(this);
         }
 
         /// <summary>

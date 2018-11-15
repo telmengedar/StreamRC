@@ -1,32 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using Microsoft.Data.Sqlite;
 using NightlyCode.Core.Data;
 using NightlyCode.Core.Logs;
-using NightlyCode.DB.Clients;
-using NightlyCode.DB.Entities;
-using NightlyCode.DB.Entities.Operations;
-using NightlyCode.DB.Info;
+using NightlyCode.Database.Clients;
+using NightlyCode.Database.Entities;
+using NightlyCode.Database.Entities.Operations;
+using NightlyCode.Database.Entities.Operations.Fields;
+using NightlyCode.Database.Info;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 
 namespace NightlyCode.StreamRC.Gangolf.Dictionary {
 
     /// <summary>
     /// dictionary containing words and information about them
     /// </summary>
-    [ModuleKey("dictionary")]
-    public class DictionaryModule : IModule {
-        readonly EntityManager dictionary = new EntityManager(new DBClient(new SQLiteConnection("Data Source=dictionary.db3"), new SQLiteInfo()));
+    [Module(Key="dictionary")]
+    public class DictionaryModule {
+        readonly IEntityManager dictionary = new EntityManager(new DBClient(new SqliteConnection("Data Source=dictionary.db3"), new SQLiteInfo()));
 
 
         /// <summary>
         /// creates a new <see cref="DictionaryModule"/>
         /// </summary>
-        public DictionaryModule(Context context) {
+        public DictionaryModule() {
             dictionary.UpdateSchema<Word>();
         }
 
@@ -85,8 +85,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
                 if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Greeting")))
                     attributes |= WordAttribute.Greeting;
 
-                int group;
-                int.TryParse(data.TryGetValue<string>(row, "Conjunktion"), out group);
+                int.TryParse(data.TryGetValue<string>(row, "Conjunktion"), out int group);
 
                 foreach (Tuple<string, WordClass> word in ExtractWord(data, row))
                 {

@@ -1,4 +1,4 @@
-﻿using NightlyCode.DB.Entities.Attributes;
+﻿using NightlyCode.Database.Entities.Attributes;
 using StreamRC.Twitch.Chat;
 
 namespace StreamRC.Twitch {

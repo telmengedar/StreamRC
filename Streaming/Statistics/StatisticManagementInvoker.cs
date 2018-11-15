@@ -1,23 +1,13 @@
 ﻿using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.UI;
 
 namespace StreamRC.Streaming.Statistics {
 
-    [Dependency(nameof(StatisticModule), SpecifierType.Type)]
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    public class StatisticManagementInvoker : IModule, IRunnableModule {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class StatisticManagementInvoker {
 
-        public StatisticManagementInvoker(Context context) {
-            this.context = context;
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Manage.Statistics", (sender, args) => new StatisticManagementWindow(context.GetModule<StatisticModule>()).Show());
-        }
-
-        void IRunnableModule.Stop() {
+        public StatisticManagementInvoker(IMainWindow mainwindow, StatisticModule statistics) {
+            mainwindow.AddMenuItem("Manage.Statistics", (sender, args) => new StatisticManagementWindow(statistics).Show());
         }
     }
 }

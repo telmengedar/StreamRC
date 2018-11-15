@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions;
 using StreamRC.RPG.Data;
@@ -14,11 +13,9 @@ using StreamRC.RPG.Players.Skills.Monster;
 
 namespace StreamRC.RPG.Adventure.MonsterBattle {
     public class MonsterBattleEntity : IBattleEntity {
-        readonly Context context;
         readonly List<ITemporaryEffect> effects = new List<ITemporaryEffect>();
 
-        public MonsterBattleEntity(Monster monster, Context context, Adventure adventure, MonsterBattleLogic battlelogic) {
-            this.context = context;
+        public MonsterBattleEntity(Monster monster, Adventure adventure, MonsterBattleLogic battlelogic) {
             Monster = monster;
             Adventure = adventure;
             BattleLogic = battlelogic;

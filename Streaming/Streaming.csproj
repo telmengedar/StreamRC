@@ -39,13 +39,13 @@
       <HintPath>..\packages\NightlyCode.Database.0.7.10\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Japi">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
+      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -65,13 +65,16 @@
   <ItemGroup>
     <Compile Include="Ads\Ad.cs" />
     <Compile Include="Ads\AdModule.cs" />
-    <Compile Include="Cache\ImageCacheEntry.cs" />
+    <Compile Include="Cache\IImageSource.cs" />
     <Compile Include="Cache\ImageCacheItem.cs" />
     <Compile Include="Cache\ImageCacheModule.cs" />
+    <Compile Include="Cache\ResourceImage.cs" />
+    <Compile Include="Cache\UrlImageSource.cs" />
     <Compile Include="Chat\AttachmentType.cs" />
     <Compile Include="Chat\ChatHttpMessage.cs" />
     <Compile Include="Chat\ChatHttpResponse.cs" />
     <Compile Include="Chat\ChatHttpService.cs" />
+    <Compile Include="Chat\ChatMessageModule.cs" />
     <Compile Include="Chat\MessageAttachement.cs" />
     <Compile Include="Chat\MicroPresentTTSModule.cs" />
     <Compile Include="Collections\Commands\AddCollectionItemCommandHandler.cs" />

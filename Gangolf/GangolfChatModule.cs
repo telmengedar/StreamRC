@@ -5,13 +5,13 @@ using System.Text;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Gangolf.Chat;
 using NightlyCode.StreamRC.Gangolf.Dictionary;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
 using StreamRC.Core.TTS;
-using StreamRC.RPG.Messages;
+using StreamRC.Streaming.Cache;
+using StreamRC.Streaming.Chat;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
@@ -23,15 +23,16 @@ namespace NightlyCode.StreamRC.Gangolf
     /// <summary>
     /// module providing gangolf interaction with chat
     /// </summary>
-    [Dependency(nameof(RPGMessageModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(TTSModule))]
-    [Dependency(nameof(TimerModule))]
-    [ModuleKey("gangolf")]
-    public class GangolfChatModule : IRunnableModule, ITimerService {
-        readonly Context context;
+    [Module(Key="gangolf", AutoCreate = true)]
+    public class GangolfChatModule : ITimerService {
         const string voice = "CereVoice Stuart - English (Scotland)";
-        ChatFactory factory;
+        const string gangolfpic = "NightlyCode.StreamRC.Gangolf.Resources.shopkeeper_normal.png";
+
+        readonly ChatFactory factory;
+        readonly ChatMessageModule messages;
+        readonly TTSModule tts;
+        readonly UserModule usermodule;
+        readonly ImageCacheModule images;
 
         readonly object chatterlock = new object();
         readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
@@ -60,31 +61,27 @@ namespace NightlyCode.StreamRC.Gangolf
         /// creates a new <see cref="GangolfChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GangolfChatModule(Context context) {
-            this.context = context;
-        }
-
-        void IRunnableModule.Start() {
-            factory = context.GetModule<ChatFactory>();
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
-            context.GetModule<StreamModule>().UserLeft += OnUserLeft;
-            context.GetModule<TimerModule>().AddService(this, 60.0);
+        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, TTSModule tts, UserModule usermodule, ImageCacheModule images) {
+            this.factory = factory;
+            this.messages = messages;
+            this.tts = tts;
+            this.usermodule = usermodule;
+            this.images = images;
+            stream.ChatMessage += OnChatMessage;
+            stream.UserLeft += OnUserLeft;
+            timer.AddService(this, 60.0);
         }
 
         void OnUserLeft(UserInformation user) {
             greeted.Remove(new Tuple<string, string>(user.Service, user.Username));
         }
 
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().ChatMessage -= OnChatMessage;
-        }
-
         void CreateInsult(long userid) {
             StringBuilder speech = new StringBuilder();
             if(RNG.XORShift64.NextFloat() < 0.15)
                 speech.Append("Well, ");
-            RPGMessageBuilder response = context.GetModule<RPGMessageModule>().Create();
-            response.ShopKeeper();
+            MessageBuilder response = new MessageBuilder();
+            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
 
             int mode = 0;
 
@@ -174,7 +171,7 @@ namespace NightlyCode.StreamRC.Gangolf
                     mode = 3;
                     break;
                 case 20:
-                    speech.Append("I research found ");
+                    speech.Append("My research found ");
                     response.Text(" research finds ");
                     mode = 2;
                     break;
@@ -182,14 +179,14 @@ namespace NightlyCode.StreamRC.Gangolf
 
             AppendInsult(response, speech, userid, mode);
 
-            response.Send();
-            context.GetModule<TTSModule>().Speak(speech.ToString(), voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
+            tts.Speak(speech.ToString(), voice);
         }
 
-        void AppendInsult(RPGMessageBuilder response, StringBuilder speech, long userid, int mode=0) {
+        void AppendInsult(MessageBuilder response, StringBuilder speech, long userid, int mode=0) {
             if(mode != 1 && mode != 3) {
-                speech.Append(context.GetModule<UserModule>().GetUser(userid).Name);
-                response.User(userid);
+                speech.Append(usermodule.GetUser(userid).Name);
+                response.Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
                 switch(RNG.XORShift64.NextInt(5)) {
                     case 0:
                         speech.Append("'s mother");
@@ -213,8 +210,8 @@ namespace NightlyCode.StreamRC.Gangolf
                     break;
                 case 1:
                     insult = factory.CreateInsult();
-                    speech.Append($"{insult} to {context.GetModule<UserModule>().GetUser(userid).Name}.");
-                    response.Text(insult).Text(" to ").User(userid);
+                    speech.Append($"{insult} to {usermodule.GetUser(userid).Name}.");
+                    response.Text(insult).Text(" to ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
                     break;
                 case 2:
                     insult = factory.CreateInsult();
@@ -223,36 +220,36 @@ namespace NightlyCode.StreamRC.Gangolf
                     break;
                 case 3:
                     insult = factory.CreateInsult();
-                    speech.Append($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for {context.GetModule<UserModule>().GetUser(userid).Name}.");
-                    response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").User(userid);
+                    speech.Append($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for {usermodule.GetUser(userid).Name}.");
+                    response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
                     break;
             }
         }
 
         long ScanForNames(string message) {
             string[] terms = message.Split(' ').Select(t=>t.Trim('?','!','.',',',';',':')).Where(t => nametriggers.All(n => n != t)).ToArray();
-            return context.GetModule<UserModule>().FindUserIDs(terms).RandomItem(RNG.XORShift64);
+            return usermodule.FindUserIDs(terms).RandomItem(RNG.XORShift64);
         }
 
         void Greet(string service, string user) {
             StringBuilder speech = new StringBuilder();
-            RPGMessageBuilder response = context.GetModule<RPGMessageModule>().Create();
-            response.ShopKeeper();
+            MessageBuilder response = new MessageBuilder();
+            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
             speech.Append("I ");
 
             string welcoming = $"{factory.Dictionary.GetWords(w => w.Class == WordClass.Verb && (w.Attributes & WordAttribute.Greeting) == WordAttribute.Greeting).RandomItem(RNG.XORShift64)}";
             speech.Append(welcoming.TrimEnd('s'));
             response.Text($" {welcoming} ");
 
-            speech.Append(' ').Append(context.GetModule<UserModule>().GetUser(service, user).Name).Append(", the ");
-            response.User(context.GetModule<UserModule>().GetUser(service, user)).Text(" the ");
+            speech.Append(' ').Append(usermodule.GetUser(service, user).Name).Append(", the ");
+            response.User(usermodule.GetUser(service, user)).Text(" the ");
 
             string insult = factory.CreateInsult();
             speech.Append(insult);
             response.Text(insult);
 
-            context.GetModule<TTSModule>().Speak(speech.ToString(), voice);
-            response.Send();
+            tts.Speak(speech.ToString(), voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
@@ -268,21 +265,19 @@ namespace NightlyCode.StreamRC.Gangolf
 
             if(nametriggers.Any(t => lowermessage.Contains(t))) {
                 long name = ScanForNames(lowermessage);
-                if(name == 0)
-                    CreateInsult(context.GetModule<UserModule>().GetUserID(message.Service, message.User));
-                else CreateInsult(name);
+                CreateInsult(name == 0 ? usermodule.GetUserID(message.Service, message.User) : name);
             }
             else if(reasontriggers.Any(t => lowermessage.Contains(t))) {
-                CreateExplanation(context.GetModule<UserModule>().GetUserID(message.Service, message.User));
+                CreateExplanation(usermodule.GetUserID(message.Service, message.User));
             }
             else if(explanationtriggers.Any(t => lowermessage.Contains(t)))
-                Explain(context.GetModule<UserModule>().GetUserID(message.Service, message.User));
+                Explain(usermodule.GetUserID(message.Service, message.User));
             else if(statictriggers.Any(t => lowermessage.Contains(t)))
-                CreateInsult(context.GetModule<UserModule>().GetUserID(message.Service, message.User));
+                CreateInsult(usermodule.GetUserID(message.Service, message.User));
             else {
                 if(factory.ContainsInsult(message.Message))
                     if(RNG.XORShift64.NextFloat() < 0.27f)
-                        CreateInsult(context.GetModule<UserModule>().GetUserID(message.Service, message.User));
+                        CreateInsult(usermodule.GetUserID(message.Service, message.User));
                     else {
                         lock(chatterlock) {
                             chatternames.TryGetValue(message.User, out int count);
@@ -293,26 +288,25 @@ namespace NightlyCode.StreamRC.Gangolf
         }
 
         void CreateExplanation(long userid) {
-            RPGMessageBuilder response = context.GetModule<RPGMessageModule>().Create();
-            response.ShopKeeper();
+            MessageBuilder response = new MessageBuilder();
+            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
             response.Text(" says it's quite simple. ");
 
             StringBuilder speech = new StringBuilder("It is quite simple. ");
             AppendInsult(response, speech, userid);
-            response.Send();
-            context.GetModule<TTSModule>().Speak(speech.ToString(), voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
+            tts.Speak(speech.ToString(), voice);
         }
 
-        void Explain(long userid)
-        {
-            RPGMessageBuilder response = context.GetModule<RPGMessageModule>().Create();
-            response.ShopKeeper();
+        void Explain(long userid) {
+            MessageBuilder response = new MessageBuilder();
+            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
             response.Text(" explains that ");
 
             StringBuilder speech = new StringBuilder("Let me explain that. ");
             AppendInsult(response, speech, userid);
-            response.Send();
-            context.GetModule<TTSModule>().Speak(speech.ToString(), voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
+            tts.Speak(speech.ToString(), voice);
         }
 
         void ITimerService.Process(double time) {
@@ -355,7 +349,7 @@ namespace NightlyCode.StreamRC.Gangolf
             string insultive = factory.InsultiveNoun();
             sb.Append(insultive.StartsWithVocal() ? "an " : "a ");
             sb.Append(insultive).Append("!");
-            context.GetModule<TTSModule>().Speak(sb.ToString(), voice);
+            tts.Speak(sb.ToString(), voice);
         }
     }
 }

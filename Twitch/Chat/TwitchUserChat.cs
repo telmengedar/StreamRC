@@ -78,8 +78,7 @@ namespace StreamRC.Twitch.Chat {
 
         Color GetFallbackColor(string user)
         {
-            Color color;
-            if (!fallbackcolor.TryGetValue(user, out color))
+            if (!fallbackcolor.TryGetValue(user, out Color color))
                 fallbackcolor[user] = color = Color.FromRgb((byte)(128 + RNG.XORShift64.NextInt(128)), (byte)(128 + RNG.XORShift64.NextInt(128)), (byte)(128 + RNG.XORShift64.NextInt(128)));
             return color;
         }
@@ -117,14 +116,14 @@ namespace StreamRC.Twitch.Chat {
                 Emotes = message.Emotes?.Select(e => new ChatEmote {
                     StartIndex = e.FirstIndex,
                     EndIndex = e.LastIndex,
-                    ImageID = imagecache.AddImage(e.GetUrl(3), $"{Service}.emote.{e.ID}"),
+                    ImageID = imagecache.GetImageByUrl(e.GetUrl(3)),
                 }).ToArray() ?? new ChatEmote[0]
             };
         }
 
         IEnumerable<MessageAttachement> CreateAttachements(IEnumerable<string> urls) {
             foreach(string url in urls) {
-                MessageAttachement attachement = null;
+                MessageAttachement attachement;
 
                 using(HeadClient wc = new HeadClient()) {
                     try {
@@ -137,7 +136,7 @@ namespace StreamRC.Twitch.Chat {
                                 attachement = new MessageAttachement {
                                     Type = AttachmentType.Image,
                                     OriginalSource = url,
-                                    URL = imagecache.CreateCacheUrl(imagecache.AddImage(url, DateTime.Now + TimeSpan.FromMinutes(5.0)))
+                                    URL = imagecache.CreateCacheUrl(imagecache.GetImageByUrl(url))
                                 };
                                 break;
                             default:
@@ -160,8 +159,7 @@ namespace StreamRC.Twitch.Chat {
                     }
                 }
 
-                if(attachement != null)
-                    yield return attachement;
+                yield return attachement;
             }
         }
 

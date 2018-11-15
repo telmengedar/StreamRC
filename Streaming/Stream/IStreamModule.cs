@@ -15,6 +15,13 @@ namespace StreamRC.Streaming.Stream {
         void AddChannel(IChatChannel channel);
 
         /// <summary>
+        /// adds a service to the collection
+        /// </summary>
+        /// <param name="type">type of service</param>
+        /// <param name="module">module handling service calls</param>
+        void AddService(string type, IStreamServiceModule module);
+
+        /// <summary>
         /// registers a command handler for a command
         /// </summary>
         /// <param name="handler">handler used to process commands</param>

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using NightlyCode.DB.Entities.Operations;
-using NightlyCode.StreamRC.Modules;
+using NightlyCode.Database.Entities.Operations.Fields;
+using StreamRC.Core;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Ticker;
 
@@ -11,7 +11,7 @@ namespace StreamRC.Streaming.Collections {
     /// creates ticker messages for collections
     /// </summary>
     public class CollectionTickerGenerator : ITickerMessageSource {
-        readonly Context context;
+        readonly DatabaseModule database;
         readonly object countlock = new object();
         long index;
 
@@ -20,8 +20,8 @@ namespace StreamRC.Streaming.Collections {
         /// </summary>
         /// <param name="context">module context</param>
         /// <param name="module">access to collection module</param>
-        public CollectionTickerGenerator(Context context, CollectionModule module) {
-            this.context = context;
+        public CollectionTickerGenerator(DatabaseModule database, CollectionModule module) {
+            this.database = database;
             module.CollectionAdded += collection => Recount();
             module.CollectionRemoved += collection => Recount();
             Recount();
@@ -29,7 +29,7 @@ namespace StreamRC.Streaming.Collections {
 
         void Recount() {
             lock(countlock)
-                CollectionCount = context.Database.Load<Collection>(DBFunction.Count).ExecuteScalar<long>();
+                CollectionCount = database.Database.Load<Collection>(DBFunction.Count).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace StreamRC.Streaming.Collections {
                 }
             }
 
-            Collection collection = context.Database.LoadEntities<Collection>().Offset(index).Execute().FirstOrDefault();
+            Collection collection = database.Database.LoadEntities<Collection>().Offset(index).Execute().FirstOrDefault();
             if(collection != null) {
                 return new TickerMessage {
                     Content = new MessageBuilder()

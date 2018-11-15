@@ -1,32 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
-using NightlyCode.Core.Logs;
-using NightlyCode.Core.Threading;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 using StreamRC.Core.Http;
+using StreamRC.Core.Timer;
 
 namespace StreamRC.Streaming.Cache {
 
     /// <summary>
     /// module used to cache web images in database
     /// </summary>
-    [Dependency(nameof(HttpServiceModule))]
-    public class ImageCacheModule : IInitializableModule, IHttpService {
-        readonly Context context;
-        TimeSpan refreshTime;
-        readonly PeriodicTimer timer=new PeriodicTimer();
+    [Module(AutoCreate = true)]
+    public class ImageCacheModule : IHttpService, ITimerService {
+        readonly DatabaseModule database;
 
         readonly object imagelock = new object();
-        readonly List<ImageCacheEntry> images=new List<ImageCacheEntry>();
-        readonly Dictionary<long, ImageCacheEntry> imagesbyid=new Dictionary<long, ImageCacheEntry>();
-        readonly Dictionary<string, ImageCacheEntry> imagesbykey=new Dictionary<string, ImageCacheEntry>();
+        readonly Dictionary<long, ImageCacheItem> imagesbyid=new Dictionary<long, ImageCacheItem>();
+        readonly Dictionary<string, ImageCacheItem> imagesbykey=new Dictionary<string, ImageCacheItem>();
 
         static ImageCacheModule() {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -37,45 +34,16 @@ namespace StreamRC.Streaming.Cache {
         /// creates a new <see cref="ImageCacheModule"/>
         /// </summary>
         /// <param name="context">context used to access modules</param>
-        public ImageCacheModule(Context context) {
-            this.context = context;
-            timer.Elapsed += OnTimerElapsed;
-        }
+        public ImageCacheModule(DatabaseModule database, HttpServiceModule httpservice, TimerModule timer) {
+            this.database = database;
+            
 
-        void OnTimerElapsed() {
-            lock(imagelock) {
-                for(int i = images.Count - 1; i >= 0; --i) {
-                    ImageCacheEntry entry = images[i];
-                    entry.LifeTime -= 1.0;
-                    if(entry.LifeTime <= 0) {
-                        imagesbyid.Remove(entry.Image.ID);
-                        if(!string.IsNullOrEmpty(entry.Image.Key))
-                            imagesbykey.Remove(entry.Image.Key);
-                        images.RemoveAt(i);
-                    }
-                }
-                context.Database.Delete<ImageCacheItem>().Where(i => i.Expiration < DateTime.Now).Execute();
-            }
-        }
+            database.Database.UpdateSchema<ImageCacheItem>();
+            DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(30.0);
+            database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Execute();
 
-        void RefreshImage(ImageCacheEntry entry) {
-            if(DateTime.Now - entry.Image.LastUpdate < refreshTime)
-                return;
-
-            byte[] data;
-            try {
-                using(WebClient client = new WebClient()) {
-                    data = client.DownloadData(entry.Image.URL);
-                }
-            }
-            catch(Exception e) {
-                Logger.Warning(this, $"Unable to refresh image '{entry.Image.URL}'", e.Message);
-                context.Database.Update<ImageCacheItem>().Set(i => i.LastUpdate == DateTime.Now).Where(i => i.ID == entry.Image.ID).Execute();
-                return;
-            }
-
-            entry.Image.Data = data;
-            context.Database.Update<ImageCacheItem>().Set(i => i.Data == data, i => i.LastUpdate == DateTime.Now).Where(i => i.ID == entry.Image.ID).Execute();
+            httpservice.AddServiceHandler("/streamrc/image", this);
+            timer.AddService(this, 300.0);
         }
 
         /// <summary>
@@ -85,90 +53,64 @@ namespace StreamRC.Streaming.Cache {
         /// <returns>image data</returns>
         public byte[] GetImageData(long imageid) {
             lock(imagelock) {
-                ImageCacheEntry entry;
-                if(!imagesbyid.TryGetValue(imageid, out entry)) {
-                    entry = new ImageCacheEntry {
-                        Image = context.Database.LoadEntities<ImageCacheItem>().Where(i => i.ID == imageid).Execute().FirstOrDefault(),
-                        LifeTime = 300.0
-                    };
-                    images.Add(entry);
-                    imagesbyid[imageid] = entry;
-                    if(!string.IsNullOrEmpty(entry.Image.Key))
-                        imagesbykey[entry.Image.Key] = entry;
+                DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(5.0);
+                if (imagesbyid.TryGetValue(imageid, out ImageCacheItem item)) {
+                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    return item.Data;
                 }
-                RefreshImage(entry);
-                return entry.Image.Data;
+
+                return null;
             }
         }
 
-        /// <summary>
-        /// get data of an image by specifying its image key
-        /// </summary>
-        /// <param name="key">key of image</param>
-        /// <returns>image data</returns>
-        public byte[] GetImageData(string key) {
-            lock(imagelock) {
-                ImageCacheEntry entry;
-                if(!imagesbykey.TryGetValue(key, out entry)) {
-                    entry = new ImageCacheEntry {
-                        Image = context.Database.LoadEntities<ImageCacheItem>().Where(i => i.Key == key).Execute().FirstOrDefault(),
-                        LifeTime = 300.0
-                    };
-                    images.Add(entry);
-                    imagesbyid[entry.Image.ID] = entry;
-                    imagesbykey[key] = entry;
-                }
-                RefreshImage(entry);
-                return entry.Image.Data;
-            }
+        public long GetImageByResource(Assembly assembly, string path) {
+            return GetImage(new ResourceImage(assembly, path));
         }
 
-        /// <summary>
-        /// adds an image entry to the cache
-        /// </summary>
-        /// <param name="url">url to image data</param>
-        /// <param name="key">key to retrieve image (optional)</param>
-        /// <returns>id of image in databasee</returns>
-        public long AddImage(string url, string key=null) {
-            return AddImage(url, DateTime.MaxValue, key);
-        }
-
-        /// <summary>
-        /// adds an image entry to the cache
-        /// </summary>
-        /// <param name="url">url to image data</param>
-        /// <param name="key">key to retrieve image (optional)</param>
-        /// <returns>id of image in databasee</returns>
-        public long AddImage(string url, DateTime expiration, string key = null)
-        {
+        public long GetImageByUrl(string url) {
             if (string.IsNullOrEmpty(url))
-                return -1;
-
-            lock (imagelock)
-            {
-                if (!string.IsNullOrEmpty(key) && imagesbykey.ContainsKey(key))
-                    return imagesbykey[key].Image.ID;
-
-                long id = context.Database.Load<ImageCacheItem>(i => i.ID).Where(i => i.URL == url).ExecuteScalar<long>();
-                if (id != 0)
-                    return id;
-
-                return context.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.URL, i => i.LastUpdate, i => i.Expiration).Values(key, url, DateTime.Now - TimeSpan.FromDays(2.0), expiration).ReturnID().Execute();
-            }
+                return 0;
+            return GetImage(new UrlImageSource(url));
         }
 
-        /// <summary>
-        /// time after which image data is refreshed
-        /// </summary>
-        public TimeSpan RefreshTime
-        {
-            get { return refreshTime; }
-            set
-            {
-                if(refreshTime == value)
-                    return;
-                refreshTime = value;
-                context.Settings.Set(this, "RefreshTime", value);
+        public long GetImage(IImageSource source) {
+            lock (imagelock) {
+                DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(5.0);
+                if (imagesbykey.TryGetValue(source.Key, out ImageCacheItem item)) {
+                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    return item.ID;
+                }
+
+                item = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Key == source.Key).Limit(1).Execute().FirstOrDefault();
+                if (item != null) {
+                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    imagesbyid[item.ID] = item;
+                    imagesbykey[item.Key] = item;
+                    return item.ID;
+                }
+
+                System.IO.Stream stream = source.Data;
+                byte[] data=null;
+                if(stream!=null)
+                    using (MemoryStream ms = new MemoryStream()) {
+                        stream.CopyTo(ms);
+                        data = ms.ToArray();
+                    }
+
+                database.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.Expiration, i => i.Data)
+                    .Values(source.Key, expiration, data)
+                    .Execute();
+
+                item = new ImageCacheItem {
+                    ID = database.Database.Load<ImageCacheItem>(i => i.ID).Where(i => i.Key == source.Key).ExecuteScalar<long>(),
+                    Key = source.Key,
+                    Expiration = expiration,
+                    Data = data
+                };
+
+                imagesbyid[item.ID] = item;
+                imagesbykey[item.Key] = item;
+                return item.ID;
             }
         }
 
@@ -192,12 +134,6 @@ namespace StreamRC.Streaming.Cache {
                 return -1;
 
             return long.Parse(match.Groups["id"].Value);
-        }
-
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<ImageCacheItem>();
-            refreshTime = context.Settings.Get(this, "RefreshTime", TimeSpan.FromDays(1.0));
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/image", this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
@@ -224,6 +160,21 @@ namespace StreamRC.Streaming.Cache {
                 client.EndHeader();
                 using (System.IO.Stream stream = client.GetStream())
                     stream.Write(data, 0, data.Length);
+            }
+        }
+
+        void ITimerService.Process(double time) {
+            lock (imagelock) {
+                DateTime now = DateTime.Now;
+                ImageCacheItem[] expired = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Expiration < now).Execute().ToArray();
+                
+                foreach (ImageCacheItem item in expired) {
+                    imagesbyid.Remove(item.ID);
+                    imagesbykey.Remove(item.Key);
+                }
+
+                long[] ids = expired.Select(i => i.ID).ToArray();
+                database.Database.Delete<ImageCacheItem>().Where(i => ids.Contains(i.ID)).Execute();
             }
         }
     }

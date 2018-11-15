@@ -1,32 +1,22 @@
 ﻿using System.Drawing;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Streaming.Text;
 
 namespace StreamRC.Streaming.Games {
 
-    [Dependency(nameof(CurrentlyPlayedModule))]
-    [Dependency(nameof(TextModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    public class GamesHttpModule : IRunnableModule, IHttpService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class GamesHttpModule : IHttpService {
+        readonly CurrentlyPlayedModule currentlyplayed;
+        readonly TextModule text;
 
-        public GamesHttpModule(Context context) {
-            this.context = context;
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/images/games/current", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/images/games/epithet", this);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/images/games/current");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/images/games/epithet");
+        public GamesHttpModule(HttpServiceModule httpservice, CurrentlyPlayedModule currentlyplayed, TextModule text) {
+            this.currentlyplayed = currentlyplayed;
+            this.text = text;
+            httpservice.AddServiceHandler("/streamrc/images/games/current", this);
+            httpservice.AddServiceHandler("/streamrc/images/games/epithet", this);
         }
 
         public void ProcessRequest(HttpClient client, HttpRequest request) {
@@ -38,9 +28,9 @@ namespace StreamRC.Streaming.Games {
             int outlinethickness = request.GetParameter<int>("outlinethickness");
             Color outlinecolor = request.HasParameter("outlinecolor") ? request.GetParameter<Color>("outlinecolor") : Color.Black;
 
-            CurrentlyPlayedGame game = context.GetModule<CurrentlyPlayedModule>().CurrentGame;
+            CurrentlyPlayedGame game = currentlyplayed.CurrentGame;
             string gamename = request.Resource.EndsWith("current") ? game.Game : game.Epithet;
-            client.ServeData(context.GetModule<TextModule>().CreateTextImage(gamename, size, textcolor, outlinecolor, outlinethickness), ".png");
+            client.ServeData(text.CreateTextImage(gamename, size, textcolor, outlinecolor, outlinethickness), ".png");
         }
     }
 }

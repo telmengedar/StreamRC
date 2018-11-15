@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using NightlyCode.Twitch.Api;
 using NightlyCode.Twitch.Chat;
 using NightlyCode.Twitch.V5;
+using StreamRC.Core;
+using StreamRC.Core.Settings;
 using StreamRC.Core.Timer;
+using StreamRC.Core.UI;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users;
@@ -25,15 +25,14 @@ namespace StreamRC.Twitch.Chat {
     /// <summary>
     /// interface to twitch
     /// </summary>
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(TwitchChatModule))]
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    [ModuleKey("twitchbot")]
-    public class TwitchBotModule : IInitializableModule, IStreamServiceModule, IRunnableModule, ITimerService, IStreamStatsModule {
+    [Module(Key="twitchbot", AutoCreate = true)]
+    public class TwitchBotModule : IStreamServiceModule, ITimerService, IStreamStatsModule {
+        readonly TwitchChatModule chatmodule;
+        readonly StreamModule stream;
+        readonly UserModule usermodule;
+        readonly ISettings settings;
+        readonly ImageCacheModule imagecache;
 
-        readonly Context context;
         readonly ChatClient chatclient = new ChatClient();
 
         string botname;
@@ -62,8 +61,12 @@ namespace StreamRC.Twitch.Chat {
         /// creates a new <see cref="TwitchBotModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public TwitchBotModule(Context context) {
-            this.context = context;
+        public TwitchBotModule(IMainWindow mainwindow, TwitchChatModule chatmodule, StreamModule stream, DatabaseModule database, UserModule users, ISettings settings, TimerModule timer, ImageCacheModule imagecache) {
+            this.chatmodule = chatmodule;
+            this.stream = stream;
+            this.usermodule = users;
+            this.settings = settings;
+            this.imagecache = imagecache;
             chatclient.Disconnected += () => Disconnect(true);
             chatclient.Reconnect += () => {
                 Logger.Info(this, "Reconnect message received");
@@ -72,6 +75,23 @@ namespace StreamRC.Twitch.Chat {
 
             chatclient.ChannelJoined += OnChannelJoined;
             chatclient.ChannelLeft += OnChannelLeft;
+
+            database.Database.UpdateSchema<TwitchProfile>();
+
+            users.BeginInitialization(TwitchConstants.ServiceKey);
+
+            stream.AddService(TwitchConstants.ServiceKey, this);
+
+            mainwindow.AddMenuItem("Profiles.Twitch.Connect", (sender, args) => new TwitchConnector(this, chatmodule).ShowDialog());
+
+            botname = settings.Get<string>(this, "botname", null);
+            accesstoken = settings.Get<string>(this, "token", null);
+
+            if (!string.IsNullOrEmpty(botname) && !string.IsNullOrEmpty(accesstoken))
+                Connect();
+
+            timer.AddService(this, 5.0);
+
         }
 
         public bool Live
@@ -105,7 +125,7 @@ namespace StreamRC.Twitch.Chat {
         public NightlyCode.Twitch.Api.User UserData => userdata;
 
         public void Disconnect(bool reconnect) {
-            context.GetModule<StreamModule>().RemoveChannels(c=>c is TwitchBotChat);
+            stream.RemoveChannels(c=>c is TwitchBotChat);
             isconnected = false;
 
             if (reconnect && !isreconnecting)
@@ -132,13 +152,13 @@ namespace StreamRC.Twitch.Chat {
         void OnChannelJoined(ChatChannel channelsource)
         {
             Logger.Info(this, $"Connected to channel '{channelsource.Name}'");
-            context.GetModule<StreamModule>().AddChannel(new TwitchBotChat(channelsource, context.GetModule<UserModule>(), context.GetModule<ImageCacheModule>()));
+            stream.AddChannel(new TwitchBotChat(channelsource, usermodule, imagecache));
         }
 
         void OnChannelLeft(ChatChannel channelsource)
         {
             Logger.Info(this, $"Disconnected from channel '{channelsource.Name}'");
-            context.GetModule<StreamModule>().RemoveChannel(TwitchConstants.ServiceKey, channelsource.Name);
+            stream.RemoveChannel(TwitchConstants.ServiceKey, channelsource.Name);
         }
 
         public void Connect() {
@@ -147,8 +167,8 @@ namespace StreamRC.Twitch.Chat {
                 return;
             }
 
-            string chatchannel = context.GetModule<TwitchChatModule>().Username;
-            string usertoken = context.GetModule<TwitchChatModule>().AccessToken;
+            string chatchannel = chatmodule.Username;
+            string usertoken = chatmodule.AccessToken;
             if(string.IsNullOrEmpty(usertoken)) {
                 Logger.Warning(this, "User not connected");
                 return;
@@ -174,7 +194,7 @@ namespace StreamRC.Twitch.Chat {
 
         void OnLiveStatusChanged(bool live) {
             if(live) {
-                string chatchannel = context.GetModule<TwitchChatModule>().Username;
+                string chatchannel = chatmodule.Username;
                 if (!string.IsNullOrEmpty(chatchannel))
                 {
                     Logger.Info(this, $"Connecting to @{botname} to #{chatchannel}");
@@ -244,7 +264,7 @@ namespace StreamRC.Twitch.Chat {
             GetUserResponse userresponse=twitchapi.GetUsersByID(userids);
 
             foreach(NightlyCode.Twitch.Api.User user in userresponse.Data)
-                yield return context.GetModule<UserModule>().AddOrUpdateUser(TwitchConstants.ServiceKey, user.Login, user.ID);
+                yield return usermodule.AddOrUpdateUser(TwitchConstants.ServiceKey, user.Login, user.ID);
         }
 
         IEnumerable<UserInformation> GetFollowers()
@@ -310,7 +330,7 @@ namespace StreamRC.Twitch.Chat {
                 }
 
                 if(response != null) {
-                    User[] users = context.GetModule<UserModule>().GetUsersByKey(TwitchConstants.ServiceKey, response.Data.Select(u => u.FromID).ToArray());
+                    User[] users = usermodule.GetUsersByKey(TwitchConstants.ServiceKey, response.Data.Select(u => u.FromID).ToArray());
 
                     string[] unknownids = response.Data.Where(u => users.All(us => us.Key != u.FromID)).Select(u => u.FromID).ToArray();
 
@@ -344,18 +364,6 @@ namespace StreamRC.Twitch.Chat {
 
         public Stream ServiceIcon => ResourceAccessor.GetResource<Stream>("StreamRC.Twitch.Resources.Glitch_White_RGB.png");
 
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<TwitchProfile>();
-
-            context.GetModule<UserModule>().BeginInitialization(TwitchConstants.ServiceKey);
-
-#if !TEST
-            context.GetModule<StreamModule>().AddService(TwitchConstants.ServiceKey, this);
-#endif
-
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Profiles.Twitch.Connect", (sender, args) => new TwitchConnector(context).ShowDialog());
-        }
-
         void CheckFollowers() {
             if(cooldown > 0) {
                 --cooldown;
@@ -363,8 +371,6 @@ namespace StreamRC.Twitch.Chat {
             }
 
             cooldown = 5;
-
-            UserModule usermodule = context.GetModule<UserModule>();
 
             try {
                 foreach(UserInformation follower in GetFollowers()) {
@@ -421,24 +427,8 @@ namespace StreamRC.Twitch.Chat {
                 return;
             }
 
-            context.GetModule<UserModule>().EndInitialization(TwitchConstants.ServiceKey);
+            usermodule.EndInitialization(TwitchConstants.ServiceKey);
         }
-
-        void IRunnableModule.Start() {
-            botname = context.Settings.Get<string>(this, "botname", null);
-            accesstoken = context.Settings.Get<string>(this, "token", null);
-
-            if (!string.IsNullOrEmpty(botname) && !string.IsNullOrEmpty(accesstoken))
-                Connect();
-
-            context.GetModule<TimerModule>().AddService(this, 5.0);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
-            Disconnect(false);
-        }
-
         /// <summary>
         /// set the credentials to use for chat module
         /// </summary>
@@ -452,8 +442,8 @@ namespace StreamRC.Twitch.Chat {
             botname = chatuser;
             accesstoken = chataccesstoken;
 
-            context.Settings.Set(this, "botname", chatuser);
-            context.Settings.Set(this, "token", chataccesstoken);
+            settings.Set(this, "botname", chatuser);
+            settings.Set(this, "token", chataccesstoken);
             if (!string.IsNullOrEmpty(chatuser) && !string.IsNullOrEmpty(chataccesstoken))
                 Connect();
         }

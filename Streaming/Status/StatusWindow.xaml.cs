@@ -222,14 +222,14 @@ namespace StreamRC.Streaming.Status
                 alternate = !alternate;
 
                 paragraph.Inlines.Add(new Image {
-                    Source = emotecache[imagecache.AddImage($"http://localhost/streamrc/services/icon?service={message.Service}")],
+                    Source = emotecache[imagecache.GetImageByUrl($"http://localhost/streamrc/services/icon?service={message.Service}")],
                     Stretch = Stretch.Uniform,
                     Height = 24.0
                 });
 
                 if (!string.IsNullOrEmpty(message.AvatarLink))
                     paragraph.Inlines.Add(new Image {
-                        Source = emotecache[imagecache.AddImage(message.AvatarLink)],
+                        Source = emotecache[imagecache.GetImageByUrl(message.AvatarLink)],
                         Stretch = Stretch.Uniform,
                         Height = 24.0
                     });
@@ -278,7 +278,7 @@ namespace StreamRC.Streaming.Status
 
                 long imageid = imagecache.ExtractIDFromUrl(url);
                 if(imageid == -1)
-                    imageid = imagecache.AddImage(url, DateTime.Now + TimeSpan.FromMinutes(5.0));
+                    imageid = imagecache.GetImageByUrl(url);
 
                 paragraph.Inlines.Add(new Image {
                     Source = emotecache[imageid],
