@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.Remoting.Contexts;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
 
@@ -13,7 +13,7 @@ namespace StreamRC.Streaming.Stream.Alias {
     /// module which handles aliases for commands
     /// </summary>
     [Dependency(nameof(StreamModule), SpecifierType.Type)]
-    [ModuleKey("alias")]
+    [Module(Key="alias")]
     public class CommandAliasModule : IRunnableModule, IStreamCommandHandler, IInitializableModule {
         readonly Context context;
 

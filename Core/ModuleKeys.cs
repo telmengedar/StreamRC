@@ -1,4 +1,4 @@
-﻿namespace NightlyCode.StreamRC.Modules {
+﻿namespace StreamRC.Core {
 
     /// <summary>
     /// predefined module keys

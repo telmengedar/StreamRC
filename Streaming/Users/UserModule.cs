@@ -1,28 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
-using StreamRC.Streaming.Stream;
-using StreamRC.Streaming.Stream.Chat;
+using StreamRC.Streaming.Extensions;
 
 namespace StreamRC.Streaming.Users {
 
     /// <summary>
     /// module managing users
     /// </summary>
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    [ModuleKey("users")]
-    public class UserModule : IInitializableModule, IRunnableModule, ITimerService, IHttpService {
-        readonly Context context;
+    [Module(Key="users", AutoCreate = true)]
+    public class UserModule : ITimerService, IHttpService {
+        readonly DatabaseModule database;
         readonly object userlock = new object();
 
         readonly List<UserCacheEntry> users = new List<UserCacheEntry>();
@@ -35,8 +31,11 @@ namespace StreamRC.Streaming.Users {
         /// creates a new <see cref="UserModule"/>
         /// </summary>
         /// <param name="context"></param>
-        public UserModule(Context context) {
-            this.context = context;
+        public UserModule(DatabaseModule database, HttpServiceModule httpservice, TimerModule timer) {
+            this.database = database;
+            database.Database.UpdateSchema<User>();
+            httpservice.AddServiceHandler("/streamrc/users/flag", this);
+            timer.AddService(this, 1.0);
         }
 
         /// <summary>
@@ -82,13 +81,22 @@ namespace StreamRC.Streaming.Users {
         }
 
         /// <summary>
+        /// find ids of users specified in name enumeration
+        /// </summary>
+        /// <param name="names">names to search for</param>
+        /// <returns>ids of matching users</returns>
+        public IEnumerable<long> FindUserIDs(IEnumerable<string> names) {
+            return database.Database.Load<User>(u => u.ID).Where(u => names.Contains(u.Name)).ExecuteSet<long>();
+        }
+
+        /// <summary>
         /// get user information by key
         /// </summary>
         /// <param name="service">service user is linked to</param>
         /// <param name="keys">user keys (eg. ids)</param>
         /// <returns>user information</returns>
         public User[] GetUsersByKey(string service, params string[] keys) {
-            return context.Database.LoadEntities<User>().Where(u => u.Service == service && keys.Contains(u.Key)).Execute().ToArray();
+            return database.Database.LoadEntities<User>().Where(u => u.Service == service && keys.Contains(u.Key)).Execute().ToArray();
         }
 
         /// <summary>
@@ -98,8 +106,20 @@ namespace StreamRC.Streaming.Users {
         /// <param name="url">link to avatar image</param>
         public void UpdateUserAvatar(User user, string url) {
             lock(userlock) {
-                context.Database.Update<User>().Set(u => u.Avatar == url).Where(u => u.ID == user.ID).Execute();
+                database.Database.Update<User>().Set(u => u.Avatar == url).Where(u => u.ID == user.ID).Execute();
                 user.Avatar = url;
+            }
+        }
+
+        /// <summary>
+        /// updates the color for username representation
+        /// </summary>
+        /// <param name="service">service user is registered to</param>
+        /// <param name="user">user of which to update avatar</param>
+        /// <param name="color">color of user</param>
+        public void UpdateUserColor(string service, string user, string color) {
+            lock(userlock) {
+                UpdateUserColor(GetUser(service, user), color.ParseColor());
             }
         }
 
@@ -110,8 +130,30 @@ namespace StreamRC.Streaming.Users {
         /// <param name="color">color of user</param>
         public void UpdateUserColor(User user, string color) {
             lock(userlock) {
-                context.Database.Update<User>().Set(u => u.Color == color).Where(u => u.ID == user.ID).Execute();
+                database.Database.Update<User>().Set(u => u.Color == color).Where(u => u.ID == user.ID).Execute();
                 user.Color = color;
+            }
+        }
+
+        /// <summary>
+        /// updates the color for username representation
+        /// </summary>
+        /// <param name="user">user of which to update avatar</param>
+        /// <param name="color">color of user</param>
+        public void UpdateUserColor(User user, Color color)
+        {
+            UpdateUserColor(user, $"#{color.R:X2}{color.G:X2}{color.B:X2}");
+        }
+
+        /// <summary>
+        /// get color used to display a username
+        /// </summary>
+        /// <param name="service">service user is registered to</param>
+        /// <param name="user">name of user</param>
+        /// <returns>custom color string registered to user</returns>
+        public string GetUserColor(string service, string user) {
+            lock(userlock) {
+                return GetUser(service, user).Color;
             }
         }
 
@@ -124,11 +166,10 @@ namespace StreamRC.Streaming.Users {
         public User GetExistingUser(string service, string name) {
             lock(userlock) {
                 UserKey key = new UserKey(service, name);
-                UserCacheEntry cacheentry;
-                usersbyname.TryGetValue(key, out cacheentry);
+                usersbyname.TryGetValue(key, out UserCacheEntry cacheentry);
                 if (cacheentry == null)
                 {
-                    User user = context.Database.LoadEntities<User>().Where(u => u.Service == key.Service && u.Name == key.Username).Execute().FirstOrDefault();
+                    User user = database.Database.LoadEntities<User>().Where(u => u.Service == key.Service && u.Name == key.Username).Execute().FirstOrDefault();
                     if(user == null)
                         throw new Exception($"User '{name}' for service '{service}' not found.");
 
@@ -148,16 +189,12 @@ namespace StreamRC.Streaming.Users {
         public User GetUser(string service, string name) {
             lock(userlock) {
                 UserKey key = new UserKey(service, name);
-                UserCacheEntry cacheentry;
-                usersbyname.TryGetValue(key, out cacheentry);
+                usersbyname.TryGetValue(key, out UserCacheEntry cacheentry);
                 if(cacheentry == null) {
-                    User user = context.Database.LoadEntities<User>().Where(u => u.Service == key.Service && u.Name == key.Username).Execute().FirstOrDefault();
+                    User user = database.Database.LoadEntities<User>().Where(u => u.Service == key.Service && u.Name == key.Username).Execute().FirstOrDefault();
                     if(user == null) {
-                        user = new User {
-                            Service = service,
-                            Name = name,
-                            ID = context.Database.Insert<User>().Columns(u => u.Service, u => u.Name, u => u.Status).Values(service, name, UserStatus.Free).ReturnID().Execute()
-                        };
+                        database.Database.Insert<User>().Columns(u => u.Service, u => u.Name, u => u.Status).Values(service, name, UserStatus.Free).Execute();
+                        user = database.Database.LoadEntities<User>().Where(u => u.Service == key.Service && u.Name == key.Username).Execute().FirstOrDefault();
                     }
                     cacheentry = AddUserToCache(user);
                 }
@@ -178,7 +215,7 @@ namespace StreamRC.Streaming.Users {
                 User user = GetUser(service, name);
                 if(key != null && user.Key != key) {
                     user.Key = key;
-                    context.Database.Update<User>().Set(u => u.Key == key).Where(u => u.ID == user.ID).Execute();
+                    database.Database.Update<User>().Set(u => u.Key == key).Where(u => u.ID == user.ID).Execute();
                 }
                 return user;
             }
@@ -194,7 +231,7 @@ namespace StreamRC.Streaming.Users {
         {
             User user = GetExistingUser(service, username);
             user.Flags |= flag;
-            context.Database.Update<User>().Set(u => u.Flags == user.Flags).Where(u => u.ID == user.ID).Execute();
+            database.Database.Update<User>().Set(u => u.Flags == user.Flags).Where(u => u.ID == user.ID).Execute();
             NightlyCode.Core.Logs.Logger.Info(this, $"{service}/{username} is now flagged as {flag}.");
             UserFlagsChanged?.Invoke(user);
         }
@@ -209,7 +246,7 @@ namespace StreamRC.Streaming.Users {
         {
             User user = GetExistingUser(service, username);
             user.Flags &= ~flag;
-            context.Database.Update<User>().Set(u => u.Flags == user.Flags).Where(u => u.ID == user.ID).Execute();
+            database.Database.Update<User>().Set(u => u.Flags == user.Flags).Where(u => u.ID == user.ID).Execute();
             NightlyCode.Core.Logs.Logger.Info(this, $"{service}/{username} is not flagged as {flag} anymore.");
         }
 
@@ -220,10 +257,9 @@ namespace StreamRC.Streaming.Users {
         /// <returns>user</returns>
         public User GetUser(long userid) {
             lock(userlock) {
-                UserCacheEntry cacheentry;
-                usersbyid.TryGetValue(userid, out cacheentry);
+                usersbyid.TryGetValue(userid, out UserCacheEntry cacheentry);
                 if(cacheentry == null) {
-                    User user = context.Database.LoadEntities<User>().Where(u => u.ID == userid).Execute().FirstOrDefault();
+                    User user = database.Database.LoadEntities<User>().Where(u => u.ID == userid).Execute().FirstOrDefault();
                     cacheentry = AddUserToCache(user);
                 }
                 cacheentry.LifeTime = 300.0;
@@ -231,40 +267,22 @@ namespace StreamRC.Streaming.Users {
             }
         }
 
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<User>();
-
-            context.GetModule<StreamModule>().NewFollower += OnFollower;
-            context.GetModule<StreamModule>().NewSubscriber += OnSubscriber;
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
-
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/users/flag", this);
-        }
-
-        void OnChatMessage(ChatMessage message) {
-            User user = GetUser(message.Service, message.User);
-
-            string color = $"#{message.UserColor.R.ToString("X2")}{message.UserColor.G.ToString("X2")}{message.UserColor.B.ToString("X2")}";
-            if(user.Color != color)
-                UpdateUserColor(user, color);
-        }
-
         public void BeginInitialization(string service) {
-            context.Database.Update<User>().Set(u => u.Flags == (u.Flags|UserFlags.Initializing)).Where(u=>u.Service==service).Execute();
+            database.Database.Update<User>().Set(u => u.Flags == (u.Flags|UserFlags.Initializing)).Where(u=>u.Service==service).Execute();
         }
 
         public void EndInitialization(string service) {
             UserFlags flags = ~UserFlags.Initializing;
-            context.Database.Update<User>().Set(u => u.Status==UserStatus.Free, u=> u.Flags==(u.Flags & flags)).Where(u => u.Service == service && (u.Flags&UserFlags.Initializing)==UserFlags.Initializing).Execute();
+            database.Database.Update<User>().Set(u => u.Status==UserStatus.Free, u=> u.Flags==(u.Flags & flags)).Where(u => u.Service == service && (u.Flags&UserFlags.Initializing)==UserFlags.Initializing).Execute();
         }
 
         public UserStatus GetUserStatus(string service, string user) {
-            return context.Database.Load<User>(u => u.Status).Where(u => u.Service==service && u.Name == user).ExecuteScalar<UserStatus>();
+            return database.Database.Load<User>(u => u.Status).Where(u => u.Service==service && u.Name == user).ExecuteScalar<UserStatus>();
         }
 
         public void SetInitialized(string service, string user) {
             UserFlags flags = ~UserFlags.Initializing;
-            context.Database.Update<User>().Set(u => u.Flags == (u.Flags & flags)).Where(u => u.Service == service && u.Name == user).Execute();
+            database.Database.Update<User>().Set(u => u.Flags == (u.Flags & flags)).Where(u => u.Service == service && u.Name == user).Execute();
         }
 
         public bool SetUserStatus(string service, string user, UserStatus status) {
@@ -272,37 +290,17 @@ namespace StreamRC.Streaming.Users {
             GetUser(service, user);
             
 
-            return context.Database.Update<User>().Set(u => u.Status == status).Where(u => u.Service == service && u.Name == user && u.Status < status).Execute() > 0;
+            return database.Database.Update<User>().Set(u => u.Status == status).Where(u => u.Service == service && u.Name == user && u.Status < status).Execute() > 0;
         }
 
-        void OnSubscriber(SubscriberInformation user) {
-            SetUserStatus(user.Service, user.Username, user.Status);
+        public void UserJoined(string service, string user) {
+            lock (userlock)
+                activeusers.Add(new UserKey(service, user));
         }
 
-        void OnFollower(UserInformation user) {
-            SetUserStatus(user.Service, user.Username, UserStatus.Follower);
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<TimerModule>().AddService(this, 1.0);
-            context.GetModule<StreamModule>().UserJoined += OnUserJoined;
-            context.GetModule<StreamModule>().UserLeft += OnUserLeft;
-        }
-
-        void OnUserLeft(UserInformation user) {
-            lock(userlock)
-                activeusers.Remove(new UserKey(user.Service, user.Username));
-        }
-
-        void OnUserJoined(UserInformation user) {
-            lock(userlock)
-                activeusers.Add(new UserKey(user.Service, user.Username));
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
-            context.GetModule<StreamModule>().UserJoined -= OnUserJoined;
-            context.GetModule<StreamModule>().UserLeft -= OnUserLeft;
+        public void UserLeft(string service, string user) {
+            lock (userlock)
+                activeusers.Remove(new UserKey(service, user));
         }
 
         void ITimerService.Process(double time) {

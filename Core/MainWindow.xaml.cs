@@ -6,58 +6,36 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using NightlyCode.Core.Helpers;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.Scripts;
+using StreamRC.Core.Settings;
+using StreamRC.Core.UI;
 
 namespace StreamRC.Core
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    [ModuleKey(ModuleKeys.MainWindow)]
-    public partial class MainWindow : Window, IInitializableModule, IRunnableModule, IMainWindow {
-        readonly Context context;
-        IChatMessageSender chat;
+    [Module(Key=ModuleKeys.MainWindow)]
+    public partial class MainWindow : ModuleWindow, IMainWindow {
+        readonly IChatMessageSender chat;
+        readonly ScriptModule scripts;
 
         readonly List<string> commandhistory=new List<string>();
         int index = -1;
-
+        
         /// <summary>
         /// creates a new <see cref="MainWindow"/>
         /// </summary>
-        public MainWindow(Context context) {
-            this.context = context;
+        public MainWindow(ISettings settings, IChatMessageSender chat, ScriptModule scripts)
+            : base(settings)
+        {
+            this.chat = chat;
+            this.scripts = scripts;
             InitializeComponent();
-        }
-
-        protected override void OnLocationChanged(EventArgs e)
-        {
-            base.OnLocationChanged(e);
-            context.Settings.Set(this, "x", Left);
-            context.Settings.Set(this, "y", Top);
-        }
-
-        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-        {
-            base.OnRenderSizeChanged(sizeInfo);
-            if (sizeInfo.WidthChanged)
-                context.Settings.Set(this, "width", sizeInfo.NewSize.Width);
-            if (sizeInfo.HeightChanged)
-                context.Settings.Set(this, "height", sizeInfo.NewSize.Height);
-        }
-
-        protected void LoadSettings()
-        {
-            double width = context.Settings.Get(this, "width", Width);
-            double height = context.Settings.Get(this, "height", Height);
-            double x = context.Settings.Get(this, "x", 0.0);
-            double y = context.Settings.Get(this, "y", 0.0);
-            Width = width;
-            Height = height;
-            Left = x;
-            Top = y;
+            Logger.Message += OnLogMessage;
+            Show();
         }
 
         /// <summary>
@@ -105,10 +83,10 @@ namespace StreamRC.Core
             for (int i = 0; i < path.Length; ++i)
             {
                 MenuItem menui = null;
-                for (int k = 0; k < currentcollection.Count; ++k)
-                    if ((currentcollection[k] as MenuItem)?.Header as string == path[i])
+                foreach(object item in currentcollection)
+                    if ((item as MenuItem)?.Header as string == path[i])
                     {
-                        menui = currentcollection[k] as MenuItem;
+                        menui = item as MenuItem;
                         break;
                     }
 
@@ -151,6 +129,9 @@ namespace StreamRC.Core
             }
 
             Dispatcher.BeginInvoke((Action)(() => {
+                while(log.Blocks.Count > 256)
+                    log.Blocks.Remove(log.Blocks.FirstBlock);
+
                 Paragraph paragraph = new Paragraph();
                 paragraph.Inlines.Add(new Run($"{sender}: {message}")
                 {
@@ -182,27 +163,14 @@ namespace StreamRC.Core
             if(e.Key == Key.Enter || e.Key == Key.Return) {
                 string message = txtMessage.Text;
                 if(message.StartsWith("$")) {
-                    if(message.Length > 2 && message[1] == '$') {
-                        try {
-                            context.ExecuteCommand(message.Substring(2));
-                            Logger.Info(this, "Command executed");
-                        }
-                        catch(Exception ex) {
-                            Logger.Error(this, "Error executing command", ex);
-                        }
+                    try {
+                        object result = scripts.Execute(message.Substring(1))??"Executed";
+                        if (result is Array array)
+                            result = string.Join("\n", array.Cast<object>());
+                        Logger.Info(this, message.Substring(1), $"{result}");
                     }
-                    else {
-                        string[] arguments = Commands.SplitArguments(message.Substring(1)).ToArray();
-                        switch(arguments[0]) {
-                            default:
-                                try {
-                                    context.ExecuteCommand(arguments[0], arguments[1], arguments.Skip(2).ToArray());
-                                }
-                                catch(Exception ex) {
-                                    Logger.Error(this, "Error executing command", ex);
-                                }
-                                break;
-                        }
+                    catch (Exception ex) {
+                        Logger.Error(this, "Error executing command", ex);
                     }
                 }
                 else {
@@ -235,19 +203,6 @@ namespace StreamRC.Core
             for(int i = commandhistory.Count - 1; i >= 0 && i > 32; --i)
                 commandhistory.RemoveAt(i);
             index = -1;
-        }
-
-        void IInitializableModule.Initialize() {
-            LoadSettings();
-            Logger.Message += OnLogMessage;
-        }
-
-        void IRunnableModule.Start() {
-            Show();
-            chat = context.Modules.FirstOrDefault(m => m.Module is IChatMessageSender)?.Module as IChatMessageSender;
-        }
-
-        void IRunnableModule.Stop() {
         }
     }
 }

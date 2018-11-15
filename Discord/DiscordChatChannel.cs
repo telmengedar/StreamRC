@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Media;
+using NightlyCode.Core.Helpers;
 using NightlyCode.Core.Logs;
 using NightlyCode.Discord.Data;
 using NightlyCode.Discord.Data.Channels;
@@ -65,7 +66,7 @@ namespace StreamRC.Discord {
         /// <summary>
         /// channel flags
         /// </summary>
-        public ChannelFlags Flags => ChannelFlags.Bot | flags;
+        public ChannelFlags Flags => ChannelFlags.Bot | ChannelFlags.LineBreaks | flags;
 
         /// <summary>
         /// users currently in chat
@@ -109,7 +110,7 @@ namespace StreamRC.Discord {
         public void ProcessMessage(Message message) {
             if (message.Content.StartsWith("!"))
             {
-                string[] arguments = message.Content.Substring(1).Split(' ');
+                string[] arguments = Commands.SplitArguments(message.Content.Substring(1)).ToArray();
                 CommandReceived?.Invoke(this, new StreamCommand
                 {
                     Service = DiscordConstants.Service,
@@ -117,6 +118,15 @@ namespace StreamRC.Discord {
                     User = message.Author.Username,
                     Command = arguments[0],
                     Arguments = arguments.Skip(1).ToArray()
+                });
+            }
+            else if(message.Content.StartsWith("$")) {
+                CommandReceived?.Invoke(this, new StreamCommand {
+                    Service = DiscordConstants.Service,
+                    Channel = Key,
+                    User = message.Author.Username,
+                    Command = message.Content.Substring(1),
+                    IsSystemCommand = true
                 });
             }
             else ChatMessage?.Invoke(this, new ChatMessage

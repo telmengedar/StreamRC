@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
+using NightlyCode.DB.Clients.Tables;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
@@ -122,11 +124,11 @@ namespace StreamRC.RPG.Players {
         /// <param name="playerid">id of player</param>
         /// <param name="deltahealth">value of changed health</param>
         public void UpdateHealth(long playerid, int deltahealth) {
-            Aggregate max = Aggregate.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.CurrentHP + deltahealth));
+            Aggregate max = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.CurrentHP + deltahealth));
             if(context.Database.Update<Player>().Set(p => p.CurrentHP == max.Int).Where(p => p.UserID == playerid).Execute() == 0)
                 return;
 
-            System.Data.DataTable table = context.Database.Load<Player>(p => p.CurrentHP, p => p.MaximumHP).Where(p => p.UserID == playerid).Execute();
+            DataTable table = context.Database.Load<Player>(p => p.CurrentHP, p => p.MaximumHP).Where(p => p.UserID == playerid).Execute();
             HealthChanged?.Invoke(playerid, Converter.Convert<int>(table.Rows[0][0]), Converter.Convert<int>(table.Rows[0][1]), deltahealth);
         }
 
@@ -200,7 +202,7 @@ namespace StreamRC.RPG.Players {
         }
 
         void OnTimerElapsed() {
-            Aggregate maxvomit = Aggregate.Max(Constant.Create(0), EntityField.Create<Player>(p => p.Vomit - 5));
+            Aggregate maxvomit = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(p => p.Vomit - 5));
             context.Database.Update<Player>().Set(u => u.Experience == u.Experience + 1.0f, u => u.Vomit == maxvomit.Int).Where(u => u.IsActive == true).Execute();
 
             foreach(PlayerAscension player in context.Database.LoadEntities<PlayerAscension>().Where(a => a.Experience >= a.NextLevel).Execute())
@@ -247,7 +249,7 @@ namespace StreamRC.RPG.Players {
             UpdateGold(userid, value);
         }
 
-        void OnChatMessage(ChatMessage message) {
+        void OnChatMessage(IChatChannel channel, ChatMessage message) {
             AddExperience(message.Service, message.User, 3 + message.Message.Length * 0.05f);
         }
 

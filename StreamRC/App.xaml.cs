@@ -7,7 +7,6 @@ using System.Windows.Threading;
 using NightlyCode.Core.Helpers;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 
 namespace NightlyCode.StreamRC
 {
@@ -15,7 +14,7 @@ namespace NightlyCode.StreamRC
     /// Interaction logic for App.xaml
     /// </summary>
     public partial class App : Application {
-        readonly Context context = new Context();
+        readonly ModuleContext context = new ModuleContext();
         LogFileCleaner logcleaner;
 
         protected override void OnStartup(StartupEventArgs e) {
@@ -30,7 +29,7 @@ namespace NightlyCode.StreamRC
             logcleaner.Start(TimeSpan.FromMinutes(30.0f));
 
             ModuleScanner scanner=new ModuleScanner(Path.Combine(PathExtensions.GetApplicationDirectory(), "modules"));
-            foreach(IModule module in scanner.ScanForModules(context))
+            foreach(Type module in scanner.ScanForModules(context))
                 context.AddModule(module);
 
             context.Start();

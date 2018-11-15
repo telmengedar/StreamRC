@@ -6,10 +6,8 @@ using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Cache;
@@ -18,43 +16,25 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Events {
 
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(ImageCacheModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    [Dependency(nameof(StreamEventModule))]
-    public class StreamEventHttpModule : IRunnableModule, IHttpService {
-        readonly Context context;
-        UserModule usermodule;
-        ImageCacheModule imagemodule;
-        StreamEventModule streameventmodule;
 
-        public StreamEventHttpModule(Context context) {
-            this.context = context;
-        }
+    [Module(AutoCreate = true)]
+    public class StreamEventHttpModule : IHttpService {
+        readonly UserModule usermodule;
+        readonly ImageCacheModule imagemodule;
+        readonly StreamEventModule streameventmodule;
 
-        void IRunnableModule.Start() {
-            usermodule = context.GetModule<UserModule>();
-            imagemodule = context.GetModule<ImageCacheModule>();
-            streameventmodule = context.GetModule<StreamEventModule>();
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events.css", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events.js", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/events/data", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/highlight", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/highlight.css", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/highlight.js", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/highlight/data", this);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/events");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/events.css");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/events.js");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/events/data");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/highlight");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/highlight.css");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/highlight.js");
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/highlight/data");
+        public StreamEventHttpModule(HttpServiceModule httpservice, UserModule usermodule, ImageCacheModule imagemodule, StreamEventModule streameventmodule) {
+            this.usermodule = usermodule;
+            this.imagemodule = imagemodule;
+            this.streameventmodule = streameventmodule;
+            httpservice.AddServiceHandler("/streamrc/events", this);
+            httpservice.AddServiceHandler("/streamrc/events.css", this);
+            httpservice.AddServiceHandler("/streamrc/events.js", this);
+            httpservice.AddServiceHandler("/streamrc/events/data", this);
+            httpservice.AddServiceHandler("/streamrc/highlight", this);
+            httpservice.AddServiceHandler("/streamrc/highlight.css", this);
+            httpservice.AddServiceHandler("/streamrc/highlight.js", this);
+            httpservice.AddServiceHandler("/streamrc/highlight/data", this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {

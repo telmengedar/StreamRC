@@ -4,15 +4,16 @@ using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.Settings;
 
 namespace StreamRC.Core.Timer {
 
     /// <summary>
     /// module providing a periodic timer
     /// </summary>
-    public class TimerModule : IRunnableModule, IInitializableModule {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class TimerModule {
+        readonly ISettings settings;
 
         readonly PeriodicTimer timer=new PeriodicTimer();
         DateTime lastexecution = DateTime.Now;
@@ -22,14 +23,17 @@ namespace StreamRC.Core.Timer {
         TimeSpan resolution;
 
         readonly List<TimerEntry> intervaltable=new List<TimerEntry>();
-         
+        readonly List<TimerEntry> lateadd = new List<TimerEntry>();
+
         /// <summary>
         /// creates a new <see cref="TimerModule"/>
         /// </summary>
-        /// <param name="context">access to module context</param>
-        public TimerModule(Context context) {
-            this.context = context;
+        /// <param name="settings">access to configuration</param>
+        public TimerModule(ISettings settings) {
+            this.settings = settings;
             timer.Elapsed += OnTimer;
+            Resolution = settings.Get(this, "Resolution", TimeSpan.FromSeconds(0.5));
+            timer.Start(Resolution);
         }
 
         void OnTimer() {
@@ -57,6 +61,12 @@ namespace StreamRC.Core.Timer {
                         entry.Time = 0.0;
                     }
                 }
+
+                if(lateadd.Count > 0) {
+                    foreach(TimerEntry entry in lateadd)
+                        intervaltable.Add(entry);
+                    lateadd.Clear();
+                }
             }
             
         }
@@ -66,15 +76,19 @@ namespace StreamRC.Core.Timer {
         /// </summary>
         public TimeSpan Resolution
         {
-            get { return resolution; }
+            get => resolution;
             set
             {
                 if(resolution == value)
                     return;
 
                 resolution = value;
-                context.Settings.Set(this, "Resolution", resolution);
+                settings.Set(this, "Resolution", resolution);
             }
+        }
+
+        public void LateAdd(ITimerService service, double interval=0.0) {
+            lateadd.Add(new TimerEntry(service, interval));
         }
 
         /// <summary>
@@ -115,18 +129,6 @@ namespace StreamRC.Core.Timer {
                 services.Remove(service);
                 intervaltable.RemoveAll(e => e.Service == service);
             }
-        }
-
-        void IRunnableModule.Start() {
-            timer.Start(Resolution);
-        }
-
-        void IRunnableModule.Stop() {
-            timer.Stop();
-        }
-
-        void IInitializableModule.Initialize() {
-            Resolution = context.Settings.Get(this, "Resolution", TimeSpan.FromSeconds(0.5));
         }
     }
 }

@@ -1,12 +1,11 @@
 ﻿using System.Windows;
-using NightlyCode.Modules;
 
-namespace NightlyCode.StreamRC.Modules {
+namespace StreamRC.Core.UI {
 
     /// <summary>
     /// interface for a main window
     /// </summary>
-    public interface IMainWindow : IModule {
+    public interface IMainWindow {
 
         /// <summary>
         /// adds an item to the menu bar

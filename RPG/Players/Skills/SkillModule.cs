@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
@@ -116,7 +117,7 @@ namespace StreamRC.RPG.Players.Skills {
         }
 
         public int GetUsedSkillPoints(long playerid) {
-            Aggregate aggregate = Aggregate.Sum<int>(EntityField.Create<SkillConsumption>(s => s.Consumption));
+            Aggregate aggregate = DBFunction.Sum<SkillConsumption>(s => s.Consumption);
             return context.Database.Load<SkillConsumption>(aggregate).Where(s => s.PlayerID == playerid).ExecuteScalar<int>();
         }
 

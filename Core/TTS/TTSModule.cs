@@ -5,30 +5,24 @@ using System.Speech.Synthesis;
 using System.Threading;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Core.TTS {
 
     /// <summary>
     /// module used to synthesize text
     /// </summary>
-    [ModuleKey("tts")]
-    public class TTSModule : ICommandModule,IInitializableModule {
-        readonly Context context;
-
+    [Module(Key ="tts")]
+    public class TTSModule {
         readonly SpeechSynthesizer synthesizer = new SpeechSynthesizer();
 
         readonly Queue<TTSText> speechqueue=new Queue<TTSText>();
         bool isspeaking;
         readonly object speaklock = new object();
-        string voice;
-        string output;
 
         /// <summary>
         /// creates a new <see cref="TTSModule"/>
         /// </summary>
-        public TTSModule(Context context) {
-            this.context = context;
+        public TTSModule() {
             synthesizer.SpeakCompleted += OnSpeakCompleted;
         }
 
@@ -36,19 +30,6 @@ namespace StreamRC.Core.TTS {
         /// triggered when a text is spoken
         /// </summary>
         public event Action<string, string> TextSpoken;
-
-        public string Voice
-        {
-            get { return voice; }
-            set
-            {
-                if(voice == value)
-                    return;
-
-                voice = value;
-                context.Settings.Set(this, "voice", voice);
-            }
-        }
 
         void OnSpeakCompleted(object sender, SpeakCompletedEventArgs e) {
             TTSText next;
@@ -66,8 +47,23 @@ namespace StreamRC.Core.TTS {
         }
 
         void Speak(TTSText text) {
-            if (!string.IsNullOrEmpty(text.Voice))
-                synthesizer.SelectVoice(text.Voice);
+            if(!string.IsNullOrEmpty(text.Voice)) {
+                try {
+                    synthesizer.SelectVoice(text.Voice);
+                }
+                catch(Exception e) {
+                    Logger.Error(this, $"Unable to select voice {text.Voice}", e);
+                }
+            }
+            else if(text.Index >= 0) {
+                try {
+                    synthesizer.SelectVoiceByHints(text.Gender, text.Age, text.Index);
+                }
+                catch(Exception e) {
+                    Logger.Error(this, $"Unable to select voice {text.Gender}, {text.Age}, {text.Index}", e);
+                }
+            }
+
             synthesizer.SpeakAsync(text.Text);
             TextSpoken?.Invoke(text.Voice, text.Text);
         }
@@ -77,24 +73,61 @@ namespace StreamRC.Core.TTS {
         /// </summary>
         /// <param name="text">text to speak</param>
         public void Speak(string text) {
-            string voice = DetectVoice(ref text);
-            if(string.IsNullOrEmpty(voice))
-                voice = GetVoice("en");
+            string voicename = DetectVoice(ref text);
+            if(string.IsNullOrEmpty(voicename))
+                voicename = GetVoice("en");
 
-            lock(speaklock) {
-                if(isspeaking) {
-                    speechqueue.Enqueue(new TTSText {
-                        Voice = voice,
+            Speak(text, voicename);
+        }
+
+        /// <summary>
+        /// speaks a text using the tts engine and the specified voice
+        /// </summary>
+        /// <param name="text">text to speak</param>
+        /// <param name="voicename">name of voice to use</param>
+        public void Speak(string text, string voicename) {
+            lock (speaklock)
+            {
+                if (isspeaking)
+                {
+                    speechqueue.Enqueue(new TTSText
+                    {
+                        Voice = voicename,
                         Text = text
                     });
                     return;
                 }
 
                 isspeaking = true;
-                Speak(new TTSText {
-                    Voice = voice,
+                Speak(new TTSText
+                {
+                    Voice = voicename,
                     Text = text
                 });
+            }
+        }
+
+        /// <summary>
+        /// speaks a text using the tts engine and the specified voice
+        /// </summary>
+        /// <param name="text">text to speak</param>
+        public void Speak(string text, VoiceGender gender, VoiceAge age, int index=0)
+        {
+            lock (speaklock) {
+                TTSText ttstext = new TTSText {
+                    Text = text,
+                    Gender = gender,
+                    Age = age,
+                    Index = index
+                };
+
+                if (isspeaking) {
+                    speechqueue.Enqueue(ttstext);
+                    return;
+                }
+
+                isspeaking = true;
+                Speak(ttstext);
             }
         }
 
@@ -116,36 +149,18 @@ namespace StreamRC.Core.TTS {
                 return null;
 
             string language = text.Substring(0, indexof);
-            string voice = GetVoice(language);
-            if(voice != null)
+            string voicename = GetVoice(language);
+            if(voicename != null)
                 text = text.Substring(indexof + 1);
-            return voice;
+            return voicename;
         }
 
-        void ICommandModule.ProcessCommand(string command, params string[] arguments) {
-            switch(command) {
-                case "streamspeak":
-                    if(arguments.Length < 3)
-                        throw new Exception("No text specified");
-                    Speak(string.Join(" ", arguments.Skip(2)));
-                    break;
-                case "speak":
-                    Speak(string.Join(" ", arguments));
-                    break;
-                case "voices":
-                    Logger.Info(this, "Installed voices", string.Join("\r\n", synthesizer.GetInstalledVoices().Select(v => $"{v.VoiceInfo.Name} ({v.VoiceInfo.Culture.DisplayName}, {v.VoiceInfo.Gender}, {v.VoiceInfo.Age}")));
-                    break;
-                case "voice":
-                    synthesizer.SelectVoice(arguments[0]);
-                    Logger.Info(this, "New voice selected", $"{synthesizer.Voice.Name} ({synthesizer.Voice.Culture.DisplayName}, {synthesizer.Voice.Gender}, {synthesizer.Voice.Age})");
-                    break;
-                default:
-                    throw new Exception($"'{command}' not handled by this module");
-            }
-        }
-
-        void IInitializableModule.Initialize() {
-            voice = context.Settings.Get<string>(this, "voice");
+        /// <summary>
+        /// lists names voices which can be used for speaking text
+        /// </summary>
+        /// <returns></returns>
+        public string[] ListVoices() {
+            return synthesizer.GetInstalledVoices().Select(v => $"{v.VoiceInfo.Name} ({v.VoiceInfo.Culture.DisplayName}, {v.VoiceInfo.Gender}, {v.VoiceInfo.Age}").ToArray();
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace StreamRC.Streaming.Stream {
 
@@ -22,18 +21,6 @@ namespace StreamRC.Streaming.Stream {
         /// triggered when a user has subscribed to channel
         /// </summary>
         event Action<SubscriberInformation> NewSubscriber;
-
-        /// <summary>
-        /// get subscribers of a channel
-        /// </summary>
-        /// <returns>list of subscribers</returns>
-        IEnumerable<SubscriberInformation> GetSubscribers();
-
-        /// <summary>
-        /// get followers of the connected channels
-        /// </summary>
-        /// <returns>enumeration of followers</returns>
-        IEnumerable<UserInformation> GetFollowers();
 
         /// <summary>
         /// icon representing service

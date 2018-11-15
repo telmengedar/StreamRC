@@ -1,37 +1,80 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Data;
+using NightlyCode.Core.Logs;
 using NightlyCode.DB.Clients;
 using NightlyCode.DB.Entities;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Info;
+using NightlyCode.Modules;
+using NightlyCode.StreamRC.Modules;
 
 namespace NightlyCode.StreamRC.Gangolf.Dictionary {
 
     /// <summary>
     /// dictionary containing words and information about them
     /// </summary>
-    public class Dictionary {
-        readonly EntityManager dictionary = new EntityManager(DBClient.CreateSQLite(null, false));
+    [ModuleKey("dictionary")]
+    public class DictionaryModule : IModule {
+        readonly EntityManager dictionary = new EntityManager(new DBClient(new SQLiteConnection("Data Source=dictionary.db3"), new SQLiteInfo()));
 
-        public Dictionary() {
-            dictionary.Create<Word>();
 
-            DataTable data = DataTable.ReadCSV(ResourceAccessor.GetResource<Stream>("NightlyCode.StreamRC.Gangolf.Dictionary.dictionary.csv"), ';', true);
-            for(int row = 0; row < data.RowCount; ++row) {
+        /// <summary>
+        /// creates a new <see cref="DictionaryModule"/>
+        /// </summary>
+        public DictionaryModule(Context context) {
+            dictionary.UpdateSchema<Word>();
+        }
+
+        /// <summary>
+        /// triggered when a word was added (or updated)
+        /// </summary>
+        public event Action<Word> WordAdded;
+
+        /// <summary>
+        /// adds a word to the dictionary
+        /// </summary>
+        /// <param name="text">text of word to add</param>
+        /// <param name="class">word class to add</param>
+        /// <param name="attributes">attributes of word</param>
+        public void Add(string text, WordClass @class, WordAttribute attributes) {
+            if(dictionary.Update<Word>().Set(w => w.Attributes == (w.Attributes|attributes)).Where(w => w.Class == @class && w.Text == text).Execute() == 0)
+                dictionary.Insert<Word>().Columns(w => w.Text, w => w.Class, w => w.Attributes, w=>w.Group)
+                    .Values(text, @class, attributes, 0)
+                    .Execute();
+
+            WordAdded?.Invoke(new Word {
+                Text = text,
+                Class = @class,
+                Attributes = attributes
+            });
+        }
+
+        /// <summary>
+        /// loads or reloads the contents of the dictionary
+        /// </summary>
+        /// <param name="stream"></param>
+        public void Load(Stream stream) {
+            Logger.Info(this, "Loading dictionary");
+            dictionary.Delete<Word>().Execute();
+
+            DataTable data = DataTable.ReadCSV(stream, ';', true);
+            for (int row = 0; row < data.RowCount; ++row)
+            {
                 WordAttribute attributes = WordAttribute.None;
-                if(!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Insultive")))
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Insultive")))
                     attributes |= WordAttribute.Insultive;
-                if(!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Romantic")))
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Romantic")))
                     attributes |= WordAttribute.Romantic;
-                if(!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Product")))
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Product")))
                     attributes |= WordAttribute.Product;
-                if(!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Tool")))
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Tool")))
                     attributes |= WordAttribute.Tool;
-                if(!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Producer")))
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Producer")))
                     attributes |= WordAttribute.Producer;
                 if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Color")))
                     attributes |= WordAttribute.Color;
@@ -39,13 +82,16 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
                     attributes |= WordAttribute.Political;
                 if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Descriptive")))
                     attributes |= WordAttribute.Descriptive;
+                if (!string.IsNullOrEmpty(data.TryGetValue<string>(row, "Greeting")))
+                    attributes |= WordAttribute.Greeting;
 
                 int group;
                 int.TryParse(data.TryGetValue<string>(row, "Conjunktion"), out group);
 
-                foreach(Tuple<string, WordClass> word in ExtractWord(data, row)) {
+                foreach (Tuple<string, WordClass> word in ExtractWord(data, row))
+                {
                     WordAttribute termattributes = attributes;
-                    if(word.Item2 == WordClass.Subject)
+                    if (word.Item2 == WordClass.Subject)
                         termattributes |= WordAttribute.Object;
 
                     dictionary.Insert<Word>().Columns(w => w.Text, w => w.Class, w => w.Attributes, w => w.Group)
@@ -53,6 +99,8 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
                         .Execute();
                 }
             }
+
+            Logger.Info(this, "Dictionary loaded");
         }
 
         IEnumerable<Tuple<string, WordClass>> ExtractWord(DataTable table, int row) {
@@ -61,11 +109,13 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
             if (!string.IsNullOrEmpty(table[row, 1]))
                 yield return new Tuple<string, WordClass>(table[row, 1], WordClass.Verb);
             if (!string.IsNullOrEmpty(table[row, 2]))
-                yield return new Tuple<string, WordClass>(table[row, 2], WordClass.Adjective);
+                yield return new Tuple<string, WordClass>(table[row, 2], WordClass.AdjectiveCont);
             if (!string.IsNullOrEmpty(table[row, 3]))
-                yield return new Tuple<string, WordClass>(table[row, 3], WordClass.Subject);
+                yield return new Tuple<string, WordClass>(table[row, 3], WordClass.Adjective);
             if (!string.IsNullOrEmpty(table[row, 4]))
-                yield return new Tuple<string, WordClass>(table[row, 4], WordClass.Postposition);
+                yield return new Tuple<string, WordClass>(table[row, 4], WordClass.Subject);
+            if (!string.IsNullOrEmpty(table[row, 5]))
+                yield return new Tuple<string, WordClass>(table[row, 5], WordClass.Postposition);
         }
 
         /// <summary>

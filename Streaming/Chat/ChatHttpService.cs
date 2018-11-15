@@ -6,10 +6,8 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
@@ -23,12 +21,10 @@ namespace StreamRC.Streaming.Chat {
     /// <summary>
     /// provides an html window for chat messages
     /// </summary>
-    [Dependency(nameof(MessageModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    [Dependency(nameof(TimerModule))]
-    public class ChatHttpService : IInitializableModule, IHttpService, IRunnableModule, ITimerService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class ChatHttpService : IHttpService, ITimerService {
+        readonly ImageCacheModule imagecache;
+        readonly UserModule users;
 
         readonly object messagelock=new object();
         readonly List<ChatHttpMessage> messages = new List<ChatHttpMessage>();
@@ -38,22 +34,27 @@ namespace StreamRC.Streaming.Chat {
         /// <summary>
         /// creates a new <see cref="ChatHttpService"/>
         /// </summary>
-        /// <param name="context">access to module context</param>
-        public ChatHttpService(Context context) {
-            this.context = context;
-        }
+        /// <param name="streammodule">access to stream module</param>
+        /// <param name="httpservice">access to http service</param>
+        /// <param name="imagecache">access to image cache</param>
+        /// <param name="timer">access to timer module</param>
+        /// <param name="messages">access to system messages</param>
+        /// <param name="users">access to user information</param>
+        public ChatHttpService(IStreamModule streammodule, HttpServiceModule httpservice, ImageCacheModule imagecache, TimerModule timer, MessageModule messages, UserModule users) {
+            this.imagecache = imagecache;
+            this.users = users;
+            httpservice.AddServiceHandler("/streamrc/chat", this);
+            httpservice.AddServiceHandler("/streamrc/chat.css", this);
+            httpservice.AddServiceHandler("/streamrc/chat.js", this);
+            httpservice.AddServiceHandler("/streamrc/chat/messages", this);
 
-        void IInitializableModule.Initialize() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/chat", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/chat.css", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/chat.js", this);
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/chat/messages", this);
-
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
+            streammodule.ChatMessage += OnChatMessage;
+            timer.AddService(this, 1.0);
+            messages.Message += OnSystemMessage;
         }
 
         IEnumerable<MessageChunk> CreateMessageChunks(ChatMessage message) {
-            yield return new MessageChunk(MessageChunkType.Emoticon, context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={message.Service}").ToString());
+            yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.AddImage($"http://localhost/streamrc/services/icon?service={message.Service}").ToString());
 
             foreach(MessageChunk chunk in CreateUserChunks(message))
                 yield return chunk;
@@ -62,8 +63,8 @@ namespace StreamRC.Streaming.Chat {
                 yield return chunk;
         } 
 
-        void OnChatMessage(ChatMessage message) {
-            if(message.IsWhisper || message.Message.StartsWith("!"))
+        void OnChatMessage(IChatChannel channel, ChatMessage message) {
+            if(message.IsWhisper || message.Message.StartsWith("!") || !channel.Flags.HasFlag(ChannelFlags.Chat))
                 return;
 
             lock(messagelock) {
@@ -100,9 +101,9 @@ namespace StreamRC.Streaming.Chat {
                             width = 320;
                         }
 
-                        long imageid = context.GetModule<ImageCacheModule>().ExtractIDFromUrl(attachement.URL);
+                        long imageid = imagecache.ExtractIDFromUrl(attachement.URL);
                         if (imageid == -1)
-                            imageid = context.GetModule<ImageCacheModule>().AddImage(attachement.URL, DateTime.Now + TimeSpan.FromMinutes(5.0));
+                            imageid = imagecache.AddImage(attachement.URL, DateTime.Now + TimeSpan.FromMinutes(5.0));
 
                         messages.Add(new ChatHttpMessage {
                             Timestamp = DateTime.Now,
@@ -130,18 +131,18 @@ namespace StreamRC.Streaming.Chat {
 
         IEnumerable<MessageChunk> CreateUserChunks(ChatMessage message) {
             if(!string.IsNullOrEmpty(message.AvatarLink))
-                yield return new MessageChunk(MessageChunkType.Emoticon, context.GetModule<ImageCacheModule>().AddImage(message.AvatarLink).ToString());
+                yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.AddImage(message.AvatarLink).ToString());
 
-            if((context.GetModule<UserModule>().GetUser(message.Service, message.User).Flags & UserFlags.Brainy) == UserFlags.Brainy)
+            if((users.GetUser(message.Service, message.User).Flags & UserFlags.Brainy) == UserFlags.Brainy)
                 yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=4");
-            if ((context.GetModule<UserModule>().GetUser(message.Service, message.User).Flags & UserFlags.Racist) == UserFlags.Racist)
+            if ((users.GetUser(message.Service, message.User).Flags & UserFlags.Racist) == UserFlags.Racist)
                 yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=8");
 
             yield return new MessageChunk(MessageChunkType.Text, message.User, message.UserColor.FixColor(), FontWeight.Bold);
         } 
 
         IEnumerable<MessageChunk> CreateMessageParts(string message, ChatEmote[] emotes) {
-            if (emotes.Length == 0) {
+            if(emotes == null || emotes.Length == 0) {
                 yield return new MessageChunk(MessageChunkType.Text, message);
                 yield break;
             }
@@ -193,27 +194,7 @@ namespace StreamRC.Streaming.Chat {
             }
         }
 
-        void IRunnableModule.Start() {
-            context.GetModule<TimerModule>().AddService(this, 1.0);
-            context.GetModule<MessageModule>().Message += OnSystemMessage;
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
-            context.GetModule<MessageModule>().Message -= OnSystemMessage;
-        }
-
         void ITimerService.Process(double time) {
-#if TEST
-            if(RNG.XORShift64.NextFloat() < 0.2f) {
-                OnChatMessage(new ChatMessage {
-                    User = "Anton",
-                    UserColor = Colors.Red,
-                    Message = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"
-                });
-            }
-#endif
-
             DateTime now = DateTime.Now;
             lock (messagelock)
             {

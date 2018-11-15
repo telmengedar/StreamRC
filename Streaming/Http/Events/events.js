@@ -1,4 +1,4 @@
-﻿var itemcount = 5;
+﻿var itemcount = 0;
 var notransparency = false;
 
 function loadSettings() {
@@ -22,11 +22,26 @@ function loadSettings() {
         notransparency = true;
     }
 
-    if(params.has('timer'))
-        timer = params.get('timer') === "true";
-
     if (params.has('items'))
         itemcount = parseInt(params.get('items'), 10);
+
+    if (itemcount > 0) {
+        var box = document.getElementById('box');
+        if (itemcount < 7)
+            box.removeChild(document.getElementById('support'));
+        if (itemcount < 6)
+            box.removeChild(document.getElementById('social'));
+        if (itemcount < 5)
+            box.removeChild(document.getElementById('hoster'));
+        if (itemcount < 4)
+            box.removeChild(document.getElementById('donor'));
+        if (itemcount < 3)
+            box.removeChild(document.getElementById('leader'));
+        if (itemcount < 2)
+            box.removeChild(document.getElementById('lastdonation'));
+        if (itemcount < 1)
+            box.removeChild(document.getElementById('lastevent'));
+    }
 }
 
 /*function initialize() {
@@ -57,6 +72,9 @@ function clearElement(parent) {
 }
 
 function createEvent(event, id) {
+    if (document.getElementById(id) === null)
+        return;
+
     clearElement(document.getElementById(id + "titlecontent"));
     clearElement(document.getElementById(id + "textcontent"));
     createMessageElement(event.title.chunks, document.getElementById(id + "titlecontent"));

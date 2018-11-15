@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using NightlyCode.Core.Conversion;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
@@ -50,7 +51,7 @@ namespace StreamRC.Streaming.Events
             context.GetModule<UserModule>().UserFlagsChanged += OnUserFlagsChanged;
         }
 
-        void OnChatMessage(ChatMessage message) {
+        void OnChatMessage(IChatChannel channel, ChatMessage message) {
             long userid = context.GetModule<UserModule>().GetUserID(message.Service, message.User);
             context.Database.Insert<StreamEvent>().Columns(e => e.Type, e => e.UserID, e => e.Value, e => e.Timestamp, e => e.Multiplicator).Values(StreamEventType.Chat, userid, 1, DateTime.Now, 0.02).Execute();
         }
@@ -216,12 +217,12 @@ namespace StreamRC.Streaming.Events
 
         public long GetBiggestHoster() {
             DateTime lastmonth = DateTime.Now - TimeSpan.FromDays(30);
-            return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => e.Type == StreamEventType.Host && e.Timestamp>lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value)), false)).Limit(1).ExecuteScalar<long>();
+            return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => e.Type == StreamEventType.Host && e.Timestamp>lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(DBFunction.Sum<EntityField>(s => s.Value), false)).Limit(1).ExecuteScalar<long>();
         }
 
         public long GetBiggestDonor() {
             DateTime lastmonth = DateTime.Now - TimeSpan.FromDays(30);
-            return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => (e.Type == StreamEventType.Subscription || e.Type==StreamEventType.Donation) && e.Timestamp > lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value*s.Multiplicator)), false)).Limit(1).ExecuteScalar<long>();
+            return context.Database.Load<StreamEvent>(e => e.UserID).Where(e => (e.Type == StreamEventType.Subscription || e.Type==StreamEventType.Donation) && e.Timestamp > lastmonth).GroupBy(EntityField.Create<StreamEvent>(f => f.UserID)).OrderBy(new OrderByCriteria(DBFunction.Sum<StreamEvent>(s => s.Value*s.Multiplicator), false)).Limit(1).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -234,10 +235,10 @@ namespace StreamRC.Streaming.Events
             now=now.AddMonths(-1);
             DateTime lastmonth = new DateTime(now.Year, now.Month, 1);
 
-            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator))
                 .Where(e => e.Timestamp >= lastmonth && e.Timestamp < thismonth)
                 .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
-                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .OrderBy(new OrderByCriteria(DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator), false))
                 .Limit(1)
                 .ExecuteType<EventScore>((r, t) => {
                     t.UserID = Converter.Convert<long>(r[0]);
@@ -251,10 +252,10 @@ namespace StreamRC.Streaming.Events
         /// <param name="type">type of event to evaluate</param>
         /// <returns>event score of last month or null if no data matches</returns>
         public EventScore GetLeader(params StreamEventType[] types) {
-            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator))
                 .Where(e=>types.Contains(e.Type))
                 .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
-                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .OrderBy(new OrderByCriteria(DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator), false))
                 .Limit(1)
                 .ExecuteType<EventScore>((r, t) => {
                     t.UserID = Converter.Convert<long>(r[0]);
@@ -273,10 +274,10 @@ namespace StreamRC.Streaming.Events
             now = now.AddMonths(-1);
             DateTime lastmonth = new DateTime(now.Year, now.Month, 1);
 
-            return context.Database.Load<StreamEvent>(e => e.UserID, e => Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)))
+            return context.Database.Load<StreamEvent>(e => e.UserID, e => DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator))
                 .Where(e => types.Contains(e.Type) && e.Timestamp >= lastmonth && e.Timestamp < thismonth)
                 .GroupBy(EntityField.Create<StreamEvent>(f => f.UserID))
-                .OrderBy(new OrderByCriteria(Aggregate.Sum<EntityField>(EntityField.Create<StreamEvent>(s => s.Value * s.Multiplicator)), false))
+                .OrderBy(new OrderByCriteria(DBFunction.Sum<StreamEvent>(s => s.Value * s.Multiplicator), false))
                 .Limit(1)
                 .ExecuteType<EventScore>((r, t) => {
                     t.UserID = Converter.Convert<long>(r[0]);

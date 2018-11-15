@@ -132,8 +132,17 @@ namespace StreamRC.Twitch.Chat {
         void IRunnableModule.Start() {
             username = context.Settings.Get<string>(this, "username", null);
             accesstoken = context.Settings.Get<string>(this, "token", null);
-            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(accesstoken))
-                Connect();
+            context.GetModule<TwitchBotModule>().LiveStatusChanged += OnLiveChanged;
+        }
+
+        void OnLiveChanged(bool status) {
+            if(status) {
+                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(accesstoken))
+                    Connect();
+            }
+            else {
+                Disconnect(false);
+            }
         }
 
         void IRunnableModule.Stop() {

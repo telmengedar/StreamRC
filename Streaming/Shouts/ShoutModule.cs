@@ -3,20 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Videos;
 
 namespace StreamRC.Streaming.Shouts {
 
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(VideoServiceModule))]
-    [ModuleKey("shout")]
-    public class ShoutModule : IInitializableModule, IRunnableModule {
-        readonly Context context;
-
+    [Module(Key ="shout")]
+    public class ShoutModule {
+        readonly DatabaseModule database;
+        readonly VideoServiceModule videoservice;
         readonly Dictionary<string, DateTime> lasttriggers = new Dictionary<string, DateTime>();
         readonly List<Shout> shouts = new List<Shout>();
         readonly object shoutlock = new object();
@@ -24,9 +21,30 @@ namespace StreamRC.Streaming.Shouts {
         /// <summary>
         /// creates a new <see cref="ShoutModule"/>
         /// </summary>
-        /// <param name="context">access to modules</param>
-        public ShoutModule(Context context) {
-            this.context = context;
+        /// <param name="database">access to database</param>
+        /// <param name="stream">access to stream</param>
+        /// <param name="videoservice">access to video service</param>
+        public ShoutModule(DatabaseModule database, StreamModule stream, VideoServiceModule videoservice) {
+            this.database = database;
+            this.videoservice = videoservice;
+            database.Database.UpdateSchema<Shout>();
+            shouts.AddRange(database.Database.LoadEntities<Shout>().Execute());
+            stream.ChatMessage += OnChatMessage;
+            stream.RegisterCommandHandler("shouts", new ListShoutsHandler(this));
+            stream.RegisterCommandHandler("shoutinfo", new ShoutInfoHandler(this));
+        }
+
+        /// <summary>
+        /// shouts which can get triggered
+        /// </summary>
+        public IEnumerable<Shout> Shouts
+        {
+            get
+            {
+                lock(shoutlock)
+                    foreach(Shout shout in shouts)
+                        yield return shout;
+            }
         }
 
         /// <summary>
@@ -35,7 +53,7 @@ namespace StreamRC.Streaming.Shouts {
         /// <param name="term">term which triggers the shout</param>
         /// <param name="id">id of video to play</param>
         public void AddShout(string term, string id) {
-            AddShout(term, id, TimeSpan.Zero, 0, 0);
+            AddShout(term, id, TimeSpan.Zero, 0, 0, 0);
         }
 
         /// <summary>
@@ -45,9 +63,10 @@ namespace StreamRC.Streaming.Shouts {
         /// <param name="id">id of video to play</param>
         /// <param name="starttime">time in seconds when to start playing the video</param>
         /// <param name="endtime">time in seconds when to stop playing the video</param>
-        public void AddShout(string term, string id, double starttime, double endtime)
+        /// <param name="volume">volume of video</param>
+        public void AddShout(string term, string id, double starttime, double endtime, int volume)
         {
-            AddShout(term, id, TimeSpan.Zero, starttime, endtime);
+            AddShout(term, id, TimeSpan.Zero, starttime, endtime, volume);
         }
 
         /// <summary>
@@ -58,17 +77,22 @@ namespace StreamRC.Streaming.Shouts {
         /// <param name="cooldown">cooldown which has to pass until the video can get triggered again</param>
         /// <param name="starttime">time in seconds when to start playing the video</param>
         /// <param name="endtime">time in seconds when to stop playing the video</param>
-        public void AddShout(string term, string id, TimeSpan cooldown, double starttime, double endtime) {
+        /// <param name="volume">volume of video</param>
+        public void AddShout(string term, string id, TimeSpan cooldown, double starttime, double endtime, int volume) {
+            if(volume < 0 || volume > 100)
+                throw new ArgumentException("volume");
+
             term = term.ToLower();
-            if(context.Database.Update<Shout>().Set(s => s.VideoId == id, s=>s.Cooldown==cooldown, s=>s.StartSeconds==starttime, s=>s.EndSeconds==endtime).Where(s => s.Term == term).Execute() == 0) {
-                context.Database.Insert<Shout>().Columns(s => s.Term, s => s.VideoId, s=>s.Cooldown, s=>s.StartSeconds, s=>s.EndSeconds).Values(term, id,cooldown, starttime, endtime).Execute();
+            if(database.Database.Update<Shout>().Set(s => s.VideoId == id, s=>s.Cooldown==cooldown, s=>s.StartSeconds==starttime, s=>s.EndSeconds==endtime, s=>s.Volume==volume).Where(s => s.Term == term).Execute() == 0) {
+                database.Database.Insert<Shout>().Columns(s => s.Term, s => s.VideoId, s=>s.Cooldown, s=>s.StartSeconds, s=>s.EndSeconds, s=>s.Volume).Values(term, id,cooldown, starttime, endtime, volume).Execute();
                 lock(shoutlock)
                     shouts.Add(new Shout {
                         Term = term,
                         VideoId = id,
                         Cooldown = cooldown,
                         StartSeconds = starttime,
-                        EndSeconds = endtime
+                        EndSeconds = endtime,
+                        Volume = volume
                     });
             }
 
@@ -79,6 +103,7 @@ namespace StreamRC.Streaming.Shouts {
                     shout.Cooldown = cooldown;
                     shout.StartSeconds = starttime;
                     shout.EndSeconds = endtime;
+                    shout.Volume = volume;
                 }
             }
         }
@@ -89,30 +114,13 @@ namespace StreamRC.Streaming.Shouts {
         /// <param name="term">shout term to remove</param>
         public void RemoveShout(string term) {
             term = term.ToLower();
-            context.Database.Delete<Shout>().Where(s => s.Term == term).Execute();
+            database.Database.Delete<Shout>().Where(s => s.Term == term).Execute();
             lock(shoutlock) {
                 shouts.RemoveAll(s => s.Term == term);
             }
         }
 
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<Shout>();
-        }
-
-        void IRunnableModule.Start() {
-            lock(shoutlock) {
-                shouts.Clear();
-                shouts.AddRange(context.Database.LoadEntities<Shout>().Execute());
-            }
-
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().ChatMessage -= OnChatMessage;
-        }
-
-        void OnChatMessage(ChatMessage message)
+        void OnChatMessage(IChatChannel channel, ChatMessage message)
         {
             lock(shoutlock) {
                 string messagedata = message.Message.ToLower();
@@ -121,19 +129,18 @@ namespace StreamRC.Streaming.Shouts {
                     return;
 
                 if(shout.Cooldown.Ticks > 0) {
-                    DateTime lasttrigger;
-                    lasttriggers.TryGetValue(shout.Term, out lasttrigger);
+                    lasttriggers.TryGetValue(shout.Term, out DateTime lasttrigger);
                     if(DateTime.Now - lasttrigger < shout.Cooldown) {
                         TimeSpan cooldown = shout.Cooldown - (DateTime.Now - lasttrigger);
                         Logger.Warning(this, $"{message.Service}:{message.User} tried to shout '{shout.Term}' but needs to wait another {cooldown.TotalMinutes} minutes to do that.");
-                        context.GetModule<StreamModule>().SendMessage(message.Service, message.Channel, message.User, $"You need to wait another {cooldown.TotalMinutes} minutes before shouting '{shout.Term}' again.");
+                        channel.SendMessage($"You need to wait another {cooldown.TotalMinutes} minutes before shouting '{shout.Term}' again.");
                         return;
                     }
 
                     lasttriggers[shout.Term] = DateTime.Now;
                 }
 
-                context.GetModule<VideoServiceModule>().AddVideo(shout.VideoId, shout.StartSeconds, shout.EndSeconds);
+                videoservice.AddVideo(shout.VideoId, shout.StartSeconds, shout.EndSeconds, shout.Volume);
             }
         }
 

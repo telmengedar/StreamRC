@@ -39,6 +39,16 @@ namespace StreamRC.Streaming.Stream.Chat {
         Major=16,
 
         /// <summary>
+        /// a command channel which content is not displayed but still parsed
+        /// </summary>
+        Command=32,
+
+        /// <summary>
+        /// channel display supports linebreaks
+        /// </summary>
+        LineBreaks=64,
+
+        /// <summary>
         /// all flags set
         /// </summary>
         All=0x7FFFFFFF

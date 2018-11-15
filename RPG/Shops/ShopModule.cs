@@ -3,6 +3,7 @@ using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
@@ -338,7 +339,7 @@ namespace StreamRC.RPG.Shops {
             switch(result) {
                 case AddInventoryItemResult.Success:
                 case AddInventoryItemResult.SuccessFull:
-                    Aggregate agg = Aggregate.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.Gold));
+                    Aggregate agg = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.Gold));
                     context.Database.Update<Player>().Set(p => p.Gold == agg.Int - price).Where(p => p.UserID == player.UserID).Execute();
 
                     if (item.Type!=ItemType.Special)
@@ -374,7 +375,7 @@ namespace StreamRC.RPG.Shops {
             {
                 case AddInventoryItemResult.Success:
                 case AddInventoryItemResult.SuccessFull:
-                    Aggregate agg = Aggregate.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.Gold));
+                    Aggregate agg = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.Gold));
                     context.Database.Update<Player>().Set(p => p.Gold == agg.Int-price).Where(p=>p.UserID==player.UserID).Execute();
 
 

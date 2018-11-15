@@ -1,11 +1,18 @@
-using NightlyCode.Modules;
+using System;
+using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
 
 namespace StreamRC.Streaming.Stream {
     /// <summary>
     /// interface for a module which implements streaming capabilities
     /// </summary>
-    public interface IStreamModule : IModule {
+    public interface IStreamModule {
+
+        /// <summary>
+        /// adds a channel to the stream module
+        /// </summary>
+        /// <param name="channel">channel to add</param>
+        void AddChannel(IChatChannel channel);
 
         /// <summary>
         /// registers a command handler for a command
@@ -21,5 +28,10 @@ namespace StreamRC.Streaming.Stream {
         void UnregisterCommandHandler(string command);
 
         void SendMessage(string service, string channel, string user, string message);
+
+        /// <summary>
+        /// triggered when a chat message was received
+        /// </summary>
+        event Action<IChatChannel, ChatMessage> ChatMessage;
     }
 }

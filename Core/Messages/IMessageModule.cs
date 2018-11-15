@@ -1,11 +1,10 @@
 ﻿using System;
-using NightlyCode.Modules;
 
 namespace StreamRC.Core.Messages {
     /// <summary>
     /// interface used to send messages
     /// </summary>
-    public interface IMessageModule : IModule {
+    public interface IMessageModule {
 
         /// <summary>
         /// triggered when a message was received

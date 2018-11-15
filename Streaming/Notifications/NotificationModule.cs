@@ -1,6 +1,5 @@
 ﻿using System;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
 
 namespace StreamRC.Streaming.Notifications {
@@ -8,17 +7,8 @@ namespace StreamRC.Streaming.Notifications {
     /// <summary>
     /// module routing notifications
     /// </summary>
-    [ModuleKey("notifications")]
-    public class NotificationModule : IModule {
-        readonly Context context;
-
-        /// <summary>
-        /// creates a new <see cref="NotificationModule"/>
-        /// </summary>
-        /// <param name="context"></param>
-        public NotificationModule(Context context) {
-            this.context = context;
-        }
+    [Module(Key ="notifications")]
+    public class NotificationModule {
 
         /// <summary>
         /// triggered when a notification was created

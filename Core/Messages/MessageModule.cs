@@ -1,19 +1,12 @@
 ﻿using System;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Core.Messages {
     /// <summary>
     /// module managing system messages
     /// </summary>
-    [ModuleKey("messages")]
-    public class MessageModule : IModule, IMessageModule {
-
-        /// <summary>
-        /// creates a new <see cref="MessageModule"/>
-        /// </summary>
-        /// <param name="context"></param>
-        public MessageModule(Context context) {}
+    [Module(Key="messages")]
+    public class MessageModule : IMessageModule {
 
         /// <summary>
         /// triggered when a message was received

@@ -1,4 +1,4 @@
-﻿namespace Youtube {
+﻿namespace StreamRC.Youtube {
 
     /// <summary>
     /// constants used for access to youtube
@@ -6,10 +6,8 @@
     public class YoutubeConstants {
 
         /// <summary>
-        /// client id of streamrc application
+        /// key name of service used in database
         /// </summary>
-        public readonly string ClientID = "132994049165-r74suhspo3vp4moc9cl019co39vm0202.apps.googleusercontent.com";
-
-        public readonly string Scopes = "https://www.googleapis.com/auth/youtube.readonly";
+        public const string ServiceName = "youtube";
     }
 }

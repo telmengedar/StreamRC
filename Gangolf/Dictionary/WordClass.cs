@@ -18,7 +18,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// <summary>
         /// action event or situation
         /// </summary>
-        Verb=2,
+        AdjectiveCont=2,
 
         /// <summary>
         /// extra information about <see cref="Noun"/>s
@@ -26,7 +26,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         Adjective=4,
 
         /// <summary>
-        /// information about a <see cref="Verb"/>, <see cref="Adjective"/> or another <see cref="Adverb"/>
+        /// information about a <see cref="AdjectiveCont"/>, <see cref="Adjective"/> or another <see cref="Adverb"/>
         /// </summary>
         Adverb=8,
 
@@ -40,7 +40,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// </summary>
         Preposition=32,
 
-        Postposition=512,
+        
 
         /// <summary>
         /// connect phrase
@@ -57,6 +57,11 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// </summary>
         Exclamation=256,
 
-        Subject=1024
+        Postposition = 512,
+
+        Subject =1024,
+
+        Verb=2048,
+        Amplifier=4096
     }
 }

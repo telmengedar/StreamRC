@@ -26,5 +26,10 @@ namespace StreamRC.Streaming.Videos {
         /// when to stop playing the video
         /// </summary>
         public double EndSeconds { get; set; }
+
+        /// <summary>
+        /// playback volume
+        /// </summary>
+        public int Volume { get; set; }
     }
 }

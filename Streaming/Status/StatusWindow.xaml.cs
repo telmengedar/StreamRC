@@ -8,31 +8,26 @@ using System.Windows.Media.Imaging;
 using NightlyCode.Core.Collections.Cache;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
+using StreamRC.Core.Settings;
 using StreamRC.Core.TTS;
+using StreamRC.Core.UI;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Chat;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
-using StreamRC.Streaming.Users;
 
 namespace StreamRC.Streaming.Status
 {
     /// <summary>
     /// Interaction logic for ChatWindow.xaml
     /// </summary>
-    [Dependency(nameof(TTSModule))]
-    [Dependency(nameof(MessageModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(UserModule))]
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    [Dependency(nameof(ImageCacheModule))]
-    [ModuleKey("status")]
-    public partial class StatusWindow : ModuleWindow, IRunnableModule {
-        readonly Context context;
-
+    [Module(Key="status",AutoCreate = true)]
+    public partial class StatusWindow : ModuleWindow {
+        readonly StreamModule streammodule;
+        readonly TTSModule ttsmodule;
+        readonly MessageModule messages;
+        readonly ImageCacheModule imagecache;
         readonly object chatlock = new object();
 
         readonly TimedCache<long, BitmapImage> emotecache;
@@ -42,11 +37,14 @@ namespace StreamRC.Streaming.Status
         /// <summary>
         /// creates a new <see cref="StatusWindow"/>
         /// </summary>
-        /// <param name="context">module context</param>
-        public StatusWindow(Context context)
-            : base(context) {
+        /// <param name="settings">access to settings</param>
+        public StatusWindow(ISettings settings, StreamModule streammodule, TTSModule ttsmodule, MessageModule messages, ImageCacheModule imagecache, IMainWindow mainwindow)
+            : base(settings) {
+            this.streammodule = streammodule;
+            this.ttsmodule = ttsmodule;
+            this.messages = messages;
+            this.imagecache = imagecache;
             InitializeComponent();
-            this.context = context;
             emotecache = new TimedCache<long, BitmapImage>(CreateImage);
             Closing += (sender, args) => {
                 Visibility = Visibility.Hidden;
@@ -54,11 +52,10 @@ namespace StreamRC.Streaming.Status
             };
 
             IsVisibleChanged += OnVisibilityChanged;
+            mainwindow.AddMenuItem("Display.Status", (sender, args) => Show());
         }
 
         void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            StreamModule streammodule = context.GetModule<StreamModule>();
-            TTSModule ttsmodule = context.GetModule<TTSModule>();
 
             if (IsVisible) {
                 streammodule.ChatMessage += OnMessageReceived;
@@ -67,8 +64,9 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewFollower += OnFollower;
                 streammodule.NewSubscriber += OnSubscriber;
                 streammodule.MicroPresent += OnMicroPresent;
+                streammodule.ViewersChanged += OnViewersChanged;
                 ttsmodule.TextSpoken += OnTextSpoken;
-                context.GetModule<MessageModule>().Message += OnStatusMessage;
+                messages.Message += OnStatusMessage;
             }
             else {
                 streammodule.ChatMessage -= OnMessageReceived;
@@ -77,8 +75,9 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewFollower -= OnFollower;
                 streammodule.NewSubscriber -= OnSubscriber;
                 streammodule.MicroPresent -= OnMicroPresent;
+                streammodule.ViewersChanged -= OnViewersChanged;
                 ttsmodule.TextSpoken -= OnTextSpoken;
-                context.GetModule<MessageModule>().Message -= OnStatusMessage;
+                messages.Message -= OnStatusMessage;
             }
         }
 
@@ -138,11 +137,11 @@ namespace StreamRC.Streaming.Status
             paragraph.BringIntoView();
         }
 
-        void OnMessageReceived(ChatMessage message) {
-            if(message.IsWhisper || message.Message.StartsWith("!"))
+        void OnMessageReceived(IChatChannel channel, ChatMessage message) {
+            if(message.IsWhisper || message.Message.StartsWith("!") || !channel.Flags.HasFlag(ChannelFlags.Chat))
                 return;
 
-            Dispatcher.Invoke(() => AddMessage(message));
+            Dispatcher.BeginInvoke(new Action(()=>AddMessage(message)));
         }
 
         void RemoveOldEntries() {
@@ -185,8 +184,7 @@ namespace StreamRC.Streaming.Status
 
                 foreach(MessageChunk chunk in message.Chunks) {
                     if(chunk.Type == MessageChunkType.Emoticon) {
-                        long imageid;
-                        if(!long.TryParse(chunk.Content, out imageid))
+                        if(!long.TryParse(chunk.Content, out long imageid))
                             continue;
 
                         if(imageid > -1) {
@@ -224,14 +222,14 @@ namespace StreamRC.Streaming.Status
                 alternate = !alternate;
 
                 paragraph.Inlines.Add(new Image {
-                    Source = emotecache[context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={message.Service}")],
+                    Source = emotecache[imagecache.AddImage($"http://localhost/streamrc/services/icon?service={message.Service}")],
                     Stretch = Stretch.Uniform,
                     Height = 24.0
                 });
 
                 if (!string.IsNullOrEmpty(message.AvatarLink))
                     paragraph.Inlines.Add(new Image {
-                        Source = emotecache[context.GetModule<ImageCacheModule>().AddImage(message.AvatarLink)],
+                        Source = emotecache[imagecache.AddImage(message.AvatarLink)],
                         Stretch = Stretch.Uniform,
                         Height = 24.0
                     });
@@ -278,9 +276,9 @@ namespace StreamRC.Streaming.Status
                     }
                 }
 
-                long imageid = context.GetModule<ImageCacheModule>().ExtractIDFromUrl(url);
+                long imageid = imagecache.ExtractIDFromUrl(url);
                 if(imageid == -1)
-                    imageid = context.GetModule<ImageCacheModule>().AddImage(url, DateTime.Now + TimeSpan.FromMinutes(5.0));
+                    imageid = imagecache.AddImage(url, DateTime.Now + TimeSpan.FromMinutes(5.0));
 
                 paragraph.Inlines.Add(new Image {
                     Source = emotecache[imageid],
@@ -295,7 +293,7 @@ namespace StreamRC.Streaming.Status
         }
 
         void CreateInlines(ChatMessage message, Paragraph paragraph) {
-            if(message.Emotes.Length == 0) {
+            if(message.Emotes == null || message.Emotes.Length == 0) {
                 paragraph.Inlines.Add(new Run(message.Message));
                 return;
             }
@@ -321,7 +319,7 @@ namespace StreamRC.Streaming.Status
         }
 
         BitmapImage CreateImage(long id) {
-            byte[] data = context.GetModule<ImageCacheModule>().GetImageData(id);
+            byte[] data = imagecache.GetImageData(id);
 
             if(data == null)
                 return null;
@@ -336,23 +334,10 @@ namespace StreamRC.Streaming.Status
             return image;
         }
 
-        public override void Initialize() {
-            base.Initialize();
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Display.Status", (sender, args) => Show());
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().ViewersChanged += OnViewersChanged;
-        }
-
         void OnViewersChanged(int viewers) {
             Dispatcher.Invoke(() => {
                 lblViewers.Content = viewers.ToString();
             });
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().ViewersChanged += OnViewersChanged;
         }
     }
 }

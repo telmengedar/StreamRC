@@ -3,24 +3,24 @@ using System.ComponentModel;
 using System.Diagnostics;
 using NightlyCode.Core.Logs;
 using NightlyCode.Japi.Json;
-using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.Settings;
+using StreamRC.Core.UI;
 
 namespace StreamRC.Cam {
 
-    public class CameraModule : IRunnableModule {
-        Context context;
+    public class CameraModule : IDisposable {
+        readonly ISettings settings;
 
         Process currentprocess;
-        CameraDevice current;
 
-        public CameraModule(Context context) {
-            this.context = context;
+        public CameraModule(ISettings settings, IMainWindow mainwindow) {
+            this.settings = settings;
+            Start(mainwindow);
         }
 
-        void IRunnableModule.Start() {
+        void Start(IMainWindow mainwindow) {
             try {
-                CameraDevice device = JSON.Read<CameraDevice>(context.Settings.Get<string>(this, "lastdevice"));
+                CameraDevice device = JSON.Read<CameraDevice>(settings.Get<string>(this, "lastdevice"));
                 if (device != null)
                     ShowDevice(device);
             }
@@ -28,7 +28,7 @@ namespace StreamRC.Cam {
                 
             }
 
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Display.Camera", (sender, args) => {
+            mainwindow.AddMenuItem("Display.Camera", (sender, args) => {
                 CameraPortal portal = new CameraPortal();
                 portal.Closing += OnPortalClosing;
                 portal.ShowDialog();
@@ -47,11 +47,6 @@ namespace StreamRC.Cam {
             }
         }
 
-        void IRunnableModule.Stop() {
-            if(currentprocess != null)
-                currentprocess.Kill();
-        }
-
         void ShowDevice(CameraDevice device) {
             if(currentprocess != null && !currentprocess.HasExited) {
                 try {
@@ -62,8 +57,7 @@ namespace StreamRC.Cam {
                 }
             }
 
-            current = device;
-            context.Settings.Set(this, "lastdevice", JSON.WriteString(device));
+            settings.Set(this, "lastdevice", JSON.WriteString(device));
 
             ProcessStartInfo startinfo = new ProcessStartInfo($".\\modules\\cam\\CameraDisplay_{device.Platform.ToString().ToLower()}.exe", $"\"{device.Device}\"") {
                 UseShellExecute = false,
@@ -71,18 +65,21 @@ namespace StreamRC.Cam {
             };
 
             currentprocess = Process.Start(startinfo);
-            if(!currentprocess.HasExited)
+            if(!(currentprocess?.HasExited??false))
                 currentprocess.Exited += OnCameraClosed;
             else {
-                current = null;
                 currentprocess = null;
             }
         }
 
-        private void OnCameraClosed(object sender, EventArgs e) {
-            context.Settings.Set(this, "lastdevice", null);
-            current = null;
+        void OnCameraClosed(object sender, EventArgs e) {
+            settings.Set(this, "lastdevice", null);
             currentprocess = null;
+        }
+
+        void IDisposable.Dispose() {
+            currentprocess?.Kill();
+            currentprocess?.Dispose();
         }
     }
 }

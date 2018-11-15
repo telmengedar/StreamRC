@@ -8,7 +8,6 @@ using NightlyCode.Discord.Rest;
 using NightlyCode.Discord.Websockets;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
 using StreamRC.Discord.Configuration;
 using StreamRC.Streaming.Stream;
@@ -20,11 +19,9 @@ namespace StreamRC.Discord
     /// <summary>
     /// module providing discord interaction to <see cref="StreamModule"/>
     /// </summary>
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(StreamModule))]
-    [ModuleKey("discord")]
-    public class DiscordModule : IRunnableModule, IStreamServiceModule {
-        readonly Context context;
+    [Module(Key="discord")]
+    public class DiscordModule : IStreamServiceModule {
+        readonly IStreamModule streammodule;
         string bottoken;
         string chatchannel;
 
@@ -34,26 +31,27 @@ namespace StreamRC.Discord
         readonly Dictionary<string, DiscordChatChannel> channels = new Dictionary<string, DiscordChatChannel>();
 
         string rpgchannel;
+        string commandchannel = "493839621252317184";
 
         /// <summary>
         /// creates a new <see cref="DiscordModule"/>
         /// </summary>
-        /// <param name="context">access to modules</param>
-        public DiscordModule(Context context) {
-            this.context = context;
+        /// <param name="streammodule">access to modules</param>
+        public DiscordModule(IStreamModule streammodule) {
+            this.streammodule = streammodule;
         }
 
         void OnMessage(Message message) {
             // don't process bot messages or messages coming from a channel not flagged for display
-            if(message.Author.Bot || (message.ChannelID != chatchannel && message.ChannelID != rpgchannel))
+            if(message.Author.Bot || (message.ChannelID != chatchannel && message.ChannelID != rpgchannel && message.ChannelID!=commandchannel))
                 return;
 
             DiscordChatChannel channel;
             if(!channels.TryGetValue(message.ChannelID, out channel)) {
-                ChannelFlags flags = ChannelFlags.Chat | (message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.None);
+                ChannelFlags flags = (message.ChannelID != commandchannel ? ChannelFlags.Chat : ChannelFlags.Command) | (message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.None);
                 channel = new DiscordChatChannel(discord, message.ChannelID, flags);
                 channels[message.ChannelID] = channel;
-                context.GetModule<StreamModule>().AddChannel(channel);
+                streammodule.AddChannel(channel);
             }
 
             channel.ProcessMessage(message);

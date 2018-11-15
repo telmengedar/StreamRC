@@ -98,7 +98,7 @@ namespace StreamRC.RPG.Adventure {
             }
         }
 
-        void OnChatMessage(ChatMessage message) {
+        void OnChatMessage(IChatChannel channel, ChatMessage message) {
             if(message.IsWhisper || string.IsNullOrEmpty(message.Service))
                 return;
 

@@ -2,8 +2,8 @@
 using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
+using StreamRC.Core.Settings;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
@@ -14,13 +14,12 @@ namespace StreamRC.Streaming.Ads {
     /// <summary>
     /// module used to display ads in chat
     /// </summary>
-    [ModuleKey("ads")]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(UserModule))]
-    public class AdModule : IInitializableModule, ICommandModule, IRunnableModule, ITimerService {
-        readonly Context context;
-        UserModule usermodule;
+    [Module(Key="ads", AutoCreate = true)]
+    public class AdModule : ITimerService {
+        readonly DatabaseModule database;
+        readonly ISettings settings;
+        readonly UserModule usermodule;
+        readonly StreamModule stream;
 
         readonly CircularList<Ad> ads = new CircularList<Ad>();
         TimeSpan interval;
@@ -28,9 +27,18 @@ namespace StreamRC.Streaming.Ads {
         /// <summary>
         /// creates a new <see cref="AdModule"/>
         /// </summary>
-        /// <param name="context">module context</param>
-        public AdModule(Context context) {
-            this.context = context;
+        /// <param name="database">access to database</param>
+        public AdModule(DatabaseModule database, ISettings settings, TimerModule timer, UserModule usermodule, StreamModule stream) {
+            this.database = database;
+            this.settings = settings;
+            this.usermodule = usermodule;
+            this.stream = stream;
+            database.Database.UpdateSchema<Ad>();
+
+            interval = settings.Get(this, "Interval", TimeSpan.FromMinutes(15.0));
+            ReloadAds();
+
+            timer.AddService(this, Interval.TotalSeconds);
         }
 
         /// <summary>
@@ -44,42 +52,24 @@ namespace StreamRC.Streaming.Ads {
                 if(interval == value)
                     return;
                 interval = value;
-                context.Settings.Set(this, "Interval", value);
+                settings.Set(this, "Interval", value);
             }
         }
 
         void ReloadAds() {
             ads.Clear();
-            ads.AddRange(context.Database.LoadEntities<Ad>().Where(a=>a.Active).Execute());
+            ads.AddRange(database.Database.LoadEntities<Ad>().Where(a=>a.Active).Execute());
             Logger.Info(this, "Reloaded ads");
         }
 
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<Ad>();
-
-            interval = context.Settings.Get<TimeSpan>(this, "Interval", TimeSpan.FromMinutes(15.0));
+        public void Enable(string ad) {
+            database.Database.Update<Ad>().Set(a => a.Active == true).Where(a => a.Key == ad).Execute();
             ReloadAds();
         }
 
-        void ICommandModule.ProcessCommand(string command, string[] arguments) {
-            switch(command) {
-                case "set":
-                    SetAdText(arguments[0], arguments[1]);
-                    break;
-                case "remove":
-                    RemoveAd(arguments[0]);
-                    break;
-                case "enable":
-                    context.Database.Update<Ad>().Set(a => a.Active == true).Where(a => a.Key == arguments[0]).Execute();
-                    ReloadAds();
-                    break;
-                case "disable":
-                    context.Database.Update<Ad>().Set(a => a.Active == false).Where(a => a.Key == arguments[0]).Execute();
-                    ReloadAds();
-                    break;
-                default:
-                    throw new Exception($"Unknown command '{command}' not supported");
-            }
+        public void Disable(string ad) {
+            database.Database.Update<Ad>().Set(a => a.Active == false).Where(a => a.Key == ad).Execute();
+            ReloadAds();
         }
 
         /// <summary>
@@ -88,8 +78,8 @@ namespace StreamRC.Streaming.Ads {
         /// <param name="key">key of ad</param>
         /// <param name="text">ad text</param>
         public void SetAdText(string key, string text) {
-            if (context.Database.Update<Ad>().Set(a => a.Text == text).Where(a => a.Key == key).Execute() == 0)
-                context.Database.Insert<Ad>().Columns(a => a.Key, a => a.Text).Values(key, text).Execute();
+            if (database.Database.Update<Ad>().Set(a => a.Text == text).Where(a => a.Key == key).Execute() == 0)
+                database.Database.Insert<Ad>().Columns(a => a.Key, a => a.Text).Values(key, text).Execute();
             ReloadAds();
             Logger.Info(this, $"ad '{key}' changed", text);
         }
@@ -99,18 +89,9 @@ namespace StreamRC.Streaming.Ads {
         /// </summary>
         /// <param name="key">key of ad</param>
         public void RemoveAd(string key) {
-            context.Database.Delete<Ad>().Where(a => a.Key == key).Execute();
+            database.Database.Delete<Ad>().Where(a => a.Key == key).Execute();
             ReloadAds();
             Logger.Info(this, $"ad '{key}' removed");
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<TimerModule>().AddService(this, Interval.TotalSeconds);
-            usermodule = context.GetModule<UserModule>();
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
         }
 
         void ITimerService.Process(double time) {
@@ -119,7 +100,7 @@ namespace StreamRC.Streaming.Ads {
 
             Ad ad = ads.NextItem;
             if(ad != null)
-                context.GetModule<StreamModule>().GetChannels(ChannelFlags.Notification).Foreach(c => c.SendMessage(ad.Text));
+                stream.GetChannels(ChannelFlags.Notification).Foreach(c => c.SendMessage(ad.Text));
         }
     }
 }

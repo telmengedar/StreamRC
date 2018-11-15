@@ -1,6 +1,6 @@
-﻿using NightlyCode.DB.Entities.Attributes;
+﻿using NightlyCode.Database.Entities.Attributes;
 
-namespace StreamRC.Core {
+namespace StreamRC.Core.Settings {
 
     /// <summary>
     /// setting in database

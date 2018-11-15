@@ -1,5 +1,5 @@
 ﻿using System;
-using NightlyCode.DB.Entities.Attributes;
+using NightlyCode.Database.Entities.Attributes;
 
 namespace StreamRC.Streaming.Shouts {
 
@@ -33,5 +33,10 @@ namespace StreamRC.Streaming.Shouts {
         /// time in seconds when to stop playing the video
         /// </summary>
         public double EndSeconds { get; set; }
+
+        /// <summary>
+        /// volume of video to play
+        /// </summary>
+        public int Volume { get; set; }
     }
 }

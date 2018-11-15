@@ -65,7 +65,20 @@ namespace StreamRC.Twitch.Chat {
                 return true;
             }
 
-            return message.Message.StartsWith("!") || message.User == "jtv" || message.User.ToLower() == "ncstreamrc";
+            if(message.Message.StartsWith("$"))
+            {
+                CommandReceived?.Invoke(this, new StreamCommand
+                {
+                    Service = Service,
+                    Channel = Name,
+                    User = message.User,
+                    Command = message.Message.Substring(1),
+                    IsSystemCommand = true
+                });
+
+                return true;
+            }
+            return message.User == "jtv" || message.User.ToLower() == "ncstreamrc";
         }
 
         /// <summary>

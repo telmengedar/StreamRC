@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Data;
 using System.Linq;
 using NightlyCode.Core.Conversion;
+using NightlyCode.DB.Clients.Tables;
 using NightlyCode.DB.Entities.Operations;
+using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Dependencies;
 using NightlyCode.StreamRC.Modules;
@@ -60,9 +61,9 @@ namespace StreamRC.RPG.Equipment {
         }
 
         public EquipmentBonus GetEquipmentBonus(long playerid) {
-            Aggregate damagesum = Aggregate.Sum<EquippedItemInformation>(EntityField.Create<EquippedItemInformation>(e => e.Damage));
-            Aggregate armorsum = Aggregate.Sum<EquippedItemInformation>(EntityField.Create<EquippedItemInformation>(e => e.Armor));
-            Aggregate usageoptimum = Aggregate.Average(EntityField.Create<EquippedItemInformation>(e => e.UsageOptimum));
+            Aggregate damagesum = DBFunction.Sum<EquippedItemInformation>(e => e.Damage);
+            Aggregate armorsum = DBFunction.Sum<EquippedItemInformation>(e => e.Armor);
+            Aggregate usageoptimum = DBFunction.Average(EntityField.Create<EquippedItemInformation>(e => e.UsageOptimum));
             DataTable table = context.Database.Load<EquippedItemInformation>(i => damagesum, i => armorsum).Where(i => i.PlayerID == playerid).Execute();
             return new EquipmentBonus {
                 Damage = Converter.Convert<int>(table.Rows[0][0], true),
@@ -74,8 +75,8 @@ namespace StreamRC.RPG.Equipment {
 
         public EquipmentBonus GetEquipmentBonus(long playerid, EquipmentSlot slot)
         {
-            Aggregate damagesum = Aggregate.Sum<EquippedItemInformation>(EntityField.Create<EquippedItemInformation>(e => e.Damage));
-            Aggregate armorsum = Aggregate.Sum<EquippedItemInformation>(EntityField.Create<EquippedItemInformation>(e => e.Armor));
+            Aggregate damagesum = DBFunction.Sum<EquippedItemInformation>(e => e.Damage);
+            Aggregate armorsum = DBFunction.Sum<EquippedItemInformation>(e => e.Armor);
             
             DataTable valuetable = context.Database.Load<EquippedItemInformation>(i => damagesum, i => armorsum).Where(i => i.PlayerID == playerid && i.Slot == slot).Execute();
             

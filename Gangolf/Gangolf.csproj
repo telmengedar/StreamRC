@@ -43,6 +43,10 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.97.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Extern\SQLite\x64\System.Data.SQLite.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -55,7 +59,9 @@
     <Compile Include="Chat\ChatFactory.cs" />
     <Compile Include="Chat\MessageContent.cs" />
     <Compile Include="Chat\MessageTarget.cs" />
-    <Compile Include="Dictionary\Dictionary.cs" />
+    <Compile Include="Dictionary\DictionaryModule.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
     <Compile Include="Dictionary\Word.cs" />
     <Compile Include="Dictionary\WordAttribute.cs" />
     <Compile Include="Dictionary\WordClass.cs" />
@@ -81,7 +87,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Dictionary\dictionary.csv" />
+    <Content Include="Dictionary\dictionary.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

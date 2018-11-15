@@ -5,15 +5,14 @@ using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Core.Http {
 
     /// <summary>
     /// module providing http service
     /// </summary>
-    public class HttpServiceModule : IRunnableModule {
-        Context context;
+    [Module]
+    public class HttpServiceModule {
         readonly HttpServer server = new HttpServer(IPAddress.Any, 80);
 
         readonly Dictionary<string, IHttpService> servicehandlers = new Dictionary<string, IHttpService>();
@@ -21,9 +20,9 @@ namespace StreamRC.Core.Http {
         /// <summary>
         /// creates a new <see cref="HttpServiceModule"/>
         /// </summary>
-        /// <param name="context">access to module context</param>
-        public HttpServiceModule(Context context) {
-            this.context = context;
+        public HttpServiceModule() {
+            server.Request += OnRequest;
+            server.Start();
         }
 
         /// <summary>
@@ -43,20 +42,8 @@ namespace StreamRC.Core.Http {
             servicehandlers.Remove(resource);
         }
 
-        void IRunnableModule.Start() {
-            server.Request += OnRequest;
-            server.Start();
-        }
-
-        void IRunnableModule.Stop()
-        {
-            server.Request -= OnRequest;
-            server.Stop();
-        }
-
         void OnRequest(HttpClient client, HttpRequest request) {
-            IHttpService service;
-            if(servicehandlers.TryGetValue(request.Resource, out service)) {
+            if(servicehandlers.TryGetValue(request.Resource, out IHttpService service)) {
                 try {
                     service.ProcessRequest(client, request);
                 }

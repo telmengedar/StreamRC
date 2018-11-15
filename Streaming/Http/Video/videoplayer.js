@@ -81,14 +81,21 @@ function playNextVideo() {
 
     document.getElementById('player').style.opacity = 255;
 
-    var parameters = {
-        videoId: video.id
-    };
+    if (video.id === "!stop")
+        player.stopVideo();
+    else {
+        var parameters = {
+            videoId: video.id
+        };
 
-    if (video.startseconds > 0)
-        parameters.startSeconds = video.startseconds;
-    if (video.endseconds > 0)
-        parameters.endSeconds = video.endseconds;
+        if (video.startseconds > 0)
+            parameters.startSeconds = video.startseconds;
+        if (video.endseconds > 0)
+            parameters.endSeconds = video.endseconds;
+        if (video.volume > 0)
+            player.setVolume(video.volume);
+        else player.setVolume(100);
 
-    player.loadVideoById(parameters);
+        player.loadVideoById(parameters);
+    }
 }

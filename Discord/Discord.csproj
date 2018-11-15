@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>StreamRC.Discord</RootNamespace>
     <AssemblyName>StreamRC.Discord</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,8 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core">
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Discord">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Discord.dll</HintPath>
@@ -40,8 +41,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules">
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
@@ -83,15 +84,13 @@
       <Project>{eb1a1823-3d2b-4279-b58c-1c78904ed7d0}</Project>
       <Name>Streaming</Name>
     </ProjectReference>
-    <ProjectReference Include="..\StreamRC\StreamRC.csproj">
-      <Project>{07784283-4c89-44ea-9306-7f7b08b3eb6a}</Project>
-      <Name>StreamRC</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Discord-Logo-White.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <ItemGroup>
     <Page Include="Configuration\DiscordSettings.xaml">
       <SubType>Designer</SubType>

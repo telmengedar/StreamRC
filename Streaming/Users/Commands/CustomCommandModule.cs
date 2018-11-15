@@ -1,6 +1,7 @@
-﻿using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+﻿using System.Runtime.Remoting.Contexts;
+using NightlyCode.Modules;
+using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users.Permissions;
 
@@ -9,33 +10,26 @@ namespace StreamRC.Streaming.Users.Commands {
     /// <summary>
     /// modules providing custom commands to the channel
     /// </summary>
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(UserPermissionModule))]
-    [Dependency(nameof(StreamModule))]
-    public class CustomCommandModule : IInitializableModule, IRunnableModule {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class CustomCommandModule {
+        readonly DatabaseModule database;
+        readonly StreamModule stream;
+        readonly UserPermissionModule permissions;
+        readonly ScriptModule scripts;
 
         /// <summary>
         /// creates a new <see cref="CustomCommandModule"/>
         /// </summary>
-        /// <param name="context">access to modules</param>
-        public CustomCommandModule(Context context) {
-            this.context = context;
-        }
-
-        void IInitializableModule.Initialize() {
-            context.Database.Create<CustomCommand>();
-        }
-
-        void IRunnableModule.Start() {
-            foreach(CustomCommand command in context.Database.LoadEntities<CustomCommand>().Execute())
+        /// <param name="database">access to database</param>
+        public CustomCommandModule(DatabaseModule database, StreamModule stream, UserPermissionModule permissions, ScriptModule scripts) {
+            this.database = database;
+            this.stream = stream;
+            this.permissions = permissions;
+            this.scripts = scripts;
+            database.Database.UpdateSchema<CustomCommand>();
+            foreach (CustomCommand command in database.Database.LoadEntities<CustomCommand>().Execute())
                 AddCommand(command);
-            context.GetModule<StreamModule>().RegisterCommandHandler("command", new CreateCustomCommandHandler(this, context.GetModule<UserPermissionModule>()));
-        }
-
-        void IRunnableModule.Stop() {
-            foreach(CustomCommand command in context.Database.LoadEntities<CustomCommand>().Execute())
-                RemoveCommand(command.ChatCommand);
+            stream.RegisterCommandHandler("command", new CreateCustomCommandHandler(this, permissions));
         }
 
         /// <summary>
@@ -53,11 +47,11 @@ namespace StreamRC.Streaming.Users.Commands {
                 Permissions = permissions
             };
 
-            if (context.Database.Update<CustomCommand>()
+            if (database.Database.Update<CustomCommand>()
                     .Set(c => c.SystemCommand == customcommand.SystemCommand, c => c.Permissions == customcommand.Permissions)
                     .Where(c => c.ChatCommand == customcommand.ChatCommand)
                     .Execute() == 0)
-                context.Database.Insert<CustomCommand>().Columns(c => c.ChatCommand, c => c.SystemCommand, c => c.Permissions).Values(customcommand.ChatCommand, customcommand.SystemCommand, customcommand.Permissions).Execute();
+                database.Database.Insert<CustomCommand>().Columns(c => c.ChatCommand, c => c.SystemCommand, c => c.Permissions).Values(customcommand.ChatCommand, customcommand.SystemCommand, customcommand.Permissions).Execute();
 
             return customcommand;
         }
@@ -67,7 +61,7 @@ namespace StreamRC.Streaming.Users.Commands {
         /// </summary>
         /// <param name="command">command to be registered</param>
         public void AddCommand(CustomCommand command) {
-            context.GetModule<StreamModule>().RegisterCommandHandler(command.ChatCommand, new CustomCommandHandler(context, command));
+            stream.RegisterCommandHandler(command.ChatCommand, new CustomCommandHandler(scripts, permissions, command));
         }
 
         /// <summary>
@@ -75,7 +69,7 @@ namespace StreamRC.Streaming.Users.Commands {
         /// </summary>
         /// <param name="command">command to be unregistered</param>
         public void RemoveCommand(string command) {
-            context.GetModule<StreamModule>().UnregisterCommandHandler(command);
+            stream.UnregisterCommandHandler(command);
         }
     }
 }

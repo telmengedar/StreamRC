@@ -22,13 +22,13 @@ namespace StreamRC.Streaming.Statistics
     /// provides an html window for chat messages
     /// </summary>
     [Dependency(nameof(HttpServiceModule))]
-    [Dependency(nameof(StatisticModule), SpecifierType.Type)]
-    [Dependency(nameof(GameTimeModule), SpecifierType.Type)]
+    [Dependency(nameof(StatisticModule))]
+    [Dependency(nameof(GameTimeModule))]
     public class StatisticHttpService : IInitializableModule, IHttpService {
         readonly Context context;
 
         /// <summary>
-        /// creates a new <see cref="ChatHttpService"/>
+        /// creates a new <see cref="StatisticHttpService"/>
         /// </summary>
         /// <param name="context">access to module context</param>
         public StatisticHttpService(Context context) {
@@ -84,6 +84,10 @@ namespace StreamRC.Streaming.Statistics
                     break;
                 case "Backseats":
                     yield return new MessageChunk(MessageChunkType.Emoticon, "http://localhost/streamrc/statistics/image?name=backseats");
+                    yield return new MessageChunk(MessageChunkType.Text, statistic.Value.ToString());
+                    break;
+                case "Triumphs":
+                    yield return new MessageChunk(MessageChunkType.Emoticon, "http://localhost/streamrc/statistics/image?name=triumphs");
                     yield return new MessageChunk(MessageChunkType.Text, statistic.Value.ToString());
                     break;
                 default:

@@ -1,31 +1,27 @@
 ﻿using NightlyCode.Core.Logs;
-using NightlyCode.DB.Entities.Operations;
+using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 
 namespace StreamRC.Streaming.Users.Permissions {
 
     /// <summary>
     /// module managing custom permissions for users
     /// </summary>
-    [Dependency(nameof(UserModule))]
-    [ModuleKey("permissions")]
-    public class UserPermissionModule : IInitializableModule {
-        readonly Context context;
-        UserModule usermodule;
+    [Module(Key="permissions")]
+    public class UserPermissionModule {
+        readonly DatabaseModule database;
+        readonly UserModule usermodule;
 
         /// <summary>
         /// creates a new <see cref="UserPermissionModule"/>
         /// </summary>
-        /// <param name="context">access to modules</param>
-        public UserPermissionModule(Context context) {
-            this.context = context;
-        }
-
-        void IInitializableModule.Initialize() {
-            context.Database.Create<UserPermission>();
-            usermodule = context.GetModule<UserModule>();
+        /// <param name="database">access to database</param>
+        /// <param name="usermodule">access to user data</param>
+        public UserPermissionModule(DatabaseModule database, UserModule usermodule) {
+            this.database = database;
+            this.usermodule = usermodule;
+            database.Database.UpdateSchema<UserPermission>();
         }
 
         /// <summary>
@@ -46,7 +42,7 @@ namespace StreamRC.Streaming.Users.Permissions {
         /// <param name="permission">permission to check</param>
         /// <returns></returns>
         public bool HasPermission(long userid, string permission) {
-            return context.Database.Load<UserPermission>(DBFunction.Count).Where(p => p.UserID == userid && p.Permission == permission).ExecuteScalar<long>() > 0;
+            return database.Database.Load<UserPermission>(DBFunction.Count).Where(p => p.UserID == userid && p.Permission == permission).ExecuteScalar<long>() > 0;
 
         }
 
@@ -66,7 +62,7 @@ namespace StreamRC.Streaming.Users.Permissions {
         /// <param name="userid">id of user</param>
         /// <param name="permission">permission to add</param>
         public void AddPermission(long userid, string permission) {
-            context.Database.Insert<UserPermission>().Columns(u => u.UserID, u => u.Permission).Values(userid, permission).Execute();
+            database.Database.Insert<UserPermission>().Columns(u => u.UserID, u => u.Permission).Values(userid, permission).Execute();
             Logger.Info(this, $"Permission '{permission}' added for user '{userid}'");
         }
 
@@ -86,7 +82,7 @@ namespace StreamRC.Streaming.Users.Permissions {
         /// <param name="userid">id of user</param>
         /// <param name="permission">permission to remove</param>
         public void RemovePermission(long userid, string permission) {
-            context.Database.Delete<UserPermission>().Where(p => p.UserID == userid).Execute();
+            database.Database.Delete<UserPermission>().Where(p => p.UserID == userid).Execute();
             Logger.Info(this, $"Permission '{permission}' removed for user '{userid}'");
         }
     }

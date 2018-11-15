@@ -4,7 +4,6 @@ using System.IO;
 using NightlyCode.Core.Collections.Cache;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Streaming.Text.Font;
 
 namespace StreamRC.Streaming.Text {
@@ -12,19 +11,18 @@ namespace StreamRC.Streaming.Text {
     /// <summary>
     /// module used to generate text
     /// </summary>
-    public class TextModule : IInitializableModule {
-        Context context;
-        FontSet fontset;
-        ImageToolset toolset=new ImageToolset();
+    [Module]
+    public class TextModule {
+        readonly FontSet fontset;
+        readonly ImageToolset toolset=new ImageToolset();
         readonly TimedCache<TextSpecs, byte[]> imagecache;
          
         /// <summary>
         /// creates a new <see cref="TextModule"/>
         /// </summary>
-        /// <param name="context">access to module context</param>
-        public TextModule(Context context) {
-            this.context = context;
+        public TextModule() {
             imagecache = new TimedCache<TextSpecs, byte[]>(CreateText);
+            fontset = new FontSet(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Text.Font.CyFont.json"));
         }
 
         byte[] CreateText(TextSpecs text) {
@@ -42,10 +40,6 @@ namespace StreamRC.Streaming.Text {
                 image.Save(ms, ImageFormat.Png);
                 return ms.ToArray();
             }
-        }
-
-        void IInitializableModule.Initialize() {
-            fontset = new FontSet(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Text.Font.CyFont.json"));
         }
 
         /// <summary>

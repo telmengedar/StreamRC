@@ -56,6 +56,8 @@ namespace StreamRC.Twitch.Chat {
         bool increaseflag;
         int viewers;
 
+        bool broadcastlive;
+
         /// <summary>
         /// creates a new <see cref="TwitchBotModule"/>
         /// </summary>
@@ -71,6 +73,20 @@ namespace StreamRC.Twitch.Chat {
             chatclient.ChannelJoined += OnChannelJoined;
             chatclient.ChannelLeft += OnChannelLeft;
         }
+
+        public bool Live
+        {
+            get => broadcastlive;
+            set
+            {
+                if(broadcastlive == value)
+                    return;
+                broadcastlive = value;
+                OnLiveStatusChanged(value);
+            }
+        }
+
+        public event Action<bool> LiveStatusChanged;
 
         public event Action Connected;
 
@@ -152,21 +168,28 @@ namespace StreamRC.Twitch.Chat {
                 return;
             }
 
-            if(!string.IsNullOrEmpty(chatchannel)) {
-                Logger.Info(this, $"Connecting to @{botname} to #{chatchannel}");
-                chatclient.Connect(botname, accesstoken);
-                chatclient.Join(chatchannel);
-            }
-
             isconnected = true;
             Connected?.Invoke();
         }
 
-        /// <summary>
-        /// get subscribers of a channel
-        /// </summary>
-        /// <returns>list of subscribers</returns>
-        public IEnumerable<SubscriberInformation> GetSubscribers() {
+        void OnLiveStatusChanged(bool live) {
+            if(live) {
+                string chatchannel = context.GetModule<TwitchChatModule>().Username;
+                if (!string.IsNullOrEmpty(chatchannel))
+                {
+                    Logger.Info(this, $"Connecting to @{botname} to #{chatchannel}");
+                    chatclient.Connect(botname, accesstoken);
+                    chatclient.Join(chatchannel);
+                }
+            }
+            else {
+                Logger.Info(this, "Disconnecting bot chat");
+                chatclient.Disconnect();
+            }
+            LiveStatusChanged?.Invoke(live);
+        }
+
+        IEnumerable<SubscriberInformation> GetSubscribers() {
             if (channeldata == null)
             {
                 Logger.Warning(this, "No channel connected to get subscribers");
@@ -224,11 +247,7 @@ namespace StreamRC.Twitch.Chat {
                 yield return context.GetModule<UserModule>().AddOrUpdateUser(TwitchConstants.ServiceKey, user.Login, user.ID);
         }
 
-        /// <summary>
-        /// get subscribers of a channel
-        /// </summary>
-        /// <returns>list of subscribers</returns>
-        public IEnumerable<UserInformation> GetFollowers()
+        IEnumerable<UserInformation> GetFollowers()
         {
             if (channeldata == null)
             {
@@ -461,11 +480,12 @@ namespace StreamRC.Twitch.Chat {
                     GetStreamsResponse response = twitchapi.GetStreams(userdata.ID);
                     TwitchStream stream = response.Data.FirstOrDefault();
                     if(stream == null) {
-                        Logger.Warning(this, "There was no active stream found.");
+                        Live = false;
                         viewercheck = 180.0;
                         return;
                     }
 
+                    Live = true;
                     Viewers = stream.ViewerCount;
                     viewercheck = 180.0;
                 }
@@ -476,7 +496,7 @@ namespace StreamRC.Twitch.Chat {
 
         public int Viewers
         {
-            get { return viewers; }
+            get => viewers;
             set
             {
                 if (viewers == value)

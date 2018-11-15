@@ -1,30 +1,20 @@
 ﻿using System;
 using System.Drawing;
-using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Text {
 
-    [Dependency(nameof(TextModule))]
-    [Dependency(nameof(HttpServiceModule))]
-    public class TextHttpModule : IRunnableModule, IHttpService {
-        readonly Context context;
 
-        public TextHttpModule(Context context) {
-            this.context = context;
-        }
+    [Module(AutoCreate = true)]
+    public class TextHttpModule : IHttpService {
+        readonly TextModule textmodule;
 
-        public void Start() {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/images/text", this);
-        }
-
-        public void Stop() {
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/images/text");
+        public TextHttpModule(HttpServiceModule httpservice, TextModule textmodule) {
+            this.textmodule = textmodule;
+            httpservice.AddServiceHandler("/streamrc/images/text", this);
         }
 
         public void ProcessRequest(HttpClient client, HttpRequest request) {
@@ -43,7 +33,7 @@ namespace StreamRC.Streaming.Text {
             Color color = request.HasParameter("color") ? request.GetParameter<Color>("color"):Color.White;
             Color outlinecolor = request.HasParameter("outlinecolor") ? request.GetParameter<Color>("outlinecolor") : Color.Black;
             int outlinethickness = request.GetParameter<int>("outlinethickness");
-            client.ServeData(context.GetModule<TextModule>().CreateTextImage(text, size, color, outlinecolor, outlinethickness), ".png");
+            client.ServeData(textmodule.CreateTextImage(text, size, color, outlinecolor, outlinethickness), ".png");
         }
     }
 }

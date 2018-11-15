@@ -35,8 +35,13 @@
         /// </summary>
         public bool IsWhispered { get; set; }
 
+        /// <summary>
+        /// determines whether the command is a system command
+        /// </summary>
+        public bool IsSystemCommand { get; set; }
+
         public override string ToString() {
-            return $"{User}: !{Command} {string.Join(" ", Arguments)}";
+            return $"{User}: {(IsSystemCommand ? '$' : '!')}{Command} {string.Join(" ", Arguments)}";
         }
     }
 }

@@ -6,10 +6,8 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
 
@@ -18,10 +16,8 @@ namespace StreamRC.Streaming.Ticker {
     /// <summary>
     /// manages http display for <see cref="TickerMessage"/>s
     /// </summary>
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(TickerModule))]
-    public class TickerHttpService : IHttpService, IRunnableModule, ITimerService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    public class TickerHttpService : IHttpService, ITimerService {
 
         readonly object messagelock = new object();
         readonly List<TickerHttpMessage> messages = new List<TickerHttpMessage>();
@@ -29,9 +25,15 @@ namespace StreamRC.Streaming.Ticker {
         /// <summary>
         /// creates a new <see cref="TickerHttpService"/>
         /// </summary>
-        /// <param name="context"></param>
-        public TickerHttpService(Context context) {
-            this.context = context;
+        /// <param name="ticker">access to ticker data</param>
+        public TickerHttpService(TickerModule ticker, TimerModule timer, HttpServiceModule httpservice) {
+            httpservice.AddServiceHandler("/streamrc/ticker", this);
+            httpservice.AddServiceHandler("/streamrc/ticker.css", this);
+            httpservice.AddServiceHandler("/streamrc/ticker.js", this);
+            httpservice.AddServiceHandler("/streamrc/ticker/data", this);
+
+            ticker.Message += OnMessage;
+            timer.AddService(this);
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request)
@@ -73,30 +75,6 @@ namespace StreamRC.Streaming.Ticker {
                 }
             }
 
-        }
-
-        void IRunnableModule.Start()
-        {
-            context.GetModule<TickerModule>().Message += OnMessage;
-            context.GetModule<TimerModule>().AddService(this);
-
-            HttpServiceModule httpservice = context.GetModule<HttpServiceModule>();
-            httpservice.AddServiceHandler("/streamrc/ticker", this);
-            httpservice.AddServiceHandler("/streamrc/ticker.css", this);
-            httpservice.AddServiceHandler("/streamrc/ticker.js", this);
-            httpservice.AddServiceHandler("/streamrc/ticker/data", this);
-        }
-
-        void IRunnableModule.Stop()
-        {
-            context.GetModule<TickerModule>().Message -= OnMessage;
-            context.GetModule<TimerModule>().RemoveService(this);
-
-            HttpServiceModule httpservice = context.GetModule<HttpServiceModule>();
-            httpservice.RemoveServiceHandler("/streamrc/ticker");
-            httpservice.RemoveServiceHandler("/streamrc/ticker.css");
-            httpservice.RemoveServiceHandler("/streamrc/ticker.js");
-            httpservice.RemoveServiceHandler("/streamrc/ticker/data");
         }
 
         void OnMessage(TickerMessage message)

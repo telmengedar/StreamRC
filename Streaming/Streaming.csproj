@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>StreamRC.Streaming</RootNamespace>
     <AssemblyName>StreamRC.Streaming</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,17 +32,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.DB">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.DB.dll</HintPath>
+    <Reference Include="Nightlycode.Database, Version=0.7.10.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.10\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Japi">
       <HintPath>..\..\..\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules">
-      <HintPath>..\..\..\Compiled\Library\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net">
       <HintPath>..\..\..\Compiled\Library\NightlyCode.Net.dll</HintPath>
@@ -86,6 +87,7 @@
     <Compile Include="Events\StreamHttpEvents.cs" />
     <Compile Include="Events\StreamEventType.cs" />
     <Compile Include="Events\StreamHttpEvent.cs" />
+    <Compile Include="Extensions\DataExtensions.cs" />
     <Compile Include="Games\CurrentlyPlayedGame.cs" />
     <Compile Include="Games\CurrentlyPlayedModule.cs" />
     <Compile Include="Games\GamesHttpModule.cs" />
@@ -98,7 +100,9 @@
     <Compile Include="Polls\Commands\RevokeCommandHandler.cs" />
     <Compile Include="Polls\Commands\UserVoteCommandHandler.cs" />
     <Compile Include="Polls\Commands\VoteCommandHandler.cs" />
+    <Compile Include="Shouts\ListShoutsHandler.cs" />
     <Compile Include="Shouts\Shout.cs" />
+    <Compile Include="Shouts\ShoutInfoHandler.cs" />
     <Compile Include="Shouts\ShoutModule.cs" />
     <Compile Include="Statistics\HttpStatistic.cs" />
     <Compile Include="Statistics\StatisticManagementInvoker.cs" />
@@ -356,11 +360,16 @@
   <ItemGroup>
     <EmbeddedResource Include="Users\Flags\racist.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Statistics\Icons\triumphs.png" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Http\Video\videoplayer.css" />
     <EmbeddedResource Include="Http\Video\videoplayer.html" />
     <EmbeddedResource Include="Http\Video\videoplayer.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
