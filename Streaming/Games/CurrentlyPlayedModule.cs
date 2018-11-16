@@ -23,7 +23,7 @@ namespace StreamRC.Streaming.Games {
         public CurrentlyPlayedModule(ISettings settings, InfoModule infos) {
             this.settings = settings;
             this.infos = infos;
-            game = JSON.Read<CurrentlyPlayedGame>(settings.Get<string>(this, "game", null));
+            game = JSON.Read<CurrentlyPlayedGame>(settings.Get<string>(this, "game", "null"));
         }
 
         /// <summary>

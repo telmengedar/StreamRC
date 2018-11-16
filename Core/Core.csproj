@@ -40,15 +40,15 @@
     <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Nightlycode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
+    <Reference Include="NightlyCode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\NightlyCode.Database.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Japi, Version=0.8.6412.17504, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.9.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.9\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.10.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.10\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>

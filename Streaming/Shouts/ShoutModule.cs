@@ -10,7 +10,7 @@ using StreamRC.Streaming.Videos;
 
 namespace StreamRC.Streaming.Shouts {
 
-    [Module(Key ="shout")]
+    [Module(Key ="shout", AutoCreate = true)]
     public class ShoutModule {
         readonly DatabaseModule database;
         readonly VideoServiceModule videoservice;

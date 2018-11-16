@@ -36,7 +36,7 @@ namespace StreamRC.Twitch.Chat {
         /// creates a new <see cref="TwitchChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public TwitchChatModule(StreamModule stream, UserModule usermodule, ImageCacheModule imagecache, TwitchBotModule botmodule, ISettings settings) {
+        public TwitchChatModule(StreamModule stream, UserModule usermodule, ImageCacheModule imagecache, ISettings settings) {
             this.stream = stream;
             this.usermodule = usermodule;
             this.imagecache = imagecache;
@@ -52,7 +52,6 @@ namespace StreamRC.Twitch.Chat {
 
             username = settings.Get<string>(this, "username", null);
             accesstoken = settings.Get<string>(this, "token", null);
-            botmodule.LiveStatusChanged += OnLiveChanged;
         }
 
         public string Username => username;
@@ -135,7 +134,7 @@ namespace StreamRC.Twitch.Chat {
             stream.RemoveChannel(TwitchConstants.ServiceKey, channelsource.Name);
         }
 
-        void OnLiveChanged(bool status) {
+        internal void OnLiveChanged(bool status) {
             if(status) {
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(accesstoken))
                     Connect();

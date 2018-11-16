@@ -206,6 +206,8 @@ namespace StreamRC.Twitch.Chat {
                 Logger.Info(this, "Disconnecting bot chat");
                 chatclient.Disconnect();
             }
+
+            chatmodule.OnLiveChanged(live);
             LiveStatusChanged?.Invoke(live);
         }
 

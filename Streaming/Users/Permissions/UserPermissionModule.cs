@@ -42,7 +42,7 @@ namespace StreamRC.Streaming.Users.Permissions {
         /// <param name="permission">permission to check</param>
         /// <returns></returns>
         public bool HasPermission(long userid, string permission) {
-            return database.Database.Load<UserPermission>(DBFunction.Count).Where(p => p.UserID == userid && p.Permission == permission).ExecuteScalar<long>() > 0;
+            return database.Database.Load<UserPermission>(c => DBFunction.Count).Where(p => p.UserID == userid && p.Permission == permission).ExecuteScalar<long>() > 0;
 
         }
 

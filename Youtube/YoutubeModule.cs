@@ -33,15 +33,9 @@ namespace StreamRC.Youtube {
             this.stream = stream;
             this.timer = timer;
             stream.AddService(YoutubeConstants.ServiceName, this);
-        }
-
-        public void Start() {
             timer.AddService(this, 60.0);
             Connected?.Invoke();
             Process(0.0);
-        }
-
-        public void Stop() {
         }
 
         public event Action Connected;

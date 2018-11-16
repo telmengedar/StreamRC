@@ -170,7 +170,8 @@ namespace StreamRC.Streaming.Cache {
                 
                 foreach (ImageCacheItem item in expired) {
                     imagesbyid.Remove(item.ID);
-                    imagesbykey.Remove(item.Key);
+                    if(!string.IsNullOrEmpty(item.Key))
+                        imagesbykey.Remove(item.Key);
                 }
 
                 long[] ids = expired.Select(i => i.ID).ToArray();

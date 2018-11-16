@@ -66,7 +66,7 @@ namespace StreamRC.Streaming.Statistics {
         }
 
         public bool Exists(string name) {
-            return database.Database.Load<Statistic>(DBFunction.Count).Where(s => s.Name == name).ExecuteScalar<int>() > 0;
+            return database.Database.Load<Statistic>(c => DBFunction.Count).Where(s => s.Name == name).ExecuteScalar<int>() > 0;
         }
     }
 }

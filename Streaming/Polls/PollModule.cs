@@ -50,7 +50,6 @@ namespace StreamRC.Streaming.Polls {
             this.settings = settings;
             this.ticker = ticker;
             this.collections = collections;
-            tickergenerator = new PollTickerGenerator(database, this);
 
             database.Database.UpdateSchema<Poll>();
             database.Database.UpdateSchema<PollVote>();
@@ -63,9 +62,6 @@ namespace StreamRC.Streaming.Polls {
             notificationgenerator = new PollNotificationGenerator(this, notifications);
             ReloadAvailablePolls();
 
-            if (tickergenerator.PollOptionCount > 0)
-                ticker.AddSource(tickergenerator);
-
             collections.ItemAdded += OnCollectionItemAdded;
             collections.ItemRemoved += OnCollectionItemRemoved;
             collections.ItemBlocked += OnCollectionItemBlocked;
@@ -77,6 +73,10 @@ namespace StreamRC.Streaming.Polls {
             stream.RegisterCommandHandler("polls", new ListPollsCommandHandler(this));
             stream.RegisterCommandHandler("pollinfo", new PollInfoCommandHandler(this));
             timer.AddService(this, Period);
+
+            tickergenerator = new PollTickerGenerator(database, this);
+            if (tickergenerator.PollOptionCount > 0)
+                ticker.AddSource(tickergenerator);
         }
 
         public event Action<Poll> PollCreated;
@@ -226,7 +226,7 @@ namespace StreamRC.Streaming.Polls {
         /// <param name="name">name of poll</param>
         /// <returns>true when a poll named <see cref="name"/> was found, false otherwise</returns>
         public bool ExistsPoll(string name) {
-            return database.Database.Load<Poll>(DBFunction.Count).Where(p => p.Name == name).ExecuteScalar<long>() > 0;
+            return database.Database.Load<Poll>(c => DBFunction.Count).Where(p => p.Name == name).ExecuteScalar<long>() > 0;
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace StreamRC.Streaming.Polls {
         /// <param name="option">name of option</param>
         /// <returns>true when poll named <see cref="poll"/> has an option named <see cref="option"/>, false otherwise</returns>
         public bool ExistsOption(string poll, string option) {
-            return database.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll && o.Key == option).ExecuteScalar<long>() > 0;
+            return database.Database.Load<PollOption>(c => DBFunction.Count).Where(o => o.Poll == poll && o.Key == option).ExecuteScalar<long>() > 0;
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace StreamRC.Streaming.Polls {
         /// <param name="poll">name of poll</param>
         /// <returns>true when options for the poll are defined, false otherwise</returns>
         public bool HasOptions(string poll) {
-            return database.Database.Load<PollOption>(DBFunction.Count).Where(o => o.Poll == poll).ExecuteScalar<long>() > 0;
+            return database.Database.Load<PollOption>(c => DBFunction.Count).Where(o => o.Poll == poll).ExecuteScalar<long>() > 0;
         }
 
         public PollOption[] FindOptions(string[] arguments) {
@@ -420,7 +420,7 @@ namespace StreamRC.Streaming.Polls {
 
         public void CreatePollOption(string poll, string option, string description)
         {
-            if (database.Database.Load<Poll>(DBFunction.Count).Where(p => p.Name == poll).ExecuteScalar<long>() == 0)
+            if (database.Database.Load<Poll>(c => DBFunction.Count).Where(p => p.Name == poll).ExecuteScalar<long>() == 0)
                 throw new Exception($"No poll named '{poll}' found");
 
             if (database.Database.Update<PollOption>().Set(o => o.Description == description).Where(o => o.Poll == poll && o.Key == option).Execute() == 0)
@@ -443,7 +443,7 @@ namespace StreamRC.Streaming.Polls {
         /// <param name="options">poll options (optional)</param>
         public void CreatePoll(string name, string description, string options = null)
         {
-            if (database.Database.Load<Poll>(DBFunction.Count).Where(p => p.Name == name).ExecuteScalar<long>() > 0)
+            if (database.Database.Load<Poll>(c => DBFunction.Count).Where(p => p.Name == name).ExecuteScalar<long>() > 0)
             {
                 database.Database.Delete<PollVote>().Where(p => p.Poll == name).Execute();
                 database.Database.Delete<PollOption>().Where(p => p.Poll == name).Execute();

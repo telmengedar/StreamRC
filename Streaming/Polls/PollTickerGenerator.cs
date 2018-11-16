@@ -36,7 +36,7 @@ namespace StreamRC.Streaming.Polls
         void Recount()
         {
             lock (countlock)
-                PollOptionCount = database.Database.Load<PollOption>(DBFunction.Count).Where(p=>!p.Locked).ExecuteScalar<long>();
+                PollOptionCount = database.Database.Load<PollOption>(c => DBFunction.Count).Where(p=>!p.Locked).ExecuteScalar<long>();
         }
 
         /// <summary>

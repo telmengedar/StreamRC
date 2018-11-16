@@ -26,25 +26,26 @@ namespace StreamRC.Streaming.Collections {
         /// creates a new <see cref="CollectionModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public CollectionModule(IModuleContext context, IMainWindow mainwindow, DatabaseModule database, TickerModule ticker) {
+        public CollectionModule(IMainWindow mainwindow, DatabaseModule database, TickerModule ticker, StreamModule stream) {
             this.database = database;
             this.ticker = ticker;
-            tickergenerator = new CollectionTickerGenerator(database, this);
+            
             database.Database.UpdateSchema<Collection>();
             database.Database.UpdateSchema<CollectionItem>();
             database.Database.UpdateSchema<BlockedCollectionItem>();
             database.Database.UpdateSchema<WeightedCollectionItem>();
 
-            if (tickergenerator.CollectionCount > 0)
-                context.GetModule<TickerModule>().AddSource(tickergenerator);
-
             mainwindow.AddMenuItem("Manage.Collections", (sender, args) => new CollectionManagementWindow(this).Show());
 
-            context.GetModule<StreamModule>().RegisterCommandHandler("add", new AddCollectionItemCommandHandler(this));
-            context.GetModule<StreamModule>().RegisterCommandHandler("remove", new RemoveCollectionItemCommandHandler(this));
-            context.GetModule<StreamModule>().RegisterCommandHandler("clear", new ClearCollectionCommandHandler(this));
-            context.GetModule<StreamModule>().RegisterCommandHandler("collections", new ListCollectionsCommandHandler(this));
-            context.GetModule<StreamModule>().RegisterCommandHandler("collectioninfo", new CollectionInfoCommandHandler(this));
+            stream.RegisterCommandHandler("add", new AddCollectionItemCommandHandler(this));
+            stream.RegisterCommandHandler("remove", new RemoveCollectionItemCommandHandler(this));
+            stream.RegisterCommandHandler("clear", new ClearCollectionCommandHandler(this));
+            stream.RegisterCommandHandler("collections", new ListCollectionsCommandHandler(this));
+            stream.RegisterCommandHandler("collectioninfo", new CollectionInfoCommandHandler(this));
+
+            tickergenerator = new CollectionTickerGenerator(database, this);
+            if (tickergenerator.CollectionCount > 0)
+                ticker.AddSource(tickergenerator);
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace StreamRC.Streaming.Collections {
         }
 
         public long GetCollectionCount() {
-            return database.Database.Load<Collection>(DBFunction.Count).ExecuteScalar<long>();
+            return database.Database.Load<Collection>(c=>DBFunction.Count).ExecuteScalar<long>();
         }
 
         public Collection[] GetCollections() {
@@ -144,11 +145,11 @@ namespace StreamRC.Streaming.Collections {
             if(blocked != null)
                 throw new StreamCommandException($"You can't add '{item}' to the collection '{collectionname}'. Reason: {blocked.Reason}");
 
-            if(database.Database.Load<CollectionItem>(DBFunction.Count).Where(i => i.Collection == collectionname && i.User == user && i.Item == item).ExecuteScalar<int>() > 0)
+            if(database.Database.Load<CollectionItem>(c => DBFunction.Count).Where(i => i.Collection == collectionname && i.User == user && i.Item == item).ExecuteScalar<int>() > 0)
                 throw new StreamCommandException($"You already have added '{item}' to the collection '{collectionname}'");
 
             if(collection.ItemsPerUser > 0) {
-                int currentitems = database.Database.Load<CollectionItem>(DBFunction.Count).Where(i => i.Collection == collectionname && i.User == user).ExecuteScalar<int>();
+                int currentitems = database.Database.Load<CollectionItem>(c => DBFunction.Count).Where(i => i.Collection == collectionname && i.User == user).ExecuteScalar<int>();
                 if(currentitems >= collection.ItemsPerUser)
                     throw new StreamCommandException($"You already have {collection.ItemsPerUser} in the collection '{collectionname}' which is the maximum per user for that collection. Remove some items or wait until some of them were processed.");
             }

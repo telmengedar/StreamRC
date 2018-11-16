@@ -29,7 +29,7 @@ namespace StreamRC.Streaming.Collections {
 
         void Recount() {
             lock(countlock)
-                CollectionCount = database.Database.Load<Collection>(DBFunction.Count).ExecuteScalar<long>();
+                CollectionCount = database.Database.Load<Collection>(c => DBFunction.Count).ExecuteScalar<long>();
         }
 
         /// <summary>
