@@ -1,24 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using NightlyCode.Core.Conversion;
-using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 
 namespace StreamRC.Reviews {
 
     /// <summary>
     /// module managing review data
     /// </summary>
-    [Dependency(ModuleKeys.MainWindow, SpecifierType.Key)]
-    [ModuleKey("review")]
+    [Module(Key="review")]
     public class ReviewModule : ICommandModule, IInitializableModule {
-        readonly Context context;
         readonly List<ReviewEntry> entries=new List<ReviewEntry>();
 
-        public ReviewModule(Context context) {
-            this.context = context;
+        public ReviewModule() {
         }
 
         public bool TimeoutEnabled { get; set; } = true;

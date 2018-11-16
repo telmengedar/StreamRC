@@ -18,6 +18,7 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         Descriptive=256,
         Object=512,
         Greeting=1024,
-        Comparision=2048
+        Comparision=2048,
+        Title=4096
     }
 }

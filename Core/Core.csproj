@@ -47,8 +47,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.10.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.10\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.13.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.13\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Net">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>

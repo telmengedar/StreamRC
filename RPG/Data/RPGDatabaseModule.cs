@@ -1,23 +1,19 @@
-﻿using System.Data.SQLite;
-using NightlyCode.DB.Clients;
-using NightlyCode.DB.Entities;
-using NightlyCode.DB.Info;
+﻿using NightlyCode.Database.Entities;
 using NightlyCode.Modules;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 
 namespace StreamRC.RPG.Data {
 
     /// <summary>
     /// module containing database for rpg runtime data
     /// </summary>
-    public class RPGDatabaseModule : IModule {
-        Context context;
-        readonly IEntityManager database = new EntityManager(new DBClient(new SQLiteConnection("Data Source=:memory:"), new SQLiteInfo()));
+    [Module]
+    public class RPGDatabaseModule {
 
-        public RPGDatabaseModule(Context context) {
-            this.context = context;
+        public RPGDatabaseModule(DatabaseModule databasemodule) {
+            Database = databasemodule.CreateMemoryDatabase();
         }
 
-        public IEntityManager Database => database;
+        public IEntityManager Database { get; }
     }
 }

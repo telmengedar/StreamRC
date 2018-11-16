@@ -1,27 +1,27 @@
-﻿using NightlyCode.StreamRC.Modules;
-using StreamRC.RPG.Messages;
+﻿using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
 using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Effects.Modifiers {
     public class RockEffect : IModifierEffect {
-        Context context;
         User user;
-        public RockEffect(int level, double time, Context context, User user) {
+        readonly RPGMessageModule messages;
+
+        public RockEffect(int level, double time, User user, RPGMessageModule messages) {
             Time = time;
-            this.context = context;
             this.user = user;
+            this.messages = messages;
             Level = level;
         }
 
         public string Name => "Rock";
 
         public void Initialize() {
-            context.GetModule<RPGMessageModule>().Create().User(user).Text(" feels resistant like a rock.").Send();
+            messages.Create().User(user).Text(" feels resistant like a rock.").Send();
         }
 
         public void WearOff() {
-            context.GetModule<RPGMessageModule>().Create().User(user).Text(" is getting soft again.");
+            messages.Create().User(user).Text(" is getting soft again.");
         }
 
         public double Time { get; set; }

@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
-using NightlyCode.DB.Clients.Tables;
-using NightlyCode.DB.Entities.Operations;
-using NightlyCode.DB.Entities.Operations.Aggregates;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Data;
 using StreamRC.RPG.Players.Commands;
 using StreamRC.Streaming.Events;
@@ -22,14 +16,9 @@ namespace StreamRC.RPG.Players {
     /// <summary>
     /// module managing player data
     /// </summary>
-    [Dependency(nameof(PlayerLevelModule))]
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(StreamEventModule))]
-    [ModuleKey("player")]
+    [Module(Key = "player")]
     public class PlayerModule : IInitializableModule, IRunnableModule, ICommandModule
     {
-        readonly Context context;
         readonly PeriodicTimer experiencetimer = new PeriodicTimer();
         object createplayerlock = new object();
 
@@ -37,8 +26,7 @@ namespace StreamRC.RPG.Players {
         /// creates a new <see cref="PlayerModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public PlayerModule(Context context) {
-            this.context = context;
+        public PlayerModule() {
         }
 
         /// <summary>

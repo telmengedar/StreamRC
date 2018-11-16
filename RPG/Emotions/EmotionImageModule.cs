@@ -4,17 +4,17 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Http;
 
 namespace StreamRC.RPG.Emotions {
-    public class EmotionImageModule : IRunnableModule, IHttpService {
-        readonly Context context;
+
+    [Module(AutoCreate = true)]
+    public class EmotionImageModule : IHttpService {
         readonly Dictionary<string, string> imagecache = new Dictionary<string, string>();
 
-        public EmotionImageModule(Context context)
+        public EmotionImageModule(HttpServiceModule httpservice)
         {
-            this.context = context;
+            httpservice.AddServiceHandler("/streamrc/image/emotion", this);
         }
 
         /// <summary>
@@ -36,16 +36,6 @@ namespace StreamRC.RPG.Emotions {
             }
 
             return path;
-        }
-
-        void IRunnableModule.Start()
-        {
-            context.GetModule<HttpServiceModule>().AddServiceHandler("/streamrc/image/emotion", this);
-        }
-
-        void IRunnableModule.Stop()
-        {
-            context.GetModule<HttpServiceModule>().RemoveServiceHandler("/streamrc/image/emotion");
         }
 
         void IHttpService.ProcessRequest(HttpClient client, HttpRequest request)

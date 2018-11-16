@@ -2,9 +2,8 @@
 using System.Globalization;
 using System.Linq;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Timer;
+using StreamRC.RPG.Adventure;
 using StreamRC.RPG.Effects.Battle;
 using StreamRC.RPG.Effects.Commands;
 using StreamRC.RPG.Effects.Modifiers;
@@ -17,17 +16,25 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Effects {
 
-    [Dependency(nameof(TimerModule))]
-    [Dependency(nameof(PlayerModule))]
-    [ModuleKey("effects")]
-    public class EffectModule : IRunnableModule, ITimerService, ICommandModule, IItemCommandModule {
-        readonly Context context;
+    [Module(Key="effects")]
+    public class EffectModule : ITimerService, ICommandModule, IItemCommandModule {
+        readonly StreamModule stream;
+        readonly RPGMessageModule messages;
+        readonly UserModule users;
+        readonly PlayerModule players;
+        readonly AdventureModule adventure;
         readonly object effectlock = new object();
         readonly List<ITemporaryEffect> monstereffects = new List<ITemporaryEffect>();
         readonly Dictionary<long, List<ITemporaryEffect>> playereffects = new Dictionary<long, List<ITemporaryEffect>>();
 
-        public EffectModule(Context context) {
-            this.context = context;
+        public EffectModule(StreamModule stream, TimerModule timer, RPGMessageModule messages, UserModule users, PlayerModule players, AdventureModule adventure) {
+            this.stream = stream;
+            this.messages = messages;
+            this.users = users;
+            this.players = players;
+            this.adventure = adventure;
+            stream.RegisterCommandHandler("effects", new ListEffectsCommandHandler(this));
+            timer.AddService(this, 1.0);
         }
 
         void ITimerService.Process(double time) {
@@ -113,20 +120,10 @@ namespace StreamRC.RPG.Effects {
         }
 
         public void ListEffects(string service, string channel, string user) {
-            string effects = string.Join(", ", GetActivePlayerEffects(context.GetModule<PlayerModule>().GetExistingPlayer(service, user).UserID));
+            string effects = string.Join(", ", GetActivePlayerEffects(players.GetExistingPlayer(service, user).UserID));
             if(string.IsNullOrEmpty(effects))
-                context.GetModule<StreamModule>().SendMessage(service, channel, user, "No active effects");
-            else context.GetModule<StreamModule>().SendMessage(service, channel, user, $"Active effects: {effects}");
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().RegisterCommandHandler("effects", new ListEffectsCommandHandler(this));
-            context.GetModule<TimerModule>().AddService(this, 1.0);
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().UnregisterCommandHandler("effects");
-            context.GetModule<TimerModule>().RemoveService(this);
+                stream.SendMessage(service, channel, user, "No active effects");
+            else stream.SendMessage(service, channel, user, $"Active effects: {effects}");
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {
@@ -143,8 +140,8 @@ namespace StreamRC.RPG.Effects {
         }
 
         void ReduceEffect(string service, string username, string effect, int level) {
-            User user = context.GetModule<UserModule>().GetExistingUser(service, username);
-            Player player = context.GetModule<PlayerModule>().GetExistingPlayer(service, username);
+            User user = users.GetExistingUser(service, username);
+            Player player = players.GetExistingPlayer(service, username);
             ReduceEffect(user, player, effect, level);
         }
 
@@ -156,7 +153,7 @@ namespace StreamRC.RPG.Effects {
                         RemovePlayerEffect(player, activeeffect);
                     else {
                         activeeffect.Level -= level;
-                        context.GetModule<RPGMessageModule>().Create().Text("The effect level of ").User(user).Text("'s ").Text(activeeffect.Name).Text(" was reduced to ").Text(activeeffect.Level.ToString()).Text(".").Send();
+                        messages.Create().Text("The effect level of ").User(user).Text("'s ").Text(activeeffect.Name).Text(" was reduced to ").Text(activeeffect.Level.ToString()).Text(".").Send();
                     }
                 }
             }
@@ -172,32 +169,32 @@ namespace StreamRC.RPG.Effects {
         }
 
         void AddEffect(string service, string username, string effecttype, int level, double time) {
-            User user = context.GetModule<UserModule>().GetExistingUser(service, username);
+            User user = users.GetExistingUser(service, username);
             AddEffect(user, effecttype, level, time);
         }
 
         void AddEffect(User user, string effecttype, int level, double time) {
             switch(effecttype) {
                 case "smellyarmor":
-                    AddPlayerEffect(user.ID, new SmellyArmorEffect(level, time, context.GetModule<RPGMessageModule>(), user.ID));
+                    AddPlayerEffect(user.ID, new SmellyArmorEffect(level, time, messages, user.ID));
                     break;
                 case "shittyweapon":
-                    AddPlayerEffect(user.ID, new ShittyWeaponEffect(context, level, time, user.ID));
+                    AddPlayerEffect(user.ID, new ShittyWeaponEffect(level, time, user.ID, messages, adventure));
                     break;
                 case "herakles":
-                    AddPlayerEffect(user.ID, new HeraklesEffect(level, time, context.GetModule<RPGMessageModule>(), user));
+                    AddPlayerEffect(user.ID, new HeraklesEffect(level, time, messages, user));
                     break;
                 case "cat":
-                    AddPlayerEffect(user.ID, new CatEffect(level, time, context.GetModule<RPGMessageModule>(), user));
+                    AddPlayerEffect(user.ID, new CatEffect(level, time, messages, user));
                     break;
                 case "rock":
-                    AddPlayerEffect(user.ID, new RockEffect(level, time, context, user));
+                    AddPlayerEffect(user.ID, new RockEffect(level, time, user, messages));
                     break;
                 case "enlightment":
-                    AddPlayerEffect(user.ID, new EnlighmentEffect(level, time, context.GetModule<RPGMessageModule>(), user));
+                    AddPlayerEffect(user.ID, new EnlighmentEffect(level, time, messages, user));
                     break;
                 case "fortuna":
-                    AddPlayerEffect(user.ID, new FortunaEffect(level, time, context.GetModule<RPGMessageModule>(), user));
+                    AddPlayerEffect(user.ID, new FortunaEffect(level, time, messages, user));
                     break;
             }
         }

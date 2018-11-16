@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Equipment;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Items;
@@ -15,36 +13,35 @@ using StreamRC.RPG.Shops;
 
 namespace StreamRC.RPG.Adventure {
 
-    [Dependency(nameof(AdventureModule))]
-    [Dependency(nameof(InventoryModule))]
-    [Dependency(nameof(PlayerModule))]
-    public class PlayerAwarenessModule : IRunnableModule {
-        readonly Context context;
+    [Module]
+    public class PlayerAwarenessModule {
+        readonly InventoryModule inventory;
+        readonly PlayerModule players;
+        readonly SkillModule skills;
+        readonly ItemModule items;
+        readonly ShopModule shop;
+        readonly EquipmentModule equipmentmodule;
+        readonly AdventureModule adventure;
+        readonly ConvenienceModule convenience;
 
         readonly TimeSpan threshold = TimeSpan.FromSeconds(1.0);
         readonly Dictionary<long, AwarenessContext> afkdetection = new Dictionary<long, AwarenessContext>();
          
-        public PlayerAwarenessModule(Context context) {
-            this.context = context;
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<AdventureModule>().PlayerActiveChanged += OnPlayerActiveChanged;
-            context.GetModule<AdventureModule>().PlayerActiveTrigger += OnPlayerActive;
-            context.GetModule<AdventureModule>().ItemFound += OnItemFound;
-            context.GetModule<InventoryModule>().PlayerEncumbered += OnPlayerEncumbered;
-            context.GetModule<PlayerModule>().HealthChanged += OnHealthChanged;
-            context.GetModule<SkillModule>().SkillChanged += OnSkillChanged;
-        }
-
-        void IRunnableModule.Stop()
-        {
-            context.GetModule<AdventureModule>().PlayerActiveChanged -= OnPlayerActiveChanged;
-            context.GetModule<AdventureModule>().PlayerActiveTrigger -= OnPlayerActive;
-            context.GetModule<AdventureModule>().ItemFound -= OnItemFound;
-            context.GetModule<InventoryModule>().PlayerEncumbered -= OnPlayerEncumbered;
-            context.GetModule<PlayerModule>().HealthChanged -= OnHealthChanged;
-            context.GetModule<SkillModule>().SkillChanged -= OnSkillChanged;
+        public PlayerAwarenessModule(AdventureModule adventuremodule, InventoryModule inventory, PlayerModule players, SkillModule skills, ItemModule items, ShopModule shop, EquipmentModule equipmentmodule, AdventureModule adventure, ConvenienceModule convenience) {
+            this.inventory = inventory;
+            this.players = players;
+            this.skills = skills;
+            this.items = items;
+            this.shop = shop;
+            this.equipmentmodule = equipmentmodule;
+            this.adventure = adventure;
+            this.convenience = convenience;
+            adventuremodule.PlayerActiveChanged += OnPlayerActiveChanged;
+            adventuremodule.PlayerActiveTrigger += OnPlayerActive;
+            adventuremodule.ItemFound += OnItemFound;
+            inventory.PlayerEncumbered += OnPlayerEncumbered;
+            players.HealthChanged += OnHealthChanged;
+            skills.SkillChanged += OnSkillChanged;
         }
 
         void OnItemFound(long playerid, long itemid, int quantity) {
@@ -56,18 +53,18 @@ namespace StreamRC.RPG.Adventure {
             if(playercontext.Level < 1)
                 return;
 
-            Item item = context.GetModule<ItemModule>().GetItem(itemid);
+            Item item = items.GetItem(itemid);
             if(item.Type == ItemType.Gold)
                 return;
 
-            if(context.GetModule<ItemModule>().IsIngredient(itemid)) {
+            if(items.IsIngredient(itemid)) {
 
                 // automatic crafting is done by level 3
                 if(playercontext.Level >= 3) {
-                    ItemRecipe[] recipes = context.GetModule<ItemModule>().GetRecipes(itemid).OrderByDescending(r => r.Ingredients.Length).ToArray();
+                    ItemRecipe[] recipes = items.GetRecipes(itemid).OrderByDescending(r => r.Ingredients.Length).ToArray();
                     foreach(ItemRecipe recipe in recipes) {
-                        if(context.GetModule<InventoryModule>().HasItems(playerid, recipe.Ingredients.Select(i => i.Item).ToArray())) {
-                            context.GetModule<InventoryModule>().CraftItem(playerid, context.GetModule<ItemModule>().GetItems(recipe.Ingredients.Select(i => i.Item)).ToArray());
+                        if(inventory.HasItems(playerid, recipe.Ingredients.Select(i => i.Item).ToArray())) {
+                            inventory.CraftItem(playerid, items.GetItems(recipe.Ingredients.Select(i => i.Item)).ToArray());
                             return;
                         }
                     }
@@ -75,47 +72,47 @@ namespace StreamRC.RPG.Adventure {
             }
 
             if(item.Type == ItemType.Consumable) {
-                Player player = context.GetModule<PlayerModule>().GetExistingPlayer(playerid);
+                Player player = players.GetExistingPlayer(playerid);
                 if(item.HP < player.MaximumHP * 0.35) {
-                    context.GetModule<ShopModule>().SellItem(playerid, item, quantity, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
+                    shop.SellItem(playerid, item, quantity, shop.IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
                     return;
                 }
             }
             else if (item.Type == ItemType.Weapon || item.Type == ItemType.Armor) {
-                if (item.LevelRequirement > context.GetModule<PlayerModule>().GetLevel(playerid))
+                if (item.LevelRequirement > players.GetLevel(playerid))
                     return;
 
-                EquipmentBonus bonus = context.GetModule<EquipmentModule>().GetEquipmentBonus(playerid, item.GetTargetSlot());
+                EquipmentBonus bonus = equipmentmodule.GetEquipmentBonus(playerid, item.GetTargetSlot());
                 if((item.Type == ItemType.Weapon && bonus.Damage >= item.Damage) || (item.Type == ItemType.Armor && bonus.Armor >= item.Armor))
-                    context.GetModule<ShopModule>().SellItem(playerid, item, quantity, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
+                    shop.SellItem(playerid, item, quantity, shop.IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
                 else {
-                    EquipmentItem olditem = context.GetModule<EquipmentModule>().Equip(playerid, item, item.GetTargetSlot());
+                    EquipmentItem olditem = equipmentmodule.Equip(playerid, item, item.GetTargetSlot());
                     if(quantity > 1)
-                        context.GetModule<ShopModule>().SellItem(playerid, item, quantity - 1, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
-                    context.GetModule<ShopModule>().SellItem(playerid, olditem.ItemID, 1, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, olditem.ItemID) ? 0.2 : 0.0);
+                        shop.SellItem(playerid, item, quantity - 1, shop.IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
+                    shop.SellItem(playerid, olditem.ItemID, 1, shop.IsInsultNecessaryToSell(playerid, olditem.ItemID) ? 0.2 : 0.0);
                 }
                 return;
             }
 
-            context.GetModule<ShopModule>().SellItem(playerid, item, quantity, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
+            shop.SellItem(playerid, item, quantity, shop.IsInsultNecessaryToSell(playerid, itemid) ? 0.2 : 0.0);
 
             if(playercontext.Level >= 3) {
-                int sizethreshold = (int)(context.GetModule<InventoryModule>().GetMaximumInventorySize(playerid) * 0.8);
+                int sizethreshold = (int)(inventory.GetMaximumInventorySize(playerid) * 0.8);
 
-                if(context.GetModule<InventoryModule>().GetInventorySize(playerid) > sizethreshold) {
-                    List<FullInventoryItem> inventory = new List<FullInventoryItem>(context.GetModule<InventoryModule>().GetInventoryItems(playerid));
+                if(inventory.GetInventorySize(playerid) > sizethreshold) {
+                    List<FullInventoryItem> inventorylist = new List<FullInventoryItem>(inventory.GetInventoryItems(playerid));
 
-                    while(inventory.Count > sizethreshold) {
-                        FullInventoryItem sellitem = inventory.Where(i => i.Type == ItemType.Misc && i.Name != "Pee" && i.Name != "Poo").OrderBy(i => i.Value).FirstOrDefault();
+                    while(inventorylist.Count > sizethreshold) {
+                        FullInventoryItem sellitem = inventorylist.Where(i => i.Type == ItemType.Misc && i.Name != "Pee" && i.Name != "Poo").OrderBy(i => i.Value).FirstOrDefault();
                         if(sellitem == null)
-                            sellitem = inventory.FirstOrDefault(i => i.Type == ItemType.Potion && i.HP == 0);
+                            sellitem = inventorylist.FirstOrDefault(i => i.Type == ItemType.Potion && i.HP == 0);
                         if(sellitem == null)
-                            sellitem = inventory.Where(i => i.Type == ItemType.Consumable).OrderBy(i => i.Value).FirstOrDefault();
+                            sellitem = inventorylist.Where(i => i.Type == ItemType.Consumable).OrderBy(i => i.Value).FirstOrDefault();
                         if(sellitem == null)
                             break;
 
-                        context.GetModule<ShopModule>().SellItem(playerid, sellitem.ID, sellitem.Quantity, context.GetModule<ShopModule>().IsInsultNecessaryToSell(playerid, sellitem.ID) ? 0.2 : 0.0);
-                        inventory.Remove(sellitem);
+                        shop.SellItem(playerid, sellitem.ID, sellitem.Quantity, shop.IsInsultNecessaryToSell(playerid, sellitem.ID) ? 0.2 : 0.0);
+                        inventorylist.Remove(sellitem);
                     }
                 }
                 
@@ -149,7 +146,7 @@ namespace StreamRC.RPG.Adventure {
         void IncreaseAFKIndicator(long playerid, AwarenessContext playercontext) {
             Logger.Info(this, $"AFK signs for player '{playerid}'");
             if (++playercontext.AFKIndications >= 5)
-                context.GetModule<AdventureModule>().Rest(playerid);
+                adventure.Rest(playerid);
         }
 
         void OnPlayerEncumbered(long playerid) {
@@ -177,8 +174,8 @@ namespace StreamRC.RPG.Adventure {
 
             if(hp > 0 && hp <= playercontext.MaxDamage) {
                 if(playercontext.Level >= 2) {
-                    if(context.GetModule<SkillModule>().CanCastHeal(playerid) || context.GetModule<InventoryModule>().HasHealingItems(playerid))
-                        context.GetModule<ConvenienceModule>().Heal(playerid);
+                    if(skills.CanCastHeal(playerid) || inventory.HasHealingItems(playerid))
+                        convenience.Heal(playerid);
                 }
                 else IncreaseAFKIndicator(playerid, playercontext);
             }
@@ -192,7 +189,7 @@ namespace StreamRC.RPG.Adventure {
                 afkdetection[playerid] = new AwarenessContext {
                     AFKIndications = 0,
                     LastTrigger = DateTime.Now,
-                    Level = context.GetModule<SkillModule>().GetSkillLevel(playerid, SkillType.Awareness)
+                    Level = skills.GetSkillLevel(playerid, SkillType.Awareness)
                 };
 
             else afkdetection.Remove(playerid);

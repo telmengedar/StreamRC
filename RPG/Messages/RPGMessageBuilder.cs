@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
@@ -18,26 +17,27 @@ namespace StreamRC.RPG.Messages {
     /// <see cref="MessageBuilder"/> which is used to build messages in a game context
     /// </summary>
     public class RPGMessageBuilder : MessageBuilder {
-        readonly Context context;
         readonly GameMessageModule messagemodule;
         readonly ItemImageModule itemimages;
         readonly EmotionImageModule emotionimages;
         readonly ShopImageModule shopimages;
+        readonly UserModule usermodule;
+        readonly ImageCacheModule imagecache;
 
         /// <summary>
         /// creates a new <see cref="RPGMessageBuilder"/>
         /// </summary>
-        /// <param name="context">access to modules</param>
         /// <param name="messagemodule">modules used to send messages</param>
         /// <param name="itemimages">images for items</param>
         /// <param name="emotionimages">images for emotes</param>
         /// <param name="shopimages">images for shop</param>
-        public RPGMessageBuilder(Context context, GameMessageModule messagemodule, ItemImageModule itemimages, EmotionImageModule emotionimages, ShopImageModule shopimages) {
-            this.context = context;
+        public RPGMessageBuilder(GameMessageModule messagemodule, ItemImageModule itemimages, EmotionImageModule emotionimages, ShopImageModule shopimages, UserModule usermodule, ImageCacheModule imagecache) {
             this.messagemodule = messagemodule;
             this.itemimages = itemimages;
             this.emotionimages = emotionimages;
             this.shopimages = shopimages;
+            this.usermodule = usermodule;
+            this.imagecache = imagecache;
         }
 
         public RPGMessageBuilder ShopKeeper() {
@@ -114,7 +114,7 @@ namespace StreamRC.RPG.Messages {
         }
 
         public RPGMessageBuilder User(long userid) {
-            return User(context.GetModule<UserModule>().GetUser(userid));
+            return User(usermodule.GetUser(userid));
         }
 
         public RPGMessageBuilder User(User user) {
@@ -122,11 +122,11 @@ namespace StreamRC.RPG.Messages {
         }
 
         public RPGMessageBuilder Service(string servicename) {
-            return Image(context.GetModule<ImageCacheModule>().AddImage($"http://localhost/streamrc/services/icon?service={servicename}"));
+            return Image(imagecache.GetImageByUrl($"http://localhost/streamrc/services/icon?service={servicename}"));
         }
 
         public RPGMessageBuilder Image(string imageurl, string alternative = null) {
-            return Image(context.GetModule<ImageCacheModule>().AddImage(imageurl), alternative);
+            return Image(imagecache.GetImageByUrl(imageurl), alternative);
         }
 
         public new RPGMessageBuilder Image(long imageid, string alternative=null) {

@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using NightlyCode.Core.Randoms;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
-using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Effects.Battle;
 using StreamRC.RPG.Equipment;
@@ -17,17 +14,25 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Adventure.MonsterBattle {
     public class PlayerBattleEntity : IBattleEntity {
-        readonly Context context;
+        readonly EffectModule effectmodule;
+        readonly PlayerModule playermodule;
+        readonly SkillModule skillmodule;
+        readonly EquipmentModule equipment;
+        readonly ItemModule items;
+        readonly InventoryModule inventorymodule;
         readonly User user;
 
-        public PlayerBattleEntity(Context context, long playerid, Adventure adventure, MonsterBattleLogic battlelogic) {
-            this.context = context;
+        public PlayerBattleEntity(long playerid, Adventure adventure, MonsterBattleLogic battlelogic, UserModule usermodule, EffectModule effectmodule, PlayerModule playermodule, SkillModule skillmodule, EquipmentModule equipment, ItemModule items, InventoryModule inventorymodule) {
+            this.effectmodule = effectmodule;
+            this.playermodule = playermodule;
+            this.skillmodule = skillmodule;
+            this.equipment = equipment;
+            this.items = items;
+            this.inventorymodule = inventorymodule;
             PlayerID = playerid;
             Adventure = adventure;
             BattleLogic = battlelogic;
-            user = context.GetModule<UserModule>().GetUser(playerid);
-            Name = context.Database.Load<User>(u => u.Name).Where(u => u.ID == playerid).ExecuteScalar<string>();
-            Image= context.Database.Load<User>(u => u.Avatar).Where(u => u.ID == playerid).ExecuteScalar<string>();
+            user = usermodule.GetUser(playerid);
             Effects = new ITemporaryEffect[0];
         }
 
@@ -35,8 +40,8 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
 
         public Adventure Adventure { get; }
         public MonsterBattleLogic BattleLogic { get; }
-        public string Image { get; }
-        public string Name { get; }
+        public string Image => user.Avatar;
+        public string Name => user.Name;
         public int Level { get; private set; }
         public int HP { get; private set; }
         public int MaxHP { get; private set; }
@@ -49,14 +54,14 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
         public int ArmorOptimum { get; private set; }
 
         public void AddEffect(ITemporaryEffect effect) {
-            context.GetModule<EffectModule>().AddPlayerEffect(PlayerID, effect);
+            effectmodule.AddPlayerEffect(PlayerID, effect);
         }
 
         public void Refresh() {
-            Player player = context.GetModule<PlayerModule>().GetExistingPlayer(PlayerID);
-            context.GetModule<SkillModule>().ModifyPlayerStats(player);
-            context.GetModule<EffectModule>().ModifyPlayerStats(player);
-            EquipmentBonus bonus = context.GetModule<EquipmentModule>().GetEquipmentBonus(PlayerID);
+            Player player = playermodule.GetExistingPlayer(PlayerID);
+            skillmodule.ModifyPlayerStats(player);
+            effectmodule.ModifyPlayerStats(player);
+            EquipmentBonus bonus = equipment.GetEquipmentBonus(PlayerID);
 
             Level = player.Level;
             HP = player.CurrentHP;
@@ -69,7 +74,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
             WeaponOptimum = bonus.WeaponCritical;
             ArmorOptimum = bonus.ArmorCritical;
 
-            Effects = context.GetModule<EffectModule>().GetActivePlayerEffects(player.UserID).Where(e=>e is IBattleEffect).ToArray();
+            Effects = effectmodule.GetActivePlayerEffects(player.UserID).Where(e=>e is IBattleEffect).ToArray();
         }
 
         public void Hit(int damage) {
@@ -77,13 +82,13 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
                 return;
 
             HP -= damage;
-            context.GetModule<PlayerModule>().UpdateHealth(PlayerID, -damage);
+            playermodule.UpdateHealth(PlayerID, -damage);
         }
 
         public int Heal(int healing) {
             int healed= Math.Min(MaxHP, HP + healing);
             HP += healed;
-            context.GetModule<PlayerModule>().UpdateHealth(PlayerID, healed);
+            playermodule.UpdateHealth(PlayerID, healed);
             return healed;
         }
 
@@ -92,15 +97,15 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
             if(monster == null)
                 return null;
 
-            context.GetModule<PlayerModule>().AddExperience(user.Service, user.Name, monster.Monster.Experience);
-            context.GetModule<PlayerModule>().UpdateGold(PlayerID, monster.Monster.Gold);
+            playermodule.AddExperience(user.Service, user.Name, monster.Monster.Experience);
+            playermodule.UpdateGold(PlayerID, monster.Monster.Gold);
 
             Item item = null;
             DropItem dropitem = monster.Monster.DroppedItems.FirstOrDefault(i => RNG.XORShift64.NextDouble() < i.Rate);
             if(dropitem != null) {
-                item = context.GetModule<ItemModule>().GetItem(dropitem.ItemID);
+                item = items.GetItem(dropitem.ItemID);
                 if(item != null) {
-                    if(context.GetModule<InventoryModule>().AddItem(PlayerID, item.ID, 1) == AddInventoryItemResult.InventoryFull)
+                    if(inventorymodule.AddItem(PlayerID, item.ID, 1) == AddInventoryItemResult.InventoryFull)
                         item = null;
                 }
             }

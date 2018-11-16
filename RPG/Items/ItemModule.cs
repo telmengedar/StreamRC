@@ -8,11 +8,11 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Data;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
-using NightlyCode.DB.Entities.Operations;
+using NightlyCode.Database.Entities.Operations;
+using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 using StreamRC.RPG.Items.Commands;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.Streaming.Stream;
@@ -22,24 +22,30 @@ namespace StreamRC.RPG.Items {
     /// <summary>
     /// module managing game items
     /// </summary>
-    [Dependency(nameof(ItemImageModule))]
-    [Dependency("stream", SpecifierType.Key)]
-    public class ItemModule : IInitializableModule, IRunnableModule {
-        readonly Context context;
-
-        ItemImageModule images;
+    [Module]
+    public class ItemModule {
+        readonly DatabaseModule database;
+        readonly ItemModule items;
+        readonly IStreamModule stream;
         ItemRecipe[] recipes=new ItemRecipe[0];
 
         /// <summary>
         /// creates a new <see cref="ItemModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public ItemModule(Context context) {
-            this.context = context;
+        public ItemModule(DatabaseModule database, ItemModule items, IStreamModule stream) {
+            database.Database.UpdateSchema<Item>();
+            this.database = database;
+            this.items = items;
+            this.stream = stream;
+
+            stream.RegisterCommandHandler("iteminfo", new ItemInfoCommandHandler(this));
+            Task.Run(() => InitializeItems());
+
         }
 
         public long GetRandomItemID() {
-            return context.Database.Load<Item>(i => i.ID).Where(i => i.Type != ItemType.Gold).OrderBy(new OrderByCriteria(DBFunction.Random)).Limit(1).ExecuteScalar<long>();
+            return database.Database.Load<Item>(i => i.ID).Where(i => i.Type != ItemType.Gold).OrderBy(new OrderByCriteria(DBFunction.Random)).Limit(1).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -61,7 +67,7 @@ namespace StreamRC.RPG.Items {
         }
 
         public IEnumerable<Item> GetItems(IEnumerable<long> itemids) {
-            return context.Database.LoadEntities<Item>().Where(i => itemids.Contains(i.ID)).Execute();
+            return database.Database.LoadEntities<Item>().Where(i => itemids.Contains(i.ID)).Execute();
         }
 
         /// <summary>
@@ -95,7 +101,7 @@ namespace StreamRC.RPG.Items {
                 string name = string.Join(" ", arguments.Skip(startindex).Take(i - startindex));
 
                 foreach(string singlename in name.GetPossibleSingular()) {
-                    Item item = context.GetModule<ItemModule>().GetItem(singlename);
+                    Item item = items.GetItem(singlename);
                     if(item != null) {
                         startindex = i;
                         return item;
@@ -111,7 +117,7 @@ namespace StreamRC.RPG.Items {
         /// <param name="name">name of item</param>
         /// <returns>id of item</returns>
         public long GetItemID(string name) {
-            return context.Database.Load<Item>(i => i.ID).Where(i => i.Name == name).ExecuteScalar<long>();
+            return database.Database.Load<Item>(i => i.ID).Where(i => i.Name == name).ExecuteScalar<long>();
         }
 
         /// <summary>
@@ -130,7 +136,7 @@ namespace StreamRC.RPG.Items {
         /// <param name="name">name of item</param>
         /// <returns>item information</returns>
         public Item GetItem(string name) {
-            return context.Database.LoadEntities<Item>().Where(i => i.Name.ToLower() == name.ToLower()).Execute().FirstOrDefault();
+            return database.Database.LoadEntities<Item>().Where(i => i.Name.ToLower() == name.ToLower()).Execute().FirstOrDefault();
         }
 
         /// <summary>
@@ -148,7 +154,7 @@ namespace StreamRC.RPG.Items {
         /// <param name="itemid">id of item</param>
         /// <returns>item information</returns>
         public Item GetItem(long itemid) {
-            return context.Database.LoadEntities<Item>().Where(i => i.ID == itemid).Execute().FirstOrDefault();
+            return database.Database.LoadEntities<Item>().Where(i => i.ID == itemid).Execute().FirstOrDefault();
         }
 
         /// <summary>
@@ -158,23 +164,17 @@ namespace StreamRC.RPG.Items {
         /// <param name="luck">player luck</param>
         /// <returns>random item</returns>
         public Item SelectItem(int level, int luck) {
-            Item[] items = context.Database.LoadEntities<Item>().Where(i => i.FindRequirement <= level).Execute().ToArray();
+            Item[] items = database.Database.LoadEntities<Item>().Where(i => i.FindRequirement <= level).Execute().ToArray();
             return items.RandomItem(i => Math.Min(1.0, (double)luck/Math.Max(1, i.FindOptimum)), RNG.XORShift64);
-        }
-
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<Item>();
-            images = context.GetModule<ItemImageModule>();
-            Task.Run(() => InitializeItems());
         }
 
         void InitializeItems() {
             StringBuilder log=new StringBuilder();
 
             foreach(Item resourceitem in DataTable.ReadCSV(ResourceAccessor.GetResource<Stream>(GetType().Namespace + ".items.csv"), '\t', true).Deserialize<Item>()) {
-                Item databaseitem = context.Database.LoadEntities<Item>().Where(i => i.Name == resourceitem.Name).Execute().FirstOrDefault();
+                Item databaseitem = database.Database.LoadEntities<Item>().Where(i => i.Name == resourceitem.Name).Execute().FirstOrDefault();
                 if(databaseitem == null) {
-                    context.Database.Insert<Item>()
+                    database.Database.Insert<Item>()
                         .Columns(i => i.Name, i => i.Type, i => i.Handedness, i => i.Target, i => i.FindRequirement, i => i.FindOptimum, i => i.UsageOptimum, i => i.Armor, i => i.Damage, i => i.Value, i => i.LevelRequirement, i => i.HP, i => i.MP, i=>i.Countable, i=>i.Pee, i=>i.Poo, i=>i.IsFluid, i=>i.Command, i=>i.CommandMessage, i=>i.CriticalAdjective)
                         .Values(resourceitem.Name, resourceitem.Type, resourceitem.Handedness, resourceitem.Target, resourceitem.FindRequirement, resourceitem.FindOptimum, resourceitem.UsageOptimum, resourceitem.Armor, resourceitem.Damage, resourceitem.Value, resourceitem.LevelRequirement, resourceitem.HP, resourceitem.MP, resourceitem.Countable, resourceitem.Pee, resourceitem.Poo, resourceitem.IsFluid, resourceitem.Command, resourceitem.CommandMessage, resourceitem.CriticalAdjective)
                         .Execute();
@@ -182,7 +182,7 @@ namespace StreamRC.RPG.Items {
                 }
                 else {
                     if(!databaseitem.Equals(resourceitem)) {
-                        context.Database.Update<Item>().Set(i => i.Type == resourceitem.Type, i => i.Handedness == resourceitem.Handedness, i => i.Target == resourceitem.Target, i => i.FindRequirement == resourceitem.FindRequirement, i => i.FindOptimum == resourceitem.FindOptimum, i => i.UsageOptimum == resourceitem.UsageOptimum, i => i.Armor == resourceitem.Armor, i => i.Damage == resourceitem.Damage, i => i.Value == resourceitem.Value, i => i.LevelRequirement == resourceitem.LevelRequirement, i => i.HP == resourceitem.HP, i => i.MP == resourceitem.MP, i=>i.Countable==resourceitem.Countable, i=>i.Pee==resourceitem.Pee, i=>i.Poo==resourceitem.Poo, i=>i.IsFluid==resourceitem.IsFluid, i=>i.Command==resourceitem.Command, i=>i.CommandMessage==resourceitem.CommandMessage, i=>i.CriticalAdjective==resourceitem.CriticalAdjective).Where(i => i.ID == databaseitem.ID).Execute();
+                        database.Database.Update<Item>().Set(i => i.Type == resourceitem.Type, i => i.Handedness == resourceitem.Handedness, i => i.Target == resourceitem.Target, i => i.FindRequirement == resourceitem.FindRequirement, i => i.FindOptimum == resourceitem.FindOptimum, i => i.UsageOptimum == resourceitem.UsageOptimum, i => i.Armor == resourceitem.Armor, i => i.Damage == resourceitem.Damage, i => i.Value == resourceitem.Value, i => i.LevelRequirement == resourceitem.LevelRequirement, i => i.HP == resourceitem.HP, i => i.MP == resourceitem.MP, i=>i.Countable==resourceitem.Countable, i=>i.Pee==resourceitem.Pee, i=>i.Poo==resourceitem.Poo, i=>i.IsFluid==resourceitem.IsFluid, i=>i.Command==resourceitem.Command, i=>i.CommandMessage==resourceitem.CommandMessage, i=>i.CriticalAdjective==resourceitem.CriticalAdjective).Where(i => i.ID == databaseitem.ID).Execute();
                         log.AppendLine($"'{resourceitem.Name}' updated");
                     }
                 }
@@ -202,13 +202,13 @@ namespace StreamRC.RPG.Items {
 
         public void PrintItemInfo(string service, string channel, string user, string[] arguments) {
             if(arguments.Length == 0) {
-                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, "You have to provide the name of the item to get info about.");
+                stream.SendMessage(service, channel, user, "You have to provide the name of the item to get info about.");
                 return;
             }
 
             Item item = GetItem(arguments);
             if(item == null) {
-                context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, $"There is no item by the name {string.Join(" ", arguments)}.");
+                stream.SendMessage(service, channel, user, $"There is no item by the name {string.Join(" ", arguments)}.");
                 return;
             }
 
@@ -230,15 +230,7 @@ namespace StreamRC.RPG.Items {
             if(item.LevelRequirement > 0)
                 iteminfo.Append($" Required Level: {item.LevelRequirement}");
 
-            context.GetModuleByKey<IStreamModule>("stream").SendMessage(service, channel, user, iteminfo.ToString());
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModuleByKey<IStreamModule>("stream").RegisterCommandHandler("iteminfo", new ItemInfoCommandHandler(this));
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModuleByKey<IStreamModule>("stream").UnregisterCommandHandler("iteminfo");
+            stream.SendMessage(service, channel, user, iteminfo.ToString());
         }
     }
 }

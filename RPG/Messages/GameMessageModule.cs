@@ -1,33 +1,26 @@
 ﻿using System;
 using NightlyCode.Core.Collections;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 
 namespace StreamRC.RPG.Messages {
 
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(MessageModule))]
-    public class GameMessageModule : IInitializableModule, IMessageModule {
-        readonly Context context;
-        StreamModule streammodule;
-        MessageModule messagemodule;
+    [Module]
+    public class GameMessageModule : IMessageModule {
+        readonly StreamModule streammodule;
+        readonly MessageModule messagemodule;
 
         /// <summary>
         /// creates a new <see cref="GameMessageModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GameMessageModule(Context context) {
-            this.context = context;
+        public GameMessageModule(StreamModule streammodule, MessageModule messagemodule) {
+            this.streammodule = streammodule;
+            this.messagemodule = messagemodule;
         }
 
-        void IInitializableModule.Initialize() {
-            streammodule = context.GetModule<StreamModule>();
-            messagemodule = context.GetModule<MessageModule>();
-        }
 
         /// <summary>
         /// sends a game message to all channels

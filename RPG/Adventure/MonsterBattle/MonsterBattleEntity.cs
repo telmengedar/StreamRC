@@ -13,9 +13,13 @@ using StreamRC.RPG.Players.Skills.Monster;
 
 namespace StreamRC.RPG.Adventure.MonsterBattle {
     public class MonsterBattleEntity : IBattleEntity {
+        readonly EffectModule effectmodule;
+        readonly SkillModule skillmodule;
         readonly List<ITemporaryEffect> effects = new List<ITemporaryEffect>();
 
-        public MonsterBattleEntity(Monster monster, Adventure adventure, MonsterBattleLogic battlelogic) {
+        public MonsterBattleEntity(Monster monster, Adventure adventure, MonsterBattleLogic battlelogic, EffectModule effectmodule, SkillModule skillmodule) {
+            this.effectmodule = effectmodule;
+            this.skillmodule = skillmodule;
             Monster = monster;
             Adventure = adventure;
             BattleLogic = battlelogic;
@@ -28,15 +32,15 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
             if(skill == null || skill.Type == "attack")
                 return null;
 
-            return context.GetModule<SkillModule>().GetMonsterSkill(skill.Type, skill.Level);
+            return skillmodule.GetMonsterSkill(skill.Type, skill.Level);
         }
 
         public void AddEffect(ITemporaryEffect effect) {
             ITemporaryEffect oldeffects = effects.FirstOrDefault(e => e.GetType() == effect.GetType());
             if(oldeffects != null)
-                context.GetModule<EffectModule>().RemoveEffect(oldeffects);
+                effectmodule.RemoveEffect(oldeffects);
 
-            context.GetModule<EffectModule>().AddMonsterEffect(effect);
+            effectmodule.AddMonsterEffect(effect);
             effects.Add(effect);
         }
 
@@ -79,7 +83,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
 
         public void CleanUp() {
             foreach(ITemporaryEffect effect in effects)
-                context.GetModule<EffectModule>().RemoveEffect(effect);
+                effectmodule.RemoveEffect(effect);
         }
 
         public IEnumerable<ITemporaryEffect> Effects => effects;

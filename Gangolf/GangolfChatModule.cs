@@ -30,19 +30,14 @@ namespace NightlyCode.StreamRC.Gangolf
 
         readonly ChatFactory factory;
         readonly ChatMessageModule messages;
-        readonly TTSModule tts;
         readonly UserModule usermodule;
         readonly ImageCacheModule images;
 
         readonly object chatterlock = new object();
         readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
 
-        readonly string[] reasontriggers = {
-            "why", "reason"
-        };
-
         readonly string[] explanationtriggers = {
-            "wat", "wut", "what", "understand"
+            "wat", "wut", "what", "understand", "why", "reason"
         };
 
         readonly string[] nametriggers = {
@@ -61,10 +56,9 @@ namespace NightlyCode.StreamRC.Gangolf
         /// creates a new <see cref="GangolfChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, TTSModule tts, UserModule usermodule, ImageCacheModule images) {
+        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, UserModule usermodule, ImageCacheModule images) {
             this.factory = factory;
             this.messages = messages;
-            this.tts = tts;
             this.usermodule = usermodule;
             this.images = images;
             stream.ChatMessage += OnChatMessage;
@@ -77,123 +71,98 @@ namespace NightlyCode.StreamRC.Gangolf
         }
 
         void CreateInsult(long userid) {
-            StringBuilder speech = new StringBuilder();
-            if(RNG.XORShift64.NextFloat() < 0.15)
-                speech.Append("Well, ");
             MessageBuilder response = new MessageBuilder();
+            if (RNG.XORShift64.NextFloat() < 0.15)
+                response.Text("Well, ");
+
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
 
             int mode = 0;
 
             switch(RNG.XORShift64.NextInt(21)) {
                 case 0:
-                    speech.Append("Let me point out that ");
-                    response.Text(" points out that ");
+                    response.Text("Let me point out that ");
                     break;
                 case 1:
-                    speech.Append("I think ");
-                    response.Text(" thinks ");
+                    response.Text("I think ");
                     break;
                 case 2:
-                    speech.Append("I imagine ");
-                    response.Text(" imagines ");
+                    response.Text("I imagine ");
                     break;
                 case 3:
-                    speech.Append("I declare: ");
-                    response.Text(" declares ");
+                    response.Text("I declare: ");
                     break;
                 case 4:
-                    speech.Append("I say ");
-                    response.Text(" says ");
+                    response.Text("I say ");
                     break;
                 case 5:
-                    speech.Append("I feel like ");
-                    response.Text(" feels like ");
+                    response.Text("I feel like ");
                     break;
                 case 6:
-                    speech.Append("Let me expose my ");
-                    response.Text(" exposes his ");
+                    response.Text("Let me expose my ");
                     mode = 1;
                     break;
                 case 7:
-                    speech.Append("I decided ");
-                    response.Text(" decides ");
+                    response.Text("I decided ");
                     break;
                 case 8:
-                    speech.Append("I exclaim ");
-                    response.Text(" exclaims ");
+                    response.Text("I exclaim ");
                     break;
                 case 9:
-                    speech.Append("I pontificate ");
-                    response.Text(" pontificates ");
+                    response.Text("I pontificate ");
                     break;
                 case 10:
-                    speech.Append("I know ");
-                    response.Text(" knows ");
+                    response.Text("I know ");
                     break;
                 case 11:
-                    speech.Append("I realize ");
-                    response.Text(" realizes ");
+                    response.Text("I realize ");
                     break;
                 case 12:
-                    speech.Append("I have come to understand ");
-                    response.Text(" has come to understand ");
+                    response.Text("I have come to understand ");
                     break;
                 case 13:
-                    speech.Append("I reached the conclusion ");
-                    response.Text(" reached the conclusion ");
+                    response.Text("I reached the conclusion ");
                     break;
                 case 14:
-                    speech.Append("Let's summarize ");
-                    response.Text(" summarizes ");
+                    response.Text("Let's summarize ");
                     break;
                 case 15:
-                    speech.Append("So it kind of sums up that ");
-                    response.Text(" sums up that ");
+                    response.Text("So it kind of sums up that ");
                     break;
                 case 16:
-                    speech.Append("I distill ");
-                    response.Text(" distills ");
+                    response.Text("I distill ");
                     break;
                 case 17:
-                    speech.Append("I've proven ");
-                    response.Text(" has proven  ");
+                    response.Text("I've proven ");
                     mode = 2;
                     break;
                 case 18:
-                    speech.Append("Let me demonstrate my ");
-                    response.Text(" demonstrates his ");
+                    response.Text("Let me demonstrate my ");
                     mode = 1;
                     break;
                 case 19:
-                    speech.Append("I'm arranging ");
-                    response.Text(" arranges ");
+                    response.Text("I'm arranging ");
                     mode = 3;
                     break;
                 case 20:
-                    speech.Append("My research found ");
-                    response.Text(" research finds ");
+                    response.Text("My research found ");
                     mode = 2;
                     break;
             }
 
-            AppendInsult(response, speech, userid, mode);
+            AppendInsult(response, userid, mode);
 
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
-            tts.Speak(speech.ToString(), voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game, voice);
         }
 
-        void AppendInsult(MessageBuilder response, StringBuilder speech, long userid, int mode=0) {
+        void AppendInsult(MessageBuilder response, long userid, int mode=0) {
             if(mode != 1 && mode != 3) {
-                speech.Append(usermodule.GetUser(userid).Name);
-                response.Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
+                response.User(usermodule.GetUser(userid), images);
                 switch(RNG.XORShift64.NextInt(5)) {
                     case 0:
-                        speech.Append("'s mother");
                         response.Text("'s mother");
                         break;
                     case 1:
-                        speech.Append("'s father");
                         response.Text("'s father");
                         break;
                 }
@@ -205,22 +174,18 @@ namespace NightlyCode.StreamRC.Gangolf
                 default:
                 case 0:
                     insult = factory.CreateInsult();
-                    speech.Append($" is {(insult.StartsWithVocal() ? "an" : "a")} {insult}.");
                     response.Text($" is {(insult.StartsWithVocal() ? "an" : "a")} ").Text(insult);
                     break;
                 case 1:
                     insult = factory.CreateInsult();
-                    speech.Append($"{insult} to {usermodule.GetUser(userid).Name}.");
                     response.Text(insult).Text(" to ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
                     break;
                 case 2:
                     insult = factory.CreateInsult();
-                    speech.Append($" to be {(insult.StartsWithVocal() ? "an" : "a")} {insult}.");
                     response.Text($" to be {(insult.StartsWithVocal() ? "an" : "a")} ").Text(insult);
                     break;
                 case 3:
                     insult = factory.CreateInsult();
-                    speech.Append($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for {usermodule.GetUser(userid).Name}.");
                     response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
                     break;
             }
@@ -248,8 +213,7 @@ namespace NightlyCode.StreamRC.Gangolf
             speech.Append(insult);
             response.Text(insult);
 
-            tts.Speak(speech.ToString(), voice);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game, voice);
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
@@ -267,11 +231,8 @@ namespace NightlyCode.StreamRC.Gangolf
                 long name = ScanForNames(lowermessage);
                 CreateInsult(name == 0 ? usermodule.GetUserID(message.Service, message.User) : name);
             }
-            else if(reasontriggers.Any(t => lowermessage.Contains(t))) {
-                CreateExplanation(usermodule.GetUserID(message.Service, message.User));
-            }
             else if(explanationtriggers.Any(t => lowermessage.Contains(t)))
-                Explain(usermodule.GetUserID(message.Service, message.User));
+                CreateExplanation(usermodule.GetUserID(message.Service, message.User));
             else if(statictriggers.Any(t => lowermessage.Contains(t)))
                 CreateInsult(usermodule.GetUserID(message.Service, message.User));
             else {
@@ -290,23 +251,18 @@ namespace NightlyCode.StreamRC.Gangolf
         void CreateExplanation(long userid) {
             MessageBuilder response = new MessageBuilder();
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
-            response.Text(" says it's quite simple. ");
+            switch (RNG.XORShift64.NextInt(2)) {
+                case 0:
+                    response.Text("It is quite simple. ");
+                    break;
+                case 1:
+                    response.Text("Let me explain that. ");
+                    break;
+            }
+            
 
-            StringBuilder speech = new StringBuilder("It is quite simple. ");
-            AppendInsult(response, speech, userid);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
-            tts.Speak(speech.ToString(), voice);
-        }
-
-        void Explain(long userid) {
-            MessageBuilder response = new MessageBuilder();
-            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
-            response.Text(" explains that ");
-
-            StringBuilder speech = new StringBuilder("Let me explain that. ");
-            AppendInsult(response, speech, userid);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game);
-            tts.Speak(speech.ToString(), voice);
+            AppendInsult(response, userid);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game, voice);
         }
 
         void ITimerService.Process(double time) {
@@ -326,30 +282,49 @@ namespace NightlyCode.StreamRC.Gangolf
             }
         }
 
-        public void Exclaim(string name) {
-            name = name.Split(' ')[0];
+        string GetName(string name) {
+            string[] result = name.Split(' ').Select(n => new string(n.Where(char.IsLetter).ToArray())).ToArray();
+            switch (RNG.XORShift64.NextInt(3)) {
+            case 0: {
+                string term = result[0];
+                return $"{term} {factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Noun && (w.Attributes & WordAttribute.Insultive) != WordAttribute.None)}";
+            }
+            case 1: {
+                string term = result[0];
+                return $"{term} mc {factory.InsultiveNoun()}";
+            }
+            default:
+            case 3: {
+                string term = result.Length == 1 ? result[0] : result[1];
+                return $"{factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Noun && (w.Attributes & WordAttribute.Title) != WordAttribute.None)} {term}";
+            }
+            }
+        }
 
-            StringBuilder sb = new StringBuilder();
-            if(RNG.XORShift64.NextFloat() < 0.22) {
+        public void Exclaim(string name) {
+            name = GetName(name);
+
+            MessageBuilder response = new MessageBuilder();
+            if (RNG.XORShift64.NextFloat() < 0.22) {
                 Word exclamation = factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Exclamation);
                 if(exclamation != null)
-                    sb.Append(exclamation.Text).Append("! ");
+                    response.Text(exclamation.Text).Text("! ");
             }
 
-            sb.Append(name).Append(" ");
+            response.Text(name).Text(" ");
 
             if(RNG.XORShift64.NextFloat() < 0.3) {
                 Word amplifier = factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Amplifier);
                 if(amplifier != null)
-                    sb.Append(amplifier.Text).Append(" ");
+                    response.Text(amplifier.Text).Text(" ");
             }
 
             Word comparision = factory.Dictionary.GetRandomWord(w => (w.Attributes & WordAttribute.Comparision) != WordAttribute.None);
-            sb.Append(comparision.Text).Append(" like ");
+            response.Text(comparision.Text).Text(" like ");
             string insultive = factory.InsultiveNoun();
-            sb.Append(insultive.StartsWithVocal() ? "an " : "a ");
-            sb.Append(insultive).Append("!");
-            tts.Speak(sb.ToString(), voice);
+            response.Text(insultive.StartsWithVocal() ? "an " : "a ");
+            response.Text(insultive).Text("!");
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Game, voice);
         }
     }
 }

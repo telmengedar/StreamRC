@@ -7,7 +7,7 @@ namespace StreamRC.RPG.Inventory {
     /// <summary>
     /// interface for a module which is able to execute item commands
     /// </summary>
-    public interface IItemCommandModule : IModule {
+    public interface IItemCommandModule {
 
         /// <summary>
         /// executes an item command

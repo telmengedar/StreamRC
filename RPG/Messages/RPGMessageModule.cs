@@ -1,37 +1,32 @@
 ﻿using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Emotions;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Shops;
+using StreamRC.Streaming.Cache;
+using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Messages {
 
-    [Dependency(nameof(ItemImageModule))]
-    [Dependency(nameof(GameMessageModule))]
-    public class RPGMessageModule : IRunnableModule {
-        readonly Context context;
-        GameMessageModule messages;
-        ItemImageModule itemimages;
-        EmotionImageModule emotionimages;
-        ShopImageModule shopimages;
+    [Module]
+    public class RPGMessageModule {
+        readonly GameMessageModule messages;
+        readonly ItemImageModule itemimages;
+        readonly EmotionImageModule emotionimages;
+        readonly ShopImageModule shopimages;
+        readonly UserModule users;
+        readonly ImageCacheModule imagecache;
 
-        public RPGMessageModule(Context context) {
-            this.context = context;
+        public RPGMessageModule(GameMessageModule messages, ItemImageModule itemimages, EmotionImageModule emotionimages, ShopImageModule shopimages, UserModule users, ImageCacheModule imagecache) {
+            this.messages = messages;
+            this.itemimages = itemimages;
+            this.emotionimages = emotionimages;
+            this.shopimages = shopimages;
+            this.users = users;
+            this.imagecache = imagecache;
         }
 
         public RPGMessageBuilder Create() {
-            return new RPGMessageBuilder(context, messages, itemimages, emotionimages, shopimages);
-        }
-
-        public void Start() {
-            messages = context.GetModule<GameMessageModule>();
-            itemimages = context.GetModule<ItemImageModule>();
-            emotionimages = context.GetModule<EmotionImageModule>();
-            shopimages = context.GetModule<ShopImageModule>();
-        }
-
-        public void Stop() {
+            return new RPGMessageBuilder(messages, itemimages, emotionimages, shopimages, users, imagecache);
         }
     }
 }

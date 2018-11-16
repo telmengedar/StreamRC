@@ -2,29 +2,29 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Data;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions;
 using StreamRC.RPG.Items;
 
 namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
 
-    [Dependency(nameof(ItemModule))]
-    public class MonsterModule : IInitializableModule {
-        readonly Context context;
-        Monster[] monsters;
+    [Module]
+    public class MonsterModule {
+        readonly ItemModule itemmodule;
+        readonly Monster[] monsters;
 
         /// <summary>
         /// creates a new <see cref="MonsterModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public MonsterModule(Context context) {
-            this.context = context;
+        public MonsterModule(ItemModule itemmodule) {
+            this.itemmodule = itemmodule;
+            monsters = CreateMonsters(LoadDefinitions()).ToArray();
         }
 
         IEnumerable<MonsterDefinition> LoadDefinitions() {
@@ -37,7 +37,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
                 yield break;
 
             foreach(MonsterDrop drop in drops) {
-                long itemid = context.GetModule<ItemModule>().GetItemID(drop.Item);
+                long itemid = itemmodule.GetItemID(drop.Item);
                 if(itemid > 0)
                     yield return new DropItem {
                         ItemID = itemid,
@@ -76,10 +76,6 @@ namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
                 }
             }
         } 
-
-        void IInitializableModule.Initialize() {
-            monsters = CreateMonsters(LoadDefinitions()).ToArray();
-        }
 
         public Monster GetMonster(string name, int level) {
             return monsters.Where(m => m.Requirement <= level && m.Maximum >= level && m.Name == name).RandomItem(m => Math.Min(1.0, (double)level / Math.Max(1, m.Optimum)), RNG.XORShift64);

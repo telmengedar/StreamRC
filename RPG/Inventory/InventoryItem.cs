@@ -1,5 +1,4 @@
-﻿using NightlyCode.DB.Entities.Attributes;
-using StreamRC.RPG.Items;
+﻿using NightlyCode.Database.Entities.Attributes;
 
 namespace StreamRC.RPG.Inventory {
 

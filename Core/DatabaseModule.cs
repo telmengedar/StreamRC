@@ -17,5 +17,13 @@ namespace StreamRC.Core {
         /// database manager
         /// </summary>
         public IEntityManager Database => entitymanager;
+
+        /// <summary>
+        /// creates an new in-memory database
+        /// </summary>
+        /// <returns>entity manager to use to access database</returns>
+        public IEntityManager CreateMemoryDatabase() {
+            return new EntityManager(new DBClient(new SqliteConnection("Data Source=:memory:"), new SQLiteInfo()));
+        }
     }
 }
