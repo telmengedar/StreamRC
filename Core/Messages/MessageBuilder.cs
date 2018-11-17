@@ -41,8 +41,10 @@ namespace StreamRC.Core.Messages {
         }
 
         public MessageBuilder Image(long imageid, string alternative=null) {
-            if(imageid <= 0)
+            if(imageid <= 0) {
+                Text(alternative);
                 return this;
+            }
 
             chunks.Add(new MessageChunk(MessageChunkType.Emoticon, imageid.ToString()) {
                 Alternative = alternative

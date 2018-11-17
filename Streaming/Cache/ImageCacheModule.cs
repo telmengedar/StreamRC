@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using NightlyCode.Database.Entities.Operations.Fields;
+using NightlyCode.Database.Entities.Operations.Prepared;
 using NightlyCode.Modules;
 using NightlyCode.Net.Http;
 using NightlyCode.Net.Http.Requests;
@@ -25,6 +27,13 @@ namespace StreamRC.Streaming.Cache {
         readonly Dictionary<long, ImageCacheItem> imagesbyid=new Dictionary<long, ImageCacheItem>();
         readonly Dictionary<string, ImageCacheItem> imagesbykey=new Dictionary<string, ImageCacheItem>();
 
+        readonly PreparedOperation updateexpiration;
+        readonly PreparedLoadEntitiesOperation<ImageCacheItem> loadimage;
+        readonly PreparedLoadEntitiesOperation<ImageCacheItem> loadexpired;
+        readonly PreparedOperation insertimage;
+        readonly PreparedLoadValuesOperation loadimageid;
+        readonly PreparedOperation deleteimages;
+
         static ImageCacheModule() {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             //ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
@@ -42,6 +51,17 @@ namespace StreamRC.Streaming.Cache {
             DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(30.0);
             database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Execute();
 
+            updateexpiration = database.Database.Update<ImageCacheItem>()
+                .Set(i => i.Expiration == DBParameter<DateTime>.Value)
+                .Where(i => i.ID == DBParameter.Int64)
+                .Prepare();
+
+            loadimage = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Key == DBParameter.String).Limit(1).Prepare();
+            loadimageid = database.Database.Load<ImageCacheItem>(i => i.ID).Where(i => i.Key == DBParameter.String).Prepare();
+            insertimage = database.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.Expiration, i => i.Data).Prepare();
+            loadexpired = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Expiration < DBParameter<DateTime>.Value).Prepare();
+            deleteimages = database.Database.Delete<ImageCacheItem>().Where(i => DBParameter<long[]>.Value.Contains(i.ID)).Prepare();
+
             httpservice.AddServiceHandler("/streamrc/image", this);
             timer.AddService(this, 300.0);
         }
@@ -55,7 +75,7 @@ namespace StreamRC.Streaming.Cache {
             lock(imagelock) {
                 DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(5.0);
                 if (imagesbyid.TryGetValue(imageid, out ImageCacheItem item)) {
-                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    updateexpiration.Execute(expiration, item.ID);
                     return item.Data;
                 }
 
@@ -77,13 +97,13 @@ namespace StreamRC.Streaming.Cache {
             lock (imagelock) {
                 DateTime expiration = DateTime.Now + TimeSpan.FromMinutes(5.0);
                 if (imagesbykey.TryGetValue(source.Key, out ImageCacheItem item)) {
-                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    updateexpiration.Execute(expiration, item.ID);
                     return item.ID;
                 }
 
-                item = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Key == source.Key).Limit(1).Execute().FirstOrDefault();
+                item = loadimage.Execute(source.Key).FirstOrDefault();
                 if (item != null) {
-                    database.Database.Update<ImageCacheItem>().Set(i => i.Expiration == expiration).Where(i => i.ID == item.ID).Execute();
+                    updateexpiration.Execute(expiration, item.ID);
                     imagesbyid[item.ID] = item;
                     imagesbykey[item.Key] = item;
                     return item.ID;
@@ -92,17 +112,15 @@ namespace StreamRC.Streaming.Cache {
                 System.IO.Stream stream = source.Data;
                 byte[] data=null;
                 if(stream!=null)
-                    using (MemoryStream ms = new MemoryStream()) {
+                    using(MemoryStream ms = new MemoryStream()) {
                         stream.CopyTo(ms);
                         data = ms.ToArray();
                     }
 
-                database.Database.Insert<ImageCacheItem>().Columns(i => i.Key, i => i.Expiration, i => i.Data)
-                    .Values(source.Key, expiration, data)
-                    .Execute();
+                insertimage.Execute(source.Key, expiration, data);
 
                 item = new ImageCacheItem {
-                    ID = database.Database.Load<ImageCacheItem>(i => i.ID).Where(i => i.Key == source.Key).ExecuteScalar<long>(),
+                    ID = loadimageid.ExecuteScalar<long>(source.Key),
                     Key = source.Key,
                     Expiration = expiration,
                     Data = data
@@ -165,9 +183,11 @@ namespace StreamRC.Streaming.Cache {
 
         void ITimerService.Process(double time) {
             lock (imagelock) {
-                DateTime now = DateTime.Now;
-                ImageCacheItem[] expired = database.Database.LoadEntities<ImageCacheItem>().Where(i => i.Expiration < now).Execute().ToArray();
-                
+                ImageCacheItem[] expired = loadexpired.Execute(DateTime.Now).ToArray();
+
+                if(expired.Length == 0)
+                    return;
+
                 foreach (ImageCacheItem item in expired) {
                     imagesbyid.Remove(item.ID);
                     if(!string.IsNullOrEmpty(item.Key))
@@ -175,7 +195,7 @@ namespace StreamRC.Streaming.Cache {
                 }
 
                 long[] ids = expired.Select(i => i.ID).ToArray();
-                database.Database.Delete<ImageCacheItem>().Where(i => ids.Contains(i.ID)).Execute();
+                deleteimages.Execute(ids);
             }
         }
     }

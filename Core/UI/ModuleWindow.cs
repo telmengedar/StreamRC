@@ -19,16 +19,22 @@ namespace StreamRC.Core.UI {
         /// creates a new <see cref="ModuleWindow"/>
         /// </summary>
         /// <param name="settings">access to settings</param>
-        protected ModuleWindow(ISettings settings) {
+        protected ModuleWindow(ISettings settings, bool hideonclose=true) {
             this.settings = settings;
-            Closing += (sender, args) => {
-                Visibility = Visibility.Hidden;
-                args.Cancel = true;
-            };
 
-            LoadSettings();
+            if(hideonclose) {
+                Closing += (sender, args) => {
+                    Visibility = Visibility.Hidden;
+                    args.Cancel = true;
+                };
+            }
+
+            Loaded += OnLoaded;            
         }
 
+        void OnLoaded(object sender, RoutedEventArgs e) {
+            LoadSettings();
+        }
 
         protected override void OnLocationChanged(EventArgs e)
         {

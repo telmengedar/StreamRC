@@ -29,13 +29,12 @@ namespace StreamRC.Core
         /// creates a new <see cref="MainWindow"/>
         /// </summary>
         public MainWindow(ISettings settings, IChatMessageSender chat, ScriptModule scripts)
-            : base(settings)
+            : base(settings, false)
         {
             this.chat = chat;
             this.scripts = scripts;
             InitializeComponent();
             Logger.Message += OnLogMessage;
-            Show();
         }
 
         /// <summary>

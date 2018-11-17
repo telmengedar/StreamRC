@@ -32,6 +32,9 @@ namespace NightlyCode.StreamRC
             foreach(Type module in scanner.ScanForModules(context))
                 context.AddModule(module);
 
+            MainWindow = context.GetModuleByKey<Window>("mainwindow");
+            MainWindow?.Show();
+
             context.Start();
             Logger.Info(this, "StreamRC started");
         }

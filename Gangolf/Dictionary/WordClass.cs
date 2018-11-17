@@ -40,8 +40,6 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// </summary>
         Preposition=32,
 
-        
-
         /// <summary>
         /// connect phrase
         /// </summary>
@@ -62,6 +60,12 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         Subject =1024,
 
         Verb=2048,
-        Amplifier=4096
+
+        Amplifier=4096,
+
+        /// <summary>
+        /// words like mc, van, von
+        /// </summary>
+        NameConjuction=8192
     }
 }

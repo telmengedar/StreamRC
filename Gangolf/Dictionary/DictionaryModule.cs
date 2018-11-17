@@ -55,6 +55,15 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         }
 
         /// <summary>
+        /// removes a word from dictionary
+        /// </summary>
+        /// <param name="text">word characters</param>
+        /// <param name="class">word class</param>
+        public void Remove(string text, WordClass @class) {
+            dictionary.Delete<Word>().Where(w => w.Text == text && w.Class == @class).Execute();
+        }
+
+        /// <summary>
         /// loads or reloads the contents of the dictionary
         /// </summary>
         /// <param name="stream"></param>

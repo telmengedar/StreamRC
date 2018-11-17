@@ -63,7 +63,13 @@ namespace StreamRC.Discord
                 return;
 
             if(!channels.TryGetValue(message.ChannelID, out DiscordChatChannel channel)) {
-                ChannelFlags flags = (message.ChannelID != commandchannel ? ChannelFlags.Chat : ChannelFlags.Command) | (message.ChannelID == rpgchannel ? ChannelFlags.Game : ChannelFlags.None);
+                ChannelFlags flags = ChannelFlags.None;
+                if(message.ChannelID == chatchannel)
+                    flags |= ChannelFlags.Chat;
+                if(message.ChannelID == rpgchannel)
+                    flags |= ChannelFlags.Game;
+                if(message.ChannelID == commandchannel)
+                    flags |= ChannelFlags.Command;
                 channel = new DiscordChatChannel(discord, message.ChannelID, flags);
                 channels[message.ChannelID] = channel;
                 streammodule.AddChannel(channel);

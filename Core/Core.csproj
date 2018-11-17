@@ -105,6 +105,7 @@
     <Compile Include="Timer\ITimerService.cs" />
     <Compile Include="Timer\TimerEntry.cs" />
     <Compile Include="Timer\TimerModule.cs" />
+    <Compile Include="TTS\TTSCom.cs" />
     <Compile Include="TTS\TTSModule.cs" />
     <Compile Include="TTS\TTSText.cs" />
     <Compile Include="UI\IMainWindow.cs" />
@@ -119,6 +120,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="SpeechLib">
+      <Guid>{C866CA3A-32F7-11D2-9602-00C04F8EE628}</Guid>
+      <VersionMajor>5</VersionMajor>
+      <VersionMinor>4</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -108,6 +108,26 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
         }
 
         public string InsultiveNoun() {
+            Word noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None);
+
+            WordAttribute predicate = WordAttribute.Descriptive;
+            if (noun.Attributes.HasFlag(WordAttribute.Product))
+                predicate |= WordAttribute.Producer;
+            if (!noun.Attributes.HasFlag(WordAttribute.Insultive))
+                predicate |= WordAttribute.Insultive;
+
+            Word descriptive = dictionary.GetRandomWord(w => (w.Class & WordClass.Noun) != WordClass.None && (w.Attributes & predicate) == predicate && w.ID!=noun.ID);
+            if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07)
+            {
+                Word postposition = dictionary.GetRandomWord(w => (w.Class & WordClass.Postposition) == WordClass.Postposition && (w.Group & noun.Group) != 0);
+                if(postposition != null)
+                    return $"{descriptive.Text}-{noun.Text}{postposition}";
+            }
+
+            return $"{descriptive.Text}-{noun.Text}";
+        }
+
+        public string DescriptiveInsultiveNoun() {
             StringBuilder text=new StringBuilder();
 
             Word adjective = dictionary.GetRandomWord(w => (w.Class & WordClass.Adjective) == WordClass.Adjective);
