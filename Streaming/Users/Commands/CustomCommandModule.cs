@@ -29,7 +29,6 @@ namespace StreamRC.Streaming.Users.Commands {
             database.Database.UpdateSchema<CustomCommand>();
             foreach (CustomCommand command in database.Database.LoadEntities<CustomCommand>().Execute())
                 AddCommand(command);
-            stream.RegisterCommandHandler("command", new CreateCustomCommandHandler(this, permissions));
         }
 
         /// <summary>
@@ -39,6 +38,7 @@ namespace StreamRC.Streaming.Users.Commands {
         /// <param name="servicecommand">command to be executed using the <see cref="Context"/></param>
         /// <param name="permissions">permissions to check before executing the command</param>
         /// <returns></returns>
+        [Command("command", "{0}", "{1}")]
         public CustomCommand CreateCommand(string chatcommand, string servicecommand, string permissions) {
             CustomCommand customcommand = new CustomCommand
             {

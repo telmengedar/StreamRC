@@ -1,8 +1,5 @@
 ﻿using System;
-using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Streaming.Stream;
 
@@ -19,30 +16,30 @@ namespace StreamRC.Streaming.Http {
         /// creates a new <see cref="StreamHttpResourceModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public StreamHttpResourceModule(HttpServiceModule httpservice, StreamModule stream) {
+        public StreamHttpResourceModule(IHttpServiceModule httpservice, StreamModule stream) {
             this.stream = stream;
             httpservice.AddServiceHandler("/streamrc/services/icon", this);
             httpservice.AddServiceHandler("/streamrc/scripts/messages.js", this);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/scripts/messages.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.messages.js"));
+                    response.ServeResource(GetType().Assembly, "StreamRC.Streaming.Http.messages.js");
                     break;
                 case "/streamrc/services/icon":
-                    ServeServiceIcon(client, request);
+                    ServeServiceIcon(request, response);
                     break;
                 default:
                     throw new Exception($"'{request.Resource}' not served by this module");
             }
         }
 
-        void ServeServiceIcon(HttpClient client, HttpRequest request) {
-            string servicename = request.GetParameter("service");
+        void ServeServiceIcon(IHttpRequest request, IHttpResponse response) {
+            string servicename = request.GetParameter<string>("service");
 
             IStreamServiceModule service = stream.GetService(servicename);
-            client.ServeResource(service.ServiceIcon, ".png");
+            response.ServeResource(service.ServiceIcon, ".png");
         }
     }
 }

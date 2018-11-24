@@ -2,9 +2,8 @@
 using System.Drawing;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.Core.Messages;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.Timer;
 using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
@@ -17,12 +16,12 @@ namespace StreamRC.Gambling.Roulette
     /// <summary>
     /// module providing a roulette game to the chat of streaming services
     /// </summary>
-    [Dependency(nameof(PlayerModule), SpecifierType.Type)]
-    [Dependency(nameof(TimerModule), SpecifierType.Type)]
-    [Dependency(nameof(RPGMessageModule), SpecifierType.Type)]
-    [Dependency(nameof(StreamModule), SpecifierType.Type)]
-    public class RouletteModule : IRunnableModule, ITimerService {
-        readonly Context context;
+    [Module(AutoCreate = true)]
+    [ModuleCommand("roulette", typeof(RouletteCommandHandler))]
+    public class RouletteModule : ITimerService {
+        readonly PlayerModule players;
+        readonly UserModule users;
+        readonly RPGMessageModule messages;
         readonly Queue<RouletteField> history=new Queue<RouletteField>();
         readonly List<RouletteBet> currentbets = new List<RouletteBet>();
         readonly List<RouletteBet> nextbets=new List<RouletteBet>();
@@ -48,16 +47,19 @@ namespace StreamRC.Gambling.Roulette
         /// creates a new <see cref="RouletteModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public RouletteModule(Context context) {
-            this.context = context;
+        public RouletteModule(ITimerModule timer, PlayerModule players, UserModule users, RPGMessageModule messages) {
+            this.players = players;
+            this.users = users;
+            this.messages = messages;
+            timer.AddService(this, 20.0);
         }
 
         /// <summary>
         /// places a bet in the next bet queue
         /// </summary>
         public void Bet(string service, string user, int gold, BetType type, int parameter) {
-            long userid = context.GetModule<UserModule>().GetUserID(service, user);
-            context.GetModule<PlayerModule>().UpdateGold(userid, -gold);
+            long userid = users.GetUserID(service, user);
+            players.UpdateGold(userid, -gold);
 
             lock(betlock) {
                 nextbets.Add(new RouletteBet {
@@ -154,7 +156,7 @@ namespace StreamRC.Gambling.Roulette
                         history.Dequeue();
                 }
 
-                RPGMessageBuilder builder = context.GetModule<RPGMessageModule>().Create();
+                RPGMessageBuilder builder = messages.Create();
                 builder.Text("The ball fell to field ").Text($"{number} {color}", GetColor(color), FontWeight.Bold).Text(". ");
 
                 Dictionary<long, int> winnings = new Dictionary<long, int>();
@@ -172,7 +174,7 @@ namespace StreamRC.Gambling.Roulette
 
                 foreach(KeyValuePair<long, int> win in winnings) {
                     builder.User(win.Key).Text(" won ").Gold(win.Value);
-                    context.GetModule<PlayerModule>().UpdateGold(win.Key, win.Value);
+                    players.UpdateGold(win.Key, win.Value);
                 }
                 builder.Send();
             }
@@ -182,19 +184,9 @@ namespace StreamRC.Gambling.Roulette
                         currentbets.AddRange(nextbets);
                         nextbets.Clear();
                     }
-                    context.GetModule<RPGMessageModule>().Create().Text("A new roulette round has started.").Send();
+                    messages.Create().Text("A new roulette round has started.").Send();
                 }
             }
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<TimerModule>().AddService(this, 20.0);
-            context.GetModule<StreamModule>().RegisterCommandHandler("roulette", new RouletteCommandHandler(this, context.GetModule<PlayerModule>()));
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<TimerModule>().RemoveService(this);
-            context.GetModule<StreamModule>().UnregisterCommandHandler("roulette");
         }
     }
 }

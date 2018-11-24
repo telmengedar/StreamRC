@@ -4,8 +4,8 @@ using NightlyCode.Core.Logs;
 using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
 using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.UI;
-using StreamRC.Streaming.Collections.Commands;
 using StreamRC.Streaming.Collections.Management;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Ticker;
@@ -26,7 +26,7 @@ namespace StreamRC.Streaming.Collections {
         /// creates a new <see cref="CollectionModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public CollectionModule(IMainWindow mainwindow, DatabaseModule database, TickerModule ticker, StreamModule stream) {
+        public CollectionModule(IMainWindow mainwindow, DatabaseModule database, TickerModule ticker) {
             this.database = database;
             this.ticker = ticker;
             
@@ -36,12 +36,6 @@ namespace StreamRC.Streaming.Collections {
             database.Database.UpdateSchema<WeightedCollectionItem>();
 
             mainwindow.AddMenuItem("Manage.Collections", (sender, args) => new CollectionManagementWindow(this).Show());
-
-            stream.RegisterCommandHandler("add", new AddCollectionItemCommandHandler(this));
-            stream.RegisterCommandHandler("remove", new RemoveCollectionItemCommandHandler(this));
-            stream.RegisterCommandHandler("clear", new ClearCollectionCommandHandler(this));
-            stream.RegisterCommandHandler("collections", new ListCollectionsCommandHandler(this));
-            stream.RegisterCommandHandler("collectioninfo", new CollectionInfoCommandHandler(this));
 
             tickergenerator = new CollectionTickerGenerator(database, this);
             if (tickergenerator.CollectionCount > 0)
@@ -80,6 +74,7 @@ namespace StreamRC.Streaming.Collections {
                 ticker.RemoveSource(tickergenerator);
         }
 
+        [Command("collectioninfo", "{0}")]
         public Collection GetCollection(string name) {
             return database.Database.LoadEntities<Collection>().Where(c => c.Name == name).Execute().FirstOrDefault();
         }
@@ -104,10 +99,12 @@ namespace StreamRC.Streaming.Collections {
             return database.Database.LoadEntities<WeightedCollectionItem>().Where(i=>i.Collection==collection).Execute().ToArray();
         }
 
+        [Command("collections")]
         public string[] GetCollectionNames() {
             return database.Database.Load<Collection>(c => c.Name).ExecuteSet<string>().ToArray();
         }
         
+        [Command("clear", "$user", "{0}")]
         public void Clear(string user, string collectionname) {
             Collection collection = database.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if (collection == null)
@@ -120,6 +117,7 @@ namespace StreamRC.Streaming.Collections {
             CollectionClearedUser?.Invoke(collection, user);
         }
 
+        [Command("remove", "$user", "{0}", "{1}")]
         public void RemoveItem(string user, string collectionname, string item) {
             Collection collection = database.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if (collection == null)
@@ -136,6 +134,7 @@ namespace StreamRC.Streaming.Collections {
             });
         }
 
+        [Command("add", "$user", "{0}", "{1}")]
         public void AddItem(string user, string collectionname, string item) {
             Collection collection = database.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if(collection == null)

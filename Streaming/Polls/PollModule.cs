@@ -8,7 +8,9 @@ using NightlyCode.Core.Randoms;
 using NightlyCode.Database.Entities.Operations;
 using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
+using NightlyCode.Modules.Commands;
 using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.Settings;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Collections;
@@ -23,7 +25,10 @@ namespace StreamRC.Streaming.Polls {
     /// <summary>
     /// manages user polls for stream
     /// </summary>
-    [Module(Key="poll", AutoCreate = true)]
+    [Module(Key="poll")]
+    [ModuleCommand("vote", typeof(VoteCommandHandler))]
+    [ModuleCommand("pollresult", typeof(PollResultCommandHandler))]
+    [ModuleCommand("pollinfo", typeof(PollInfoCommandHandler))]
     public class PollModule : ICommandModule, ITimerService
     {
         readonly DatabaseModule database;
@@ -66,12 +71,6 @@ namespace StreamRC.Streaming.Polls {
             collections.ItemRemoved += OnCollectionItemRemoved;
             collections.ItemBlocked += OnCollectionItemBlocked;
 
-            stream.RegisterCommandHandler("myvote", new UserVoteCommandHandler(this));
-            stream.RegisterCommandHandler("vote", new VoteCommandHandler(this));
-            stream.RegisterCommandHandler("revoke", new RevokeCommandHandler(this));
-            stream.RegisterCommandHandler("pollresult", new PollResultCommandHandler(this));
-            stream.RegisterCommandHandler("polls", new ListPollsCommandHandler(this));
-            stream.RegisterCommandHandler("pollinfo", new PollInfoCommandHandler(this));
             timer.AddService(this, Period);
 
             tickergenerator = new PollTickerGenerator(database, this);
@@ -366,6 +365,7 @@ namespace StreamRC.Streaming.Polls {
             });
         }
 
+        [Command("myvote", "$user", 0)]
         public IEnumerable<PollVote> GetUserVotes(string user, string poll=null) {
             if(string.IsNullOrEmpty(poll))
                 return database.Database.LoadEntities<PollVote>().Where(v => v.User == user).Execute();
@@ -512,12 +512,19 @@ namespace StreamRC.Streaming.Polls {
         /// get all polls currently stored in database
         /// </summary>
         /// <returns>polls</returns>
+        [Command("polls")]
         public Poll[] GetPolls()
         {
             return database.Database.LoadEntities<Poll>().Execute().ToArray();
         }
     
-        public void ExecuteRevoke(string poll, string user) {
+        /// <summary>
+        /// revokes a vote of a user
+        /// </summary>
+        /// <param name="user">name of user</param>
+        /// <param name="poll">poll where to revoke votes</param>
+        [Command("revoke", "$user", 0)]
+        public void ExecuteRevoke(string user, string poll) {
             database.Database.Delete<PollVote>().Where(p => p.Poll == poll && p.User == user).Execute();
             VoteRemoved?.Invoke(new PollVote {
                 Poll = poll,

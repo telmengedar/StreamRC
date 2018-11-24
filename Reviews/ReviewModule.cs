@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
+using NightlyCode.Modules;
+using StreamRC.Core.UI;
 
 namespace StreamRC.Reviews {
 
@@ -8,10 +9,11 @@ namespace StreamRC.Reviews {
     /// module managing review data
     /// </summary>
     [Module(Key="review")]
-    public class ReviewModule : ICommandModule, IInitializableModule {
+    public class ReviewModule {
         readonly List<ReviewEntry> entries=new List<ReviewEntry>();
 
-        public ReviewModule() {
+        public ReviewModule(IMainWindow mainwindow) {
+            mainwindow.AddMenuItem("Display.Review", (sender, args) => new ReviewDisplay(this).Show());
         }
 
         public bool TimeoutEnabled { get; set; } = true;
@@ -44,34 +46,27 @@ namespace StreamRC.Reviews {
             ReviewChanged?.Invoke();
         }
 
-        void ICommandModule.ProcessCommand(string command, params string[] arguments) {
-            switch(command) {
-                case "add":
-                    if(arguments.Length > 3)
-                        TimeoutEnabled = Converter.Convert<bool>(arguments[3]);
-
-                    AddEntry(new ReviewEntry {
-                        Name = arguments[0],
-                        Value = int.Parse(arguments[1]),
-                        Weight = double.Parse(arguments[2], CultureInfo.InvariantCulture)
-                    });
-                    break;
-                case "clear":
-                    Clear();
-                    break;
-                case "show":
-                    if(arguments.Length>0)
-                        TimeoutEnabled = Converter.Convert<bool>(arguments[0]);
-
-                    ReviewChanged?.Invoke();
-                    break;
-                default:
-                    throw new Exception($"Command '{command}' not supported");
-            }
+        /// <summary>
+        /// adds an entry to the current review
+        /// </summary>
+        /// <param name="name">name of review entry</param>
+        /// <param name="value">value of review entry</param>
+        /// <param name="weight">weight of review entry</param>
+        public void AddEntry(string name, int value, double weight) {
+            AddEntry(new ReviewEntry {
+                Name = name,
+                Value = value,
+                Weight = weight
+            });
         }
 
-        void IInitializableModule.Initialize() {
-            context.GetModuleByKey<IMainWindow>(ModuleKeys.MainWindow).AddMenuItem("Display.Review", (sender, args) => new ReviewDisplay(this).Show());
+        /// <summary>
+        /// shows the reviews
+        /// </summary>
+        /// <param name="timeout">determines whether to fadeout the reviews after a time</param>
+        public void Show(bool timeout = true) {
+            TimeoutEnabled = timeout;
+            ReviewChanged?.Invoke();
         }
     }
 }

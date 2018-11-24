@@ -8,8 +8,6 @@ using System.Text.RegularExpressions;
 using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Database.Entities.Operations.Prepared;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
@@ -43,7 +41,7 @@ namespace StreamRC.Streaming.Cache {
         /// creates a new <see cref="ImageCacheModule"/>
         /// </summary>
         /// <param name="context">context used to access modules</param>
-        public ImageCacheModule(DatabaseModule database, HttpServiceModule httpservice, TimerModule timer) {
+        public ImageCacheModule(DatabaseModule database, IHttpServiceModule httpservice, TimerModule timer) {
             this.database = database;
             
 
@@ -154,31 +152,26 @@ namespace StreamRC.Streaming.Cache {
             return long.Parse(match.Groups["id"].Value);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/image":
-                    ServeImage(client, request);
+                    ServeImage(request, response);
                     break;
             }
         }
 
-        void ServeImage(HttpClient client, HttpRequest request) {
+        void ServeImage(IHttpRequest request, IHttpResponse response) {
             long id = request.GetParameter<long>("id");
 
             byte[] data = GetImageData(id);
 
             if(data == null || data.Length == 0) {
-                client.WriteStatus(404, "Not found");
-                client.EndHeader();
+                response.Status = 404;
+                return;
             }
-            else {
-                client.WriteStatus(200, "OK");
-                client.WriteHeader("Content-Type", MimeTypes.GetMimeType(".png"));
-                client.WriteHeader("Content-Length", data.Length.ToString());
-                client.EndHeader();
-                using (System.IO.Stream stream = client.GetStream())
-                    stream.Write(data, 0, data.Length);
-            }
+
+            response.Status = 200;
+            response.ServeData(data, ".png");
         }
 
         void ITimerService.Process(double time) {

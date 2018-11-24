@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using NightlyCode.Core.Logs;
+using NightlyCode.Modules;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
@@ -9,6 +10,7 @@ namespace StreamRC.Streaming.Polls.Commands {
     /// <summary>
     /// executes user votes for polls
     /// </summary>
+    [Module]
     public class VoteCommandHandler : StreamCommandHandler {
         readonly PollModule module;
 
@@ -66,10 +68,6 @@ namespace StreamRC.Streaming.Polls.Commands {
             module.ExecuteVote(poll, command.User, vote);
 
             SendMessage(channel, command.User, $"You voted successfully for {vote} in poll {poll}.");
-        }
-
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Registers a vote for a poll. Syntax: !vote <poll> <option>");
         }
 
         public override ChannelFlags RequiredFlags => ChannelFlags.None;

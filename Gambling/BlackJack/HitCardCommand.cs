@@ -63,10 +63,6 @@ namespace StreamRC.Gambling.BlackJack {
             message.Send();
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Draw another card to increase value of your hand.");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;
     }
 }

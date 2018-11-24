@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Database.Entities.Operations.Prepared;
@@ -27,6 +28,9 @@ namespace StreamRC.Core.Settings {
             insertsetting = database.Database.Insert<Setting>().Columns(s => s.Module, s => s.Key, s => s.Value).Prepare();
             updatesetting = database.Database.Update<Setting>().Set(s => s.Value == DBParameter.String).Where(s => s.Module == DBParameter.String && s.Key == DBParameter.String).Prepare();
         }
+
+        /// <inheritdoc />
+        public event Action<string, string, object> SettingChanged;
 
         /// <summary>
         /// get a setting of a module
@@ -95,6 +99,8 @@ namespace StreamRC.Core.Settings {
                 string settingvalue = value?.ToString();
                 updatesetting.Execute(settingvalue, module, key);
             }
+
+            SettingChanged?.Invoke(module, key, value);
         }
 
         /// <summary>

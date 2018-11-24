@@ -1,12 +1,11 @@
 ﻿using System.Linq;
-using NightlyCode.DB.Entities.Operations;
+using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core;
 using StreamRC.Core.Messages;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Players;
-using StreamRC.RPG.Requests.Command;
 using StreamRC.Streaming;
 using StreamRC.Streaming.Notifications;
 using StreamRC.Streaming.Stream;
@@ -14,23 +13,25 @@ using StreamRC.Streaming.Users;
 
 namespace StreamRC.RPG.Requests {
 
-    [Dependency(nameof(UserModule))]
-    [Dependency(nameof(StreamModule))]
-    [Dependency(nameof(NotificationModule))]
-    [ModuleKey("request")]
-    public class GameRequestModule : IInitializableModule, IRunnableModule, ICommandModule, IItemCommandModule {
-        readonly Context context;
+    [Module(Key="request")]
+    public class GameRequestModule : ICommandModule, IItemCommandModule {
+        readonly IDatabaseModule database;
+        readonly NotificationModule notifications;
+        readonly UserModule users;
 
         /// <summary>
         /// creates a new <see cref="GameRequestModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GameRequestModule(Context context) {
-            this.context = context;
+        public GameRequestModule(IDatabaseModule database, IStreamModule stream, NotificationModule notifications, UserModule users) {
+            this.database = database;
+            this.notifications = notifications;
+            this.users = users;
+            database.Database.UpdateSchema<GameRequest>();
         }
 
         public int GetNumberOfRequests() {
-            return context.Database.Load<GameRequest>(DBFunction.Count).ExecuteScalar<int>();
+            return database.Database.Load<GameRequest>(r=>DBFunction.Count).ExecuteScalar<int>();
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {
@@ -46,18 +47,19 @@ namespace StreamRC.RPG.Requests {
             }
         }
 
+        [Command("requests")]
         public GameRequest[] GetRequests() {
-            return context.Database.LoadEntities<GameRequest>().Execute().ToArray();
+            return database.Database.LoadEntities<GameRequest>().Execute().ToArray();
         }
 
         public void RemoveGame(int index) {
-            GameRequest[] requests = context.Database.LoadEntities<GameRequest>().Execute().ToArray();
+            GameRequest[] requests = database.Database.LoadEntities<GameRequest>().Execute().ToArray();
             RemoveGame(requests[index].Platform, requests[index].Game);
         }
 
         public void RemoveGame(string platform, string game) {
-            if(context.Database.Delete<GameRequest>().Where(g => g.Platform == platform && g.Game == game).Execute() > 0)
-                context.GetModule<NotificationModule>().ShowNotification(
+            if(database.Database.Delete<GameRequest>().Where(g => g.Platform == platform && g.Game == game).Execute() > 0)
+                notifications.ShowNotification(
                     new MessageBuilder().Text("Game Request Removed").BuildMessage(),
                     new MessageBuilder().Text(game, StreamColors.Option, FontWeight.Bold).Text(" for ").Text(platform, StreamColors.Option, FontWeight.Bold).Text(" has been removed from the queue.").BuildMessage()
                 );
@@ -69,7 +71,7 @@ namespace StreamRC.RPG.Requests {
 
         public void RequestGame(string service, string username, string system, string game)
         {
-            User user = context.GetModule<UserModule>().GetExistingUser(service, username);
+            User user = users.GetExistingUser(service, username);
             RequestGame(user, system, game);
         }
 
@@ -78,7 +80,7 @@ namespace StreamRC.RPG.Requests {
         }
 
         void RequestGame(string service, string username, string system, params string[] arguments) {
-            User user = context.GetModule<UserModule>().GetExistingUser(service, username);
+            User user = users.GetExistingUser(service, username);
             RequestGame(user, system, arguments);
         }
 
@@ -89,7 +91,7 @@ namespace StreamRC.RPG.Requests {
             if(string.IsNullOrEmpty(game))
                 throw new StreamCommandException("You have to provide the name of the game to be played");
 
-            context.Database.Insert<GameRequest>().Columns(g => g.UserID, g => g.Platform, g => g.Game, g => g.Conditions).Values(user.ID, system, game, target).Execute();
+            database.Database.Insert<GameRequest>().Columns(g => g.UserID, g => g.Platform, g => g.Game, g => g.Conditions).Values(user.ID, system, game, target).Execute();
 
             MessageBuilder builder=new MessageBuilder();
             builder.Text(game, StreamColors.Option, FontWeight.Bold);
@@ -97,14 +99,10 @@ namespace StreamRC.RPG.Requests {
                 builder.Text($" ({target})");
             builder.Text(" for ").Text(system, StreamColors.Option, FontWeight.Bold).Text(" has been requested by ").Text(user.Name, user.Color).Text(".");
 
-            context.GetModule<NotificationModule>().ShowNotification(
+            notifications.ShowNotification(
                 new MessageBuilder().Text("New Game Request").BuildMessage(),
                 builder.BuildMessage()
                 );
-        }
-
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<GameRequest>();
         }
 
         void IItemCommandModule.ExecuteItemCommand(User user, Player player, string command, params string[] arguments) {
@@ -123,14 +121,6 @@ namespace StreamRC.RPG.Requests {
                 default:
                     throw new StreamCommandException($"'{command}' not handled by this module");
             }
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().RegisterCommandHandler("requests", new RequestListCommandHandler(this));
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().UnregisterCommandHandler("requests");
         }
     }
 }

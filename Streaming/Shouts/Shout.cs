@@ -38,5 +38,10 @@ namespace StreamRC.Streaming.Shouts {
         /// volume of video to play
         /// </summary>
         public int Volume { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString() {
+            return $"Term: {Term}: Id: {VideoId}, Cooldown: {Cooldown}, Start: {StartSeconds}, End: {EndSeconds}, Volume: {Volume}";
+        }
     }
 }

@@ -44,8 +44,7 @@ namespace StreamRC.Gambling.BlackJack {
 
             long userid = playermodule.GetPlayer(command.Service, command.User).UserID;
 
-            int bet;
-            int.TryParse(command.Arguments[0], out bet);
+            int.TryParse(command.Arguments[0], out int bet);
             if (bet <= 0)
             {
                 SendMessage(channel, command.User, $"{command.Arguments[0]} is no valid bet");
@@ -70,10 +69,10 @@ namespace StreamRC.Gambling.BlackJack {
 
             game.DealerBoard += game.Stack.Pop();
 
-            game.PlayerBoards = new List<BlackJackBoard>();
-            game.PlayerBoards.Add(new BlackJackBoard() {
-                Bet = bet
-            });
+            game.PlayerBoards = new List<BlackJackBoard> {
+                new BlackJackBoard {Bet = bet}
+            };
+
             game.PlayerBoards[0].Board += game.Stack.Pop();
             game.PlayerBoards[0].Board += game.Stack.Pop();
 
@@ -104,10 +103,6 @@ namespace StreamRC.Gambling.BlackJack {
             }
 
             message.Send();
-        }
-
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Starts a new game of Black Jack. Syntax: !bj <bet>");
         }
 
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;

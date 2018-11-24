@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using NightlyCode.Modules;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Items;
-using StreamRC.RPG.Players.Commands;
 using StreamRC.RPG.Players.Skills;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users;
@@ -29,7 +29,6 @@ namespace StreamRC.RPG.Players {
             this.inventory = inventory;
             this.itemmodule = itemmodule;
             this.effects = effects;
-            stream.RegisterCommandHandler("heal", new HealCommandHandler(this));
         }
 
         public void Heal(long playerid) {
@@ -37,6 +36,7 @@ namespace StreamRC.RPG.Players {
             Heal(user.Service, null, user.Name);
         }
 
+        [Command("$service", "$channel", "$user")]
         public void Heal(string service, string channel, string username) {
             User user = users.GetExistingUser(service, username);
             Player player = players.GetExistingPlayer(service, username);

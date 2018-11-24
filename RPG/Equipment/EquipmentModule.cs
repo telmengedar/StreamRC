@@ -6,7 +6,7 @@ using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
 using StreamRC.Core;
 using StreamRC.Core.Messages;
-using StreamRC.RPG.Equipment.Commands;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Messages;
@@ -41,12 +41,6 @@ namespace StreamRC.RPG.Equipment {
             this.players = players;
             this.items = items;
             this.inventory = inventory;
-
-            stream.RegisterCommandHandler("equip", new EquipCommandHandler(this));
-            stream.RegisterCommandHandler("equipment", new ShowEquipmentCommandHandler(this));
-            stream.RegisterCommandHandler("takeoff", new TakeoffCommandHandler(this));
-            stream.RegisterCommandHandler("compare", new CompareEquipmentCommandHandler(this));
-
         }
 
         /// <summary>
@@ -54,6 +48,7 @@ namespace StreamRC.RPG.Equipment {
         /// </summary>
         public event Action<long, EquipmentSlot> EquipmentChanged;
 
+        [Command("equipment", "$service", "$channel", "$user")]
         public void ShowEquipment(string service, string channel, string username) {
             User user = users.GetExistingUser(service, username);
             EquippedItemInformation[] equipment = database.Database.LoadEntities<EquippedItemInformation>().Where(i => i.PlayerID == user.ID).Execute().ToArray();
@@ -93,6 +88,7 @@ namespace StreamRC.RPG.Equipment {
             return database.Database.LoadEntities<EquipmentItem>().Where(i => i.PlayerID == playerid && i.Slot == slot).Execute().FirstOrDefault();
         }
 
+        [Command("compare", "$service", "$channel", "$user")]
         public void Compare(string service, string channel, string user, string[] arguments)
         {
             Player player = players.GetExistingPlayer(service, user);
@@ -148,6 +144,7 @@ namespace StreamRC.RPG.Equipment {
             }
         }
 
+        [Command("takeoff", "$service", "$channel", "$username", "{0}")]
         public void TakeOff(string service, string channel, string username, string itemorslotname) {
             User user = users.GetExistingUser(service, username);
             Player player = players.GetExistingPlayer(service, username);
@@ -286,6 +283,7 @@ namespace StreamRC.RPG.Equipment {
         /// <param name="service">service user is registered to</param>
         /// <param name="user">username</param>
         /// <param name="itemname">name of item to equip</param>
+        [Command("equip", "$service", "$channel", "$user")]
         public void Equip(string service, string channel, string user, string itemname) {
             Player player = players.GetExistingPlayer(service, user);
             if(player == null)

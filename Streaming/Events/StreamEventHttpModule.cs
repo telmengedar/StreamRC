@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Drawing;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Cache;
@@ -23,7 +20,7 @@ namespace StreamRC.Streaming.Events {
         readonly ImageCacheModule imagemodule;
         readonly StreamEventModule streameventmodule;
 
-        public StreamEventHttpModule(HttpServiceModule httpservice, UserModule usermodule, ImageCacheModule imagemodule, StreamEventModule streameventmodule) {
+        public StreamEventHttpModule(IHttpServiceModule httpservice, UserModule usermodule, ImageCacheModule imagemodule, StreamEventModule streameventmodule) {
             this.usermodule = usermodule;
             this.imagemodule = imagemodule;
             this.streameventmodule = streameventmodule;
@@ -37,20 +34,23 @@ namespace StreamRC.Streaming.Events {
             httpservice.AddServiceHandler("/streamrc/highlight/data", this);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch (request.Resource)
             {
                 case "/streamrc/events":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.html"), ".html");
+                    response.ContentType = MimeTypes.GetMimeType(".html");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.html").CopyTo(response.Content);
                     break;
                 case "/streamrc/events.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.css"), ".css");
+                    response.ContentType = MimeTypes.GetMimeType(".css");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.css").CopyTo(response.Content);
                     break;
                 case "/streamrc/events.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.js"), ".js");
+                    response.ContentType = MimeTypes.GetMimeType(".js");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Events.events.js").CopyTo(response.Content);
                     break;
                 case "/streamrc/events/data":
-                    ServeEvents(client, request);
+                    ServeEvents(request, response);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
@@ -182,26 +182,19 @@ namespace StreamRC.Streaming.Events {
             return score;
         }
 
-        void ServeEvents(HttpClient client, HttpRequest request) {
-            int count = 5;
-            if(request.HasParameter("count"))
-                count = request.GetParameter<int>("count");
+        void ServeEvents(IHttpRequest request, IHttpResponse response) {
+            StreamHttpEvents events = new StreamHttpEvents {
+                Leader = Convert("Divinity", streameventmodule.GetUserOfTheMonth()),
+                Donor = Convert("Financial Pillar", GetEvent(StreamEventType.Donation, StreamEventType.Subscription)),
+                Hoster = Convert("Heart of Gold", GetEvent(StreamEventType.Host, StreamEventType.Raid)),
+                Support = Convert("Quality Assurance", GetEvent(StreamEventType.BugReport)),
+                Social = Convert("Social Force", GetEvent(StreamEventType.Chat)),
+                LastEvent = Convert(streameventmodule.GetLastEvents(1, StreamEventType.BugReport, StreamEventType.Custom, StreamEventType.Follow, StreamEventType.Host, StreamEventType.Raid).FirstOrDefault()),
+                LastDonation = Convert(streameventmodule.GetLastEvents(1, StreamEventType.Donation, StreamEventType.Subscription).FirstOrDefault())
+            };
 
-            using (MemoryStream ms = new MemoryStream()) {
-                StreamHttpEvents events = new StreamHttpEvents {
-                    Leader = Convert("Divinity", streameventmodule.GetUserOfTheMonth()),
-                    Donor = Convert("Financial Pillar", GetEvent(StreamEventType.Donation, StreamEventType.Subscription)),
-                    Hoster = Convert("Heart of Gold", GetEvent(StreamEventType.Host, StreamEventType.Raid)),
-                    Support = Convert("Quality Assurance", GetEvent(StreamEventType.BugReport)),
-                    Social = Convert("Social Force", GetEvent(StreamEventType.Chat)),
-                    LastEvent = Convert(streameventmodule.GetLastEvents(1, StreamEventType.BugReport, StreamEventType.Custom, StreamEventType.Follow, StreamEventType.Host, StreamEventType.Raid).FirstOrDefault()),
-                    LastDonation = Convert(streameventmodule.GetLastEvents(1, StreamEventType.Donation, StreamEventType.Subscription).FirstOrDefault())
-                };
-
-                JSON.Write(events, ms);
-                client.ServeData(ms.ToArray(), ".json");
-            }
-
+            response.ContentType = MimeTypes.GetMimeType(".json");
+            JSON.Write(events, response.Content);
         }
     }
 }

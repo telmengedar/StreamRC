@@ -90,10 +90,6 @@ namespace StreamRC.Gambling.Poker.Holdem {
             message.Text($" ({evaluation})").Send();
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Starts a new Casino Holdem game");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;
     }
 }

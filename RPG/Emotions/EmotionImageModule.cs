@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 
 namespace StreamRC.RPG.Emotions {
@@ -12,7 +10,7 @@ namespace StreamRC.RPG.Emotions {
     public class EmotionImageModule : IHttpService {
         readonly Dictionary<string, string> imagecache = new Dictionary<string, string>();
 
-        public EmotionImageModule(HttpServiceModule httpservice)
+        public EmotionImageModule(IHttpServiceModule httpservice)
         {
             httpservice.AddServiceHandler("/streamrc/image/emotion", this);
         }
@@ -24,13 +22,11 @@ namespace StreamRC.RPG.Emotions {
         /// <returns>path to image on server</returns>
         public string GetImagePath(EmotionType emotion)
         {
-
-            string path;
-            if (!imagecache.TryGetValue(emotion.ToString().ToLower(), out path))
+            if (!imagecache.TryGetValue(emotion.ToString().ToLower(), out string path))
             {
                 string resourcepath = GetType().Namespace + ".Images." + emotion.ToString().ToLower() + ".png";
                 if (ResourceAccessor.ContainsResource(GetType().Assembly, resourcepath))
-                    path = $"http://localhost/streamrc/image/emotion?name={HttpExtensions.URLEncode(emotion.ToString().ToLower())}";
+                    path = $"http://localhost/streamrc/image/emotion?name={emotion.ToString().ToLower().URLEncode()}";
 
                 imagecache[emotion.ToString().ToLower()] = path;
             }
@@ -38,40 +34,32 @@ namespace StreamRC.RPG.Emotions {
             return path;
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request)
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response)
         {
             switch (request.Resource)
             {
                 case "/streamrc/image/emotion":
-                    ServeImage(client, request);
+                    ServeImage(request, response);
                     break;
                 default:
                     throw new Exception($"'{request.Resource}' not handled by this module");
             }
         }
 
-        void ServeImage(HttpClient client, HttpRequest request)
+        void ServeImage(IHttpRequest request, IHttpResponse response)
         {
-            string itemname = request.GetParameter("name");
+            string itemname = request.GetParameter<string>("name");
 
             string resourcepath = GetType().Namespace + ".Images." + itemname.ToLower() + ".png";
 
-            if (!ResourceAccessor.ContainsResource(GetType().Assembly, resourcepath))
-            {
-                client.WriteStatus(404, "Image not found");
-                client.EndHeader();
+            if (!ResourceAccessor.ContainsResource(GetType().Assembly, resourcepath)) {
+                response.Status = 404;
                 return;
             }
 
             byte[] imagedata = ResourceAccessor.GetResource<byte[]>(resourcepath);
 
-            client.WriteStatus(200, "OK");
-            client.WriteHeader("Content-Type", MimeTypes.GetMimeType(".png"));
-            client.WriteHeader("Content-Length", imagedata.Length.ToString());
-            client.EndHeader();
-            using (System.IO.Stream stream = client.GetStream())
-                stream.Write(imagedata, 0, imagedata.Length);
-
+            response.ServeData(imagedata, ".png");
         }
 
     }

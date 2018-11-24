@@ -1,6 +1,5 @@
 ﻿using NightlyCode.Core.Randoms;
 using NightlyCode.Math;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Effects.Status;
@@ -8,11 +7,13 @@ using StreamRC.RPG.Messages;
 
 namespace StreamRC.RPG.Players.Skills.Monster {
     public class PestilenceSkill : MonsterSkill {
-        readonly Context context;
+        readonly AdventureModule adventure;
+        readonly RPGMessageModule messages;
 
-        public PestilenceSkill(Context context, int level) {
+        public PestilenceSkill(int level, AdventureModule adventure, RPGMessageModule messages) {
+            this.adventure = adventure;
+            this.messages = messages;
             Level = level;
-            this.context = context;
         }
 
         public override string Name => "Pestilence";
@@ -34,10 +35,10 @@ namespace StreamRC.RPG.Players.Skills.Monster {
 
         public override void Process(IBattleEntity attacker, IBattleEntity target) {
             float hitprobability = MathCore.Sigmoid(GetModifiedDexterity(attacker) - target.Dexterity, 1.1f, 0.5f);
-            context.GetModule<RPGMessageModule>().Create().BattleActor(attacker).Text(" tries to bite ").BattleActor(target).Text(".").Send();
+            messages.Create().BattleActor(attacker).Text(" tries to bite ").BattleActor(target).Text(".").Send();
             
             if(RNG.XORShift64.NextFloat() < hitprobability)
-                target.AddEffect(new PlaqueEffect(target, context.GetModule<AdventureModule>(), context.GetModule<RPGMessageModule>()) {
+                target.AddEffect(new PlaqueEffect(target, adventure, messages) {
                     Level = Level,
                     Time = 60.0 + 120.0 * Level
                 });

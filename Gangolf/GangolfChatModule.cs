@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
@@ -9,7 +8,6 @@ using NightlyCode.StreamRC.Gangolf.Chat;
 using NightlyCode.StreamRC.Gangolf.Dictionary;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
-using StreamRC.Core.TTS;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Chat;
 using StreamRC.Streaming.Stream;
@@ -32,6 +30,7 @@ namespace NightlyCode.StreamRC.Gangolf
         readonly ChatMessageModule messages;
         readonly UserModule usermodule;
         readonly ImageCacheModule images;
+        readonly DictionaryModule dictionary;
 
         readonly object chatterlock = new object();
         readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
@@ -50,17 +49,18 @@ namespace NightlyCode.StreamRC.Gangolf
 
         readonly object greetlock = new object();
         readonly HashSet<Tuple<string, string>> greeted = new HashSet<Tuple<string, string>>();
-        int chatterthingy = 0;
+        int chatterthingy;
 
         /// <summary>
         /// creates a new <see cref="GangolfChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, UserModule usermodule, ImageCacheModule images) {
+        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, UserModule usermodule, ImageCacheModule images, DictionaryModule dictionary) {
             this.factory = factory;
             this.messages = messages;
             this.usermodule = usermodule;
             this.images = images;
+            this.dictionary = dictionary;
             stream.ChatMessage += OnChatMessage;
             stream.UserLeft += OnUserLeft;
             timer.AddService(this, 60.0);
@@ -152,7 +152,7 @@ namespace NightlyCode.StreamRC.Gangolf
 
             AppendInsult(response, userid, mode);
 
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat, voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
         }
 
         void AppendInsult(MessageBuilder response, long userid, int mode=0) {
@@ -178,7 +178,7 @@ namespace NightlyCode.StreamRC.Gangolf
                     break;
                 case 1:
                     insult = factory.CreateInsult();
-                    response.Text(insult).Text(" to ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
+                    response.Text(insult).Text(" to ").User(usermodule.GetUser(userid), images);
                     break;
                 case 2:
                     insult = factory.CreateInsult();
@@ -186,7 +186,7 @@ namespace NightlyCode.StreamRC.Gangolf
                     break;
                 case 3:
                     insult = factory.CreateInsult();
-                    response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").Image(images.GetImageByUrl(usermodule.GetUser(userid).Avatar));
+                    response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").User(usermodule.GetUser(userid), images);
                     break;
             }
         }
@@ -201,13 +201,13 @@ namespace NightlyCode.StreamRC.Gangolf
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
             response.Text("I");
 
-            string welcoming = $"{factory.Dictionary.GetWords(w => w.Class == WordClass.Verb && (w.Attributes & WordAttribute.Greeting) == WordAttribute.Greeting).RandomItem(RNG.XORShift64)}";
+            string welcoming = $"{dictionary.GetRandomWord(WordClass.Verb, WordAttribute.Greeting)}";
             response.Text($" {welcoming.TrimEnd('s')} ");
             response.User(usermodule.GetUser(service, user),images).Text(" the ");
 
             string insult = factory.CreateInsult();
             response.Text(insult);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat, voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
@@ -248,6 +248,15 @@ namespace NightlyCode.StreamRC.Gangolf
             }
         }
 
+        /// <summary>
+        /// removes a name from the known chatter list
+        /// </summary>
+        /// <param name="name">name to remove from chatter list</param>
+        public void RemoveVictim(string name) {
+            lock(chatterlock)
+                chatternames.Remove(name);
+        }
+
         void CreateExplanation(long userid) {
             MessageBuilder response = new MessageBuilder();
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
@@ -262,7 +271,7 @@ namespace NightlyCode.StreamRC.Gangolf
             
 
             AppendInsult(response, userid);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat, voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
         }
 
         void ITimerService.Process(double time) {
@@ -287,16 +296,16 @@ namespace NightlyCode.StreamRC.Gangolf
             switch (RNG.XORShift64.NextInt(3)) {
             case 0: {
                 string term = result[0];
-                return $"{term.Namify()} {factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Noun && (w.Attributes & WordAttribute.Insultive) != WordAttribute.None).Text.Namify()}";
+                return $"{term.Namify()} {dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Insultive).Text.Namify()}";
             }
             case 1: {
                 string term = result[0];
-                return $"{term.Namify()} {factory.Dictionary.GetRandomWord(w => w.Class == WordClass.NameConjuction)} {factory.InsultiveNoun().Namify()}";
+                return $"{term.Namify()} {dictionary.GetRandomWord(WordClass.NameConjuction, WordAttribute.None)} {factory.InsultiveNoun().Namify()}";
             }
             default:
             case 3: {
                 string term = result.Length == 1 ? result[0] : result[1];
-                return $"{factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Noun && (w.Attributes & WordAttribute.Title) != WordAttribute.None).Text.Namify()} {term.Namify()}";
+                return $"{dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Title).Text.Namify()} {term.Namify()}";
             }
             }
         }
@@ -307,25 +316,25 @@ namespace NightlyCode.StreamRC.Gangolf
             MessageBuilder response = new MessageBuilder();
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
             if (RNG.XORShift64.NextFloat() < 0.22) {
-                Word exclamation = factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Exclamation);
+                Word exclamation = dictionary.GetRandomWord(WordClass.Exclamation, WordAttribute.None);
                 if(exclamation != null)
-                    response.Text(exclamation.Text).Text("! ");
+                    response.Text(exclamation.Text.Namify()).Text("! ");
             }
 
             response.Text(name).Text(" ");
 
             if(RNG.XORShift64.NextFloat() < 0.3) {
-                Word amplifier = factory.Dictionary.GetRandomWord(w => w.Class == WordClass.Amplifier);
+                Word amplifier = dictionary.GetRandomWord(WordClass.Amplifier, WordAttribute.None);
                 if(amplifier != null)
                     response.Text(amplifier.Text).Text(" ");
             }
 
-            Word comparision = factory.Dictionary.GetRandomWord(w => (w.Attributes & WordAttribute.Comparision) != WordAttribute.None);
+            Word comparision = dictionary.GetRandomWord(WordClass.Verb, WordAttribute.Comparision);
             response.Text(comparision.Text).Text(" like ");
             string insultive = factory.DescriptiveInsultiveNoun();
             response.Text(insultive.StartsWithVocal() ? "an " : "a ");
             response.Text(insultive).Text("!");
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat, voice);
+            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat|ChannelFlags.Bot, voice);
         }
     }
 }

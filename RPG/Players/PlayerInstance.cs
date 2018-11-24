@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using NightlyCode.DB.Entities;
+using NightlyCode.Database.Entities;
 using StreamRC.RPG.Annotations;
 using StreamRC.RPG.Data;
 

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using NightlyCode.Modules;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.Timer;
-using StreamRC.RPG.Adventure.Commands;
 using StreamRC.RPG.Adventure.Exploration;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Adventure.MonsterBattle.Monsters;
@@ -63,9 +63,6 @@ namespace StreamRC.RPG.Adventure {
             players.PlayerStatusChanged += OnStatusChanged;
             stream.ChatMessage += OnChatMessage;
             stream.Command += OnCommand;
-            stream.RegisterCommandHandler("explore", new ExploreCommandHandler(this, players));
-            stream.RegisterCommandHandler("rest", new RestCommandHandler(this, players));
-            stream.RegisterCommandHandler("rescue", new RescuePlayerCommandHandler(this));
             timer.AddService(this, 0.5);
         }
 
@@ -190,6 +187,11 @@ namespace StreamRC.RPG.Adventure {
             adventure.Reset();
         }
 
+        [Command("explore", "$service", "$user")]
+        public void AddAdventurer(string service, string user) {
+            AddAdventurer(players.GetPlayer(service, user));
+        }
+
         /// <summary>
         /// sends a player on adventure
         /// </summary>
@@ -210,6 +212,11 @@ namespace StreamRC.RPG.Adventure {
                 PlayerActiveChanged?.Invoke(player.UserID, true);
                 messages.Create().User(player.UserID).Text(" went out to adventure.").Send();
             }
+        }
+
+        [Command("rest", "$service", "$user")]
+        public void RemoveAdventurer(string service, string user) {
+            RemoveAdventurer(usermodule.GetUserID(service, user));
         }
 
         /// <summary>
@@ -256,6 +263,7 @@ namespace StreamRC.RPG.Adventure {
             messages.Create().User(user).Text(" went to the city to rest a bit.").Send();
         }
 
+        [Command("rescue", "$service", "$channel", "$user")]
         public void Rescue(string service, string channel, string username) {
             lock(adventurerlock) {
                 User rescueuser = usermodule.GetExistingUser(service, username);

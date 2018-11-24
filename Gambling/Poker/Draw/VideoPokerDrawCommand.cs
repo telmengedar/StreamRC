@@ -14,7 +14,8 @@ namespace StreamRC.Gambling.Poker.Draw {
     /// <summary>
     /// executes the draw command for video poker games
     /// </summary>
-    public class VideoPokerDrawCommand : StreamCommandHandler {
+    public class VideoPokerDrawCommand : StreamCommandHandler
+    {
         readonly VideoPokerModule pokermodule;
         readonly PlayerModule playermodule;
         readonly RPGMessageModule messagemodule;
@@ -172,10 +173,6 @@ namespace StreamRC.Gambling.Poker.Draw {
                 default:
                     return Color.White;
             }
-        }
-
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            channel.SendMessage("Starts a game of video poker. Type !draw <bet> to start a game and when you get your first cards type !draw <slot> <slot> to redraw cards of the specified slot. Just type !draw to accept your hand.");
         }
 
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;

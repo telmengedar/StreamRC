@@ -42,11 +42,6 @@ namespace StreamRC.Streaming.Users.Commands {
         }
 
         /// <inheritdoc />
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Executes a custom command (yeah, we have like no detailed help text here)");
-        }
-
-        /// <inheritdoc />
         public override ChannelFlags RequiredFlags => ChannelFlags.None;
     }
 }

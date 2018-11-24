@@ -5,7 +5,7 @@
 <body>
 <script>
 	var xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", "http://localhost:40299/twitchrc/?" + document.location.hash.substring(1), false); // false for synchronous request
+	xmlHttp.open("GET", "http://localhost:40299/streamrc/?" + document.location.hash.substring(1), false); // false for synchronous request
 	xmlHttp.send(null);
 	close();
 </script>

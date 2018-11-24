@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Threading;
+using NightlyCode.Database.Clients.Tables;
+using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
+using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Data;
-using StreamRC.RPG.Players.Commands;
 using StreamRC.Streaming.Events;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
@@ -17,16 +21,42 @@ namespace StreamRC.RPG.Players {
     /// module managing player data
     /// </summary>
     [Module(Key = "player")]
-    public class PlayerModule : IInitializableModule, IRunnableModule, ICommandModule
+    public class PlayerModule : ICommandModule
     {
+        readonly IDatabaseModule database;
+        readonly IStreamModule stream;
+        readonly StreamEventModule streamevents;
+        readonly UserModule users;
+        readonly PlayerModule players;
+        readonly PlayerLevelModule playerlevels;
         readonly PeriodicTimer experiencetimer = new PeriodicTimer();
-        object createplayerlock = new object();
+        readonly object createplayerlock = new object();
 
         /// <summary>
         /// creates a new <see cref="PlayerModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public PlayerModule() {
+        public PlayerModule(IDatabaseModule database, IStreamModule stream, StreamEventModule streamevents, UserModule users, PlayerModule players, PlayerLevelModule playerlevels) {
+            this.database = database;
+            this.stream = stream;
+            this.streamevents = streamevents;
+            this.users = users;
+            this.players = players;
+            this.playerlevels = playerlevels;
+            database.Database.UpdateSchema<Player>();
+            database.Database.UpdateSchema<PlayerAscension>();
+            Task.Run(() => FixStats());
+
+            experiencetimer.Elapsed += OnTimerElapsed;
+            stream.UserJoined += OnUserJoined;
+            stream.UserLeft += OnUserLeft;
+            stream.Hosted += OnChannelHosted;
+            stream.Raid += OnRaidHosted;
+            stream.ChatMessage += OnChatMessage;
+            streamevents.EventValue += OnEventValue;
+
+            database.Database.Update<Player>().Set(p => p.IsActive == false).Execute();
+            experiencetimer.Start(TimeSpan.FromMinutes(1.0));
         }
 
         /// <summary>
@@ -41,15 +71,16 @@ namespace StreamRC.RPG.Players {
         /// <returns>player object</returns>
         public Player GetExistingPlayer(long playerid)
         {
-            return context.Database.LoadEntities<Player>().Where(p => p.UserID == playerid).Execute().FirstOrDefault();
+            return database.Database.LoadEntities<Player>().Where(p => p.UserID == playerid).Execute().FirstOrDefault();
         }
 
         public int GetPlayerGold(long playerid) {
-            return context.Database.Load<Player>(p => p.Gold).Where(p => p.UserID == playerid).ExecuteScalar<int>();
+            return database.Database.Load<Player>(p => p.Gold).Where(p => p.UserID == playerid).ExecuteScalar<int>();
         }
 
+        [Command("character")]
         public PlayerAscension GetPlayerAscension(long playerid) {
-            return context.Database.LoadEntities<PlayerAscension>().Where(a => a.UserID == playerid).Execute().FirstOrDefault();
+            return database.Database.LoadEntities<PlayerAscension>().Where(a => a.UserID == playerid).Execute().FirstOrDefault();
         }
 
         /// <summary>
@@ -59,12 +90,12 @@ namespace StreamRC.RPG.Players {
         /// <param name="username">name of user</param>
         /// <returns>player object</returns>
         public Player GetExistingPlayer(string service, string username) {
-            User user = context.GetModule<UserModule>().GetUser(service, username);
+            User user = users.GetUser(service, username);
             return GetExistingPlayer(user.ID);
         }
 
         public Player GetPlayer(long playerid) {
-            return context.Database.LoadEntities<Player>().Where(p => p.UserID == playerid).Execute().FirstOrDefault();
+            return database.Database.LoadEntities<Player>().Where(p => p.UserID == playerid).Execute().FirstOrDefault();
         }
 
         /// <summary>
@@ -73,7 +104,7 @@ namespace StreamRC.RPG.Players {
         /// <param name="playerid">id of player</param>
         /// <returns>player level</returns>
         public int GetLevel(long playerid) {
-            return context.Database.Load<Player>(p => p.Level).Where(p => p.UserID == playerid).ExecuteScalar<int>();
+            return database.Database.Load<Player>(p => p.Level).Where(p => p.UserID == playerid).ExecuteScalar<int>();
         }
 
         /// <summary>
@@ -83,27 +114,27 @@ namespace StreamRC.RPG.Players {
         /// <param name="username">name of user</param>
         /// <returns>player data of user</returns>
         public Player GetPlayer(string service, string username) {
-            User user = context.GetModule<UserModule>().GetUser(service, username);
+            User user = users.GetUser(service, username);
             lock(createplayerlock) {
-                Player player = context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
+                Player player = database.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
                 if(player != null)
                     return player;
 
-                context.Database.Insert<Player>()
+                database.Database.Insert<Player>()
                     .Columns(p => p.UserID, p => p.Experience, p => p.Gold, p => p.Level, p => p.CurrentHP, p => p.MaximumHP, p => p.CurrentMP, p => p.MaximumMP, p => p.Strength, p => p.Dexterity, p => p.Fitness, p => p.Luck)
                     .Values(user.ID, 0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
                     .Execute();
                 LevelUp(user.ID, 1);
-                return context.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
+                return database.Database.LoadEntities<Player>().Where(p => p.UserID == user.ID).Execute().FirstOrDefault();
             }
         }
 
         public void UpdateRunningStats(long playerid, int health, int mana) {
-            context.Database.Update<Player>().Set(p => p.CurrentHP == health, p => p.CurrentMP == mana).Where(p => p.UserID == playerid).Execute();
+            database.Database.Update<Player>().Set(p => p.CurrentHP == health, p => p.CurrentMP == mana).Where(p => p.UserID == playerid).Execute();
         }
 
         public void UpdatePeeAndPoo(long playerid, int pee, int poo, int vomit) {
-            context.Database.Update<Player>().Set(p => p.Pee == pee, p => p.Poo == poo, p => p.Vomit == vomit).Where(p => p.UserID == playerid).Execute();
+            database.Database.Update<Player>().Set(p => p.Pee == pee, p => p.Poo == poo, p => p.Vomit == vomit).Where(p => p.UserID == playerid).Execute();
         }
 
         /// <summary>
@@ -112,11 +143,10 @@ namespace StreamRC.RPG.Players {
         /// <param name="playerid">id of player</param>
         /// <param name="deltahealth">value of changed health</param>
         public void UpdateHealth(long playerid, int deltahealth) {
-            Aggregate max = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(pl => pl.CurrentHP + deltahealth));
-            if(context.Database.Update<Player>().Set(p => p.CurrentHP == max.Int).Where(p => p.UserID == playerid).Execute() == 0)
+            if(database.Database.Update<Player>().Set(p => p.CurrentHP == DBFunction.Max(0, p.CurrentHP+deltahealth)).Where(p => p.UserID == playerid).Execute() == 0)
                 return;
 
-            DataTable table = context.Database.Load<Player>(p => p.CurrentHP, p => p.MaximumHP).Where(p => p.UserID == playerid).Execute();
+            DataTable table = database.Database.Load<Player>(p => p.CurrentHP, p => p.MaximumHP).Where(p => p.UserID == playerid).Execute();
             HealthChanged?.Invoke(playerid, Converter.Convert<int>(table.Rows[0][0]), Converter.Convert<int>(table.Rows[0][1]), deltahealth);
         }
 
@@ -126,11 +156,11 @@ namespace StreamRC.RPG.Players {
         /// <param name="playerid">id of player</param>
         /// <param name="deltagold">value of changed gold</param>
         public void UpdateGold(long playerid, int deltagold) {
-            context.Database.Update<Player>().Set(p => p.Gold == p.Gold+deltagold).Where(p => p.UserID == playerid).Execute();
+            database.Database.Update<Player>().Set(p => p.Gold == p.Gold+deltagold).Where(p => p.UserID == playerid).Execute();
         }
 
         public void Revive(long playerid) {
-            context.Database.Update<Player>().Set(p => p.CurrentHP == p.MaximumHP).Where(p => p.UserID == playerid).Execute();
+            database.Database.Update<Player>().Set(p => p.CurrentHP == p.MaximumHP).Where(p => p.UserID == playerid).Execute();
         }
 
         /// <summary>
@@ -144,13 +174,13 @@ namespace StreamRC.RPG.Players {
         public event Action<long> PlayerLevelUp;
 
         void LevelUp(long userid, int level) {
-            LevelEntry data = context.GetModule<PlayerLevelModule>().GetLevelData(level);
+            LevelEntry data = playerlevels.GetLevelData(level);
             if(data == null) {
                 Logger.Warning(this, $"No data found for levelup to character level {level}");
                 return;
             }
 
-            context.Database.Update<Player>()
+            database.Database.Update<Player>()
                 .Set(p => p.Level == level, p => p.Experience == p.Experience - data.Experience, p => p.CurrentHP == data.Health, p => p.MaximumHP == data.Health, p => p.CurrentMP == data.Mana, p => p.MaximumMP == data.Mana, p => p.Strength == data.Strength, p => p.Dexterity == data.Dexterity, p => p.Fitness == data.Fitness, p => p.Luck == data.Luck, p=>p.Intelligence==data.Intelligence)
                 .Where(p => p.UserID == userid)
                 .Execute();
@@ -164,25 +194,16 @@ namespace StreamRC.RPG.Players {
         /// <param name="name">username</param>
         /// <param name="experience">experience</param>
         public void AddExperience(string service, string name, float experience) {
-            long userid = context.GetModule<UserModule>().GetUserID(service, name);
-            context.Database.Update<Player>().Set(p => p.Experience == p.Experience + experience).Where(p => p.UserID == userid).Execute();
-            int level = context.Database.Load<PlayerAscension>(p => p.Level).Where(p => p.UserID == userid && p.Experience >= p.NextLevel).ExecuteScalar<int>();
+            long userid = users.GetUserID(service, name);
+            database.Database.Update<Player>().Set(p => p.Experience == p.Experience + experience).Where(p => p.UserID == userid).Execute();
+            int level = database.Database.Load<PlayerAscension>(p => p.Level).Where(p => p.UserID == userid && p.Experience >= p.NextLevel).ExecuteScalar<int>();
             if(level > 0)
                 LevelUp(userid, level + 1);
         }
 
-        /// <summary>
-        /// initializes the <see cref="T:NightlyCode.Modules.IModule"/> to prepare for start
-        /// </summary>
-        void IInitializableModule.Initialize() {
-            context.Database.UpdateSchema<Player>();
-            context.Database.UpdateSchema<PlayerAscension>();
-            Task.Run(() => FixStats());
-        }
-
         void FixStats() {
-            foreach(LevelEntry data in context.GetModule<PlayerLevelModule>().GetLevelEntries()) {
-                context.Database.Update<Player>()
+            foreach(LevelEntry data in playerlevels.GetLevelEntries()) {
+                database.Database.Update<Player>()
                     .Set(p => p.MaximumHP == data.Health, p => p.MaximumMP == data.Mana, p => p.Strength == data.Strength, p => p.Dexterity == data.Dexterity, p => p.Fitness == data.Fitness, p => p.Luck == data.Luck, p=>p.Intelligence==data.Intelligence)
                     .Where(p => p.Level == data.Level)
                     .Execute();
@@ -190,10 +211,9 @@ namespace StreamRC.RPG.Players {
         }
 
         void OnTimerElapsed() {
-            Aggregate maxvomit = DBFunction.Max(Constant.Create(0), EntityField.Create<Player>(p => p.Vomit - 5));
-            context.Database.Update<Player>().Set(u => u.Experience == u.Experience + 1.0f, u => u.Vomit == maxvomit.Int).Where(u => u.IsActive == true).Execute();
+            database.Database.Update<Player>().Set(u => u.Experience == u.Experience + 1.0f, u => u.Vomit == DBFunction.Max(0, u.Vomit-5)).Where(u => u.IsActive == true).Execute();
 
-            foreach(PlayerAscension player in context.Database.LoadEntities<PlayerAscension>().Where(a => a.Experience >= a.NextLevel).Execute())
+            foreach(PlayerAscension player in database.Database.LoadEntities<PlayerAscension>().Where(a => a.Experience >= a.NextLevel).Execute())
                 LevelUp(player.UserID, player.Level + 1);
         }
 
@@ -202,7 +222,7 @@ namespace StreamRC.RPG.Players {
         }
 
         void SetActive(long playerid, bool isactive) {
-            context.Database.Update<Player>().Set(p => p.IsActive == isactive).Where(p => p.UserID == playerid).Execute();
+            database.Database.Update<Player>().Set(p => p.IsActive == isactive).Where(p => p.UserID == playerid).Execute();
             PlayerStatusChanged?.Invoke(playerid, isactive);
         }
 
@@ -218,40 +238,12 @@ namespace StreamRC.RPG.Players {
             AddExperience(raid.Service, raid.Login, 12.0f + Math.Max(0, raid.RaiderCount) * 1.3f);
         }
 
-        void IRunnableModule.Start() {
-            experiencetimer.Elapsed += OnTimerElapsed;
-            context.GetModule<StreamModule>().UserJoined += OnUserJoined;
-            context.GetModule<StreamModule>().UserLeft += OnUserLeft;
-            context.GetModule<StreamModule>().Hosted += OnChannelHosted;
-            context.GetModule<StreamModule>().Raid += OnRaidHosted;
-            context.GetModule<StreamModule>().ChatMessage += OnChatMessage;
-            context.GetModule<StreamEventModule>().EventValue += OnEventValue;
-
-            context.Database.Update<Player>().Set(p => p.IsActive == false).Execute();
-            experiencetimer.Start(TimeSpan.FromMinutes(1.0));
-
-            context.GetModule<StreamModule>().RegisterCommandHandler("character", new CharacterStatsCommandHandler(this, context.GetModule<UserModule>()));
-        }
-
         void OnEventValue(long userid, int value) {
             UpdateGold(userid, value);
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
             AddExperience(message.Service, message.User, 3 + message.Message.Length * 0.05f);
-        }
-
-        void IRunnableModule.Stop() {
-            experiencetimer.Elapsed -= OnTimerElapsed;
-            context.GetModule<StreamModule>().UserJoined -= OnUserJoined;
-            context.GetModule<StreamModule>().UserLeft -= OnUserLeft;
-            context.GetModule<StreamModule>().Hosted -= OnChannelHosted;
-            context.GetModule<StreamModule>().Raid -= OnRaidHosted;
-            context.GetModule<StreamModule>().ChatMessage -= OnChatMessage;
-            context.GetModule<StreamEventModule>().EventValue -= OnEventValue;
-            experiencetimer.Stop();
-
-            context.GetModule<StreamModule>().UnregisterCommandHandler("character");
         }
 
         void ICommandModule.ProcessCommand(string command, params string[] arguments) {

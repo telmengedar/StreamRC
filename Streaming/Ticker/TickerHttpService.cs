@@ -6,8 +6,6 @@ using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
 
@@ -26,7 +24,7 @@ namespace StreamRC.Streaming.Ticker {
         /// creates a new <see cref="TickerHttpService"/>
         /// </summary>
         /// <param name="ticker">access to ticker data</param>
-        public TickerHttpService(TickerModule ticker, TimerModule timer, HttpServiceModule httpservice) {
+        public TickerHttpService(TickerModule ticker, TimerModule timer, IHttpServiceModule httpservice) {
             httpservice.AddServiceHandler("/streamrc/ticker", this);
             httpservice.AddServiceHandler("/streamrc/ticker.css", this);
             httpservice.AddServiceHandler("/streamrc/ticker.js", this);
@@ -36,42 +34,42 @@ namespace StreamRC.Streaming.Ticker {
             timer.AddService(this);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request)
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response)
         {
             switch (request.Resource)
             {
                 case "/streamrc/ticker":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.html"), ".html");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.html"), ".html");
                     break;
                 case "/streamrc/ticker.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.css"), ".css");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.css"), ".css");
                     break;
                 case "/streamrc/ticker.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.js"), ".js");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Ticker.ticker.js"), ".js");
                     break;
                 case "/streamrc/ticker/data":
-                    ServeMessages(client, request);
+                    ServeMessages(request, response);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
         }
 
-        void ServeMessages(HttpClient client, HttpRequest request)
+        void ServeMessages(IHttpRequest request, IHttpResponse response)
         {
-            DateTime messagethreshold = Converter.Convert<DateTime>(Converter.Convert<long>(request.GetParameter("timestamp")));
+            DateTime messagethreshold = Converter.Convert<DateTime>(request.GetParameter<long>("timestamp"));
 
             lock (messagelock)
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    TickerHttpResponse response = new TickerHttpResponse
+                    TickerHttpResponse httpresponse = new TickerHttpResponse
                     {
                         Messages = messages.Where(n => n.Timestamp >= messagethreshold).Select(n => n.Message).ToArray(),
                         Timestamp = DateTime.Now
                     };
-                    JSON.Write(response, ms);
-                    client.ServeData(ms.ToArray(), ".json");
+                    response.ContentType = MimeTypes.GetMimeType(".json");
+                    JSON.Write(httpresponse, response.Content);
                 }
             }
 

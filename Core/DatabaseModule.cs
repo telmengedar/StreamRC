@@ -10,13 +10,12 @@ namespace StreamRC.Core {
     /// module providing access to database
     /// </summary>
     [Module]
-    public class DatabaseModule {
-        readonly IEntityManager entitymanager = new EntityManager(new DBClient(new SqliteConnection("Data Source=streamrc.db3"), new SQLiteInfo()));
+    public class DatabaseModule : IDatabaseModule {
 
         /// <summary>
         /// database manager
         /// </summary>
-        public IEntityManager Database => entitymanager;
+        public IEntityManager Database { get; } = new EntityManager(new DBClient(new SqliteConnection("Data Source=streamrc.db3"), new SQLiteInfo()));
 
         /// <summary>
         /// creates an new in-memory database

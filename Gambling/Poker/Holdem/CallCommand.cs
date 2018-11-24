@@ -108,10 +108,6 @@ namespace StreamRC.Gambling.Poker.Holdem {
             message.Send();
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Calls a hand and puts the bet amount of the game into the pot for another card.");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;
     }
 }

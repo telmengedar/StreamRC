@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Logs;
-using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Videos {
@@ -19,7 +16,7 @@ namespace StreamRC.Streaming.Videos {
         /// creates a new <see cref="VideoServiceModule"/>
         /// </summary>
         /// <param name="httpservice">access to http service</param>
-        public VideoServiceModule(HttpServiceModule httpservice) {
+        public VideoServiceModule(IHttpServiceModule httpservice) {
             httpservice.AddServiceHandler("/streamrc/video/videoplayer", this);
             httpservice.AddServiceHandler("/streamrc/video/videoplayer.css", this);
             httpservice.AddServiceHandler("/streamrc/video/videoplayer.js", this);
@@ -75,31 +72,31 @@ namespace StreamRC.Streaming.Videos {
             }
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/video/videoplayer":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.html"), ".html");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.html"), ".html");
                     break;
                 case "/streamrc/video/videoplayer.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.css"), ".css");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.css"), ".css");
                     break;
                 case "/streamrc/video/videoplayer.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.js"), ".js");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Video.videoplayer.js"), ".js");
                     break;
                 case "/streamrc/video/videos":
-                    ServeVideos(client, request);
+                    ServeVideos(response);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
         }
 
-        void ServeVideos(HttpClient client, HttpRequest request) {
+        void ServeVideos(IHttpResponse response) {
             lock(videolock) {
-                client.ServeData(JSON.WriteString(new VideoResponse {
+                response.ServeJSON(new VideoResponse {
                     Timestamp = DateTime.Now,
                     Videos = videos.ToArray()
-                }), MimeTypes.GetMimeType(".json"));
+                });
                 videos.Clear();
             }
         }

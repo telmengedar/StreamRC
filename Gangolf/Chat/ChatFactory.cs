@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using NightlyCode.Core.Helpers;
 using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
@@ -22,28 +20,16 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             ReloadInsults();
         }
 
-        public void LoadDictionary() {
-            string file = Path.Combine(PathExtensions.GetApplicationDirectory(), "data", "dictionary.csv");
-            if(!File.Exists(file))
-                return;
-
-            using(Stream dictionarydata = File.OpenRead(file))
-                dictionary.Load(dictionarydata);
-        }
-
-        public DictionaryModule Dictionary => dictionary;
-
         public bool ContainsInsult(string message) {
             return message.Split(' ').Select(w => w.ToLower()).Any(w => insults.Any(i => w.StartsWith(i) || w.EndsWith(i)));
         }
 
         public string CreateInsult() {
             HashSet<long> used=new HashSet<long>();
-            long[] usedids;
 
             StringBuilder text = new StringBuilder();
 
-            Word adjective = dictionary.GetRandomWord(w => (w.Class & WordClass.Adjective) == WordClass.Adjective);
+            Word adjective = dictionary.GetRandomWord(WordClass.Adjective, WordAttribute.None);
             WordAttribute attributefilter = WordAttribute.None;
 
             double chance = 0.36;
@@ -59,10 +45,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 text.Append(adjective).Append(' ');
 
                 used.Add(adjective.ID);
-                usedids = used.ToArray();
-                adjective = dictionary.GetRandomWord(w => (w.Class & WordClass.Adjective) == WordClass.Adjective
-                                                          && (w.Attributes & attributefilter) == WordAttribute.None
-                                                          && !usedids.Contains(w.ID));
+                adjective = dictionary.GetRandomWord(WordClass.Adjective, attributefilter, used.ToArray());
                 chance *= chance;
             }
             while(RNG.XORShift64.NextDouble() < chance);
@@ -71,10 +54,10 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
 
             Word noun;
             if (RNG.XORShift64.NextDouble() < 0.3) {
-                Word verb = dictionary.GetRandomWord(w => (w.Class & WordClass.AdjectiveCont) == WordClass.AdjectiveCont);
+                Word verb = dictionary.GetRandomWord(WordClass.AdjectiveCont, WordAttribute.None);
 
                 if(!verb.Attributes.HasFlag(WordAttribute.Insultive)) {
-                    noun = dictionary.GetRandomWord(w => w.Class == WordClass.Noun && (w.Attributes & WordAttribute.Insultive) == WordAttribute.Insultive);
+                    noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Insultive);
                     text.Append(noun).Append('-');
                     used.Add(noun.ID);
                 }
@@ -82,11 +65,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 text.Append(verb).Append(' ');
             }
 
-            if(used.Count > 0) {
-                usedids = used.ToArray();
-                noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None && w.ID != usedids[0]);
-            }
-            else noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None);
+            noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object, used.ToArray());
 
             used.Add(noun.ID);
 
@@ -96,11 +75,10 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if(!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            usedids = used.ToArray();
-            Word descriptive = dictionary.GetRandomWord(w => (w.Class & WordClass.Noun) != WordClass.None && (w.Attributes & predicate) == predicate && !usedids.Contains(w.ID));
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, used.ToArray());
             text.Append($"{descriptive.Text}-{noun.Text}");
             if(noun.Class==WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
-                Word postposition = dictionary.GetRandomWord(w => (w.Class & WordClass.Postposition) == WordClass.Postposition && (w.Group & noun.Group) != 0);
+                Word postposition = dictionary.GetRandomLinkedWord(WordClass.Postposition, WordAttribute.None, noun.Group, used.ToArray());
                 if(postposition != null)
                     text.Append(postposition);
             }
@@ -108,7 +86,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
         }
 
         public string InsultiveNoun() {
-            Word noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None);
+            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object);
 
             WordAttribute predicate = WordAttribute.Descriptive;
             if (noun.Attributes.HasFlag(WordAttribute.Product))
@@ -116,11 +94,10 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if (!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            Word descriptive = dictionary.GetRandomWord(w => (w.Class & WordClass.Noun) != WordClass.None && (w.Attributes & predicate) == predicate && w.ID!=noun.ID);
-            if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07)
-            {
-                Word postposition = dictionary.GetRandomWord(w => (w.Class & WordClass.Postposition) == WordClass.Postposition && (w.Group & noun.Group) != 0);
-                if(postposition != null)
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, noun.ID);
+            if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
+                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, noun.Group);
+                if (postposition != null)
                     return $"{descriptive.Text}-{noun.Text}{postposition}";
             }
 
@@ -128,18 +105,13 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
         }
 
         public string DescriptiveInsultiveNoun() {
-            StringBuilder text=new StringBuilder();
+            StringBuilder text = new StringBuilder();
 
-            Word adjective = dictionary.GetRandomWord(w => (w.Class & WordClass.Adjective) == WordClass.Adjective);
+            Word adjective = dictionary.GetRandomWord(WordClass.Adjective, WordAttribute.None);
 
             text.Append(adjective.Text).Append(" ");
-            List<long> usedids = new List<long>() {
-                adjective.ID
-            };
 
-            Word noun = dictionary.GetRandomWord(w => (w.Class & (WordClass.Noun | WordClass.Subject)) != WordClass.None && (w.Attributes & WordAttribute.Object) != WordAttribute.None);
-
-            usedids.Add(noun.ID);
+            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object);
 
             WordAttribute predicate = WordAttribute.Descriptive;
             if (noun.Attributes.HasFlag(WordAttribute.Product))
@@ -147,12 +119,10 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if (!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            long[] used = usedids.ToArray();
-            Word descriptive = dictionary.GetRandomWord(w => (w.Class & WordClass.Noun) != WordClass.None && (w.Attributes & predicate) == predicate && !used.Contains(w.ID));
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, adjective.ID, noun.ID);
             text.Append($"{descriptive.Text}-{noun.Text}");
-            if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07)
-            {
-                Word postposition = dictionary.GetRandomWord(w => (w.Class & WordClass.Postposition) == WordClass.Postposition && (w.Group & noun.Group) != 0);
+            if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
+                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, noun.Group);
                 if (postposition != null)
                     text.Append(postposition);
             }

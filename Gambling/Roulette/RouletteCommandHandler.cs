@@ -13,7 +13,7 @@ namespace StreamRC.Gambling.Roulette {
     /// </summary>
     public class RouletteCommandHandler : StreamCommandHandler {
         readonly RouletteModule module;
-        PlayerModule playermodule;
+        readonly PlayerModule playermodule;
 
         /// <summary>
         /// creates a new <see cref="RouletteModule"/>
@@ -25,11 +25,6 @@ namespace StreamRC.Gambling.Roulette {
         }
 
         public override void ExecuteCommand(IChatChannel channel, StreamCommand command) {
-            if(command.Arguments.Length == 0) {
-                ProvideHelp(channel, command.User);
-                return;
-            }
-
             int gold;
             try
             {
@@ -120,10 +115,6 @@ namespace StreamRC.Gambling.Roulette {
                     SendMessage(channel, command.User, $"History of roulette fields: {string.Join(",", module.History)}");
                     break;
             }
-        }
-
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Play a round of roulette in this channel. Just type '!roulette <field> <bet>' to place a bet. For instance '!roulette red 5' places 5 gold coins on red. '!roulette 8 10' places 10 gold on field 8. '!roulette odd' places 1 gold on odd numbers");
         }
 
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;

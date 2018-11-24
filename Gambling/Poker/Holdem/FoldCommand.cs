@@ -54,10 +54,6 @@ namespace StreamRC.Gambling.Poker.Holdem {
             message.Send();
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Folds your current holdem hand and forfeits all gold in pot.");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;
     }
 }

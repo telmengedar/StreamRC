@@ -19,6 +19,11 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         Object=512,
         Greeting=1024,
         Comparision=2048,
-        Title=4096
+        Title=4096,
+
+        /// <summary>
+        /// word points to an individual
+        /// </summary>
+        Subject=8192
     }
 }

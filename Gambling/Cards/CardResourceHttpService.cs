@@ -1,7 +1,5 @@
 ﻿using System.IO;
 using NightlyCode.Core.ComponentModel;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 
 namespace StreamRC.Gambling.Cards {
@@ -25,11 +23,11 @@ namespace StreamRC.Gambling.Cards {
         /// </summary>
         /// <param name="client">client of request</param>
         /// <param name="request">request data</param>
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             byte code = request.GetParameter<byte>("code");
             //if(code==0||code>52)
             //    client.
-            client.ServeResource(ResourceAccessor.GetResource<Stream>(GetResourcePath(code)), MimeTypes.GetMimeType(".png"));
+            response.ServeResource(ResourceAccessor.GetResource<Stream>(GetResourcePath(code)), MimeTypes.GetMimeType(".png"));
         }
     }
 }

@@ -1,13 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
 using System.Windows;
 using System.Windows.Input;
-using NightlyCode.Core.ComponentModel;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
+using StreamRC.Core.Http;
 using StreamRC.Twitch.Chat;
 
 namespace StreamRC.Twitch
@@ -15,36 +10,31 @@ namespace StreamRC.Twitch
     /// <summary>
     /// Interaction logic for TwitchConnector.xaml
     /// </summary>
-    public partial class TwitchConnector : Window {
+    public partial class TwitchConnector : Window, IHttpService {
         readonly TwitchBotModule botmodule;
         readonly TwitchChatModule chatmodule;
+        readonly IHttpServiceModule httpservice;
 
         const int port = 40299;
-        readonly HttpServer server = new HttpServer(IPAddress.Any, port);
-
         /// <summary>
         /// creates a new <see cref="TwitchConnector"/>
         /// </summary>
-        public TwitchConnector(TwitchBotModule botmodule, TwitchChatModule chatmodule) {
+        public TwitchConnector(TwitchBotModule botmodule, TwitchChatModule chatmodule, IHttpServiceModule httpservice) {
             this.botmodule = botmodule;
             this.chatmodule = chatmodule;
+            this.httpservice = httpservice;
             InitializeComponent();
-            server.Request += OnRequest;
-            server.Start();
+            httpservice.AddServiceHandler("/streamrc/twitch/token", this);
         }
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
-            server.Stop();
+            httpservice.RemoveServiceHandler("/streamrc/twitch/token");
         }
 
-        void OnRequest(HttpClient client, HttpRequest request) {
-            client.WriteStatus(200, "OK");
-
-            if (request.Parameters.Any(p => p.Key == "access_token")) {
-                string token = request.GetParameter("access_token");
-                client.WriteHeader("Content-Length", "0");
-                client.EndHeader();
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
+            if (request.HasParameter("access_token")) {
+                string token = request.GetParameter<string>("access_token");
 
                 Dispatcher.Invoke(() => {
                     if(chkBot.IsChecked ?? false)
@@ -53,14 +43,8 @@ namespace StreamRC.Twitch
                     Close();
                 });
             }
-            else if(!request.Parameters.Any()) {
-                string page = ResourceAccessor.GetResource<string>("StreamRC.Twitch.Resources.AuthorisationResponse.html");
-
-                client.WriteHeader("Content-Type", "text/html; charset=utf-8");
-                client.WriteHeader("Content-Length", page.Length.ToString());
-                client.EndHeader();
-                using(StreamWriter writer = new StreamWriter(client.GetStream()))
-                    writer.Write(page);
+            else if(!request.Query.HasKeys()) {
+                response.ServeResource(GetType().Assembly, "StreamRC.Twitch.Resources.AuthorisationResponse.html");
             }
         }
 

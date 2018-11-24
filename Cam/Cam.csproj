@@ -60,15 +60,14 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.1\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Japi, Version=0.8.6758.28565, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+    <Reference Include="NightlyCode.Japi, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Japi.0.8.5\lib\netstandard2.0\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.13.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.13\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.19\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">

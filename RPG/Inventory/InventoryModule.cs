@@ -7,10 +7,10 @@ using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
 using StreamRC.Core;
 using StreamRC.Core.Messages;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Equipment;
-using StreamRC.RPG.Inventory.Commands;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.RPG.Messages;
@@ -52,13 +52,6 @@ namespace StreamRC.RPG.Inventory {
             this.effects = effects;
             database.Database.UpdateSchema<InventoryItem>();
             database.Database.UpdateSchema<FullInventoryItem>();
-
-            stream.RegisterCommandHandler("inventory", new ShowInventoryCommandHandler(this));
-            stream.RegisterCommandHandler("use", new UseItemCommandHandler(this));
-            stream.RegisterCommandHandler("drop", new DropItemCommandHandler(this));
-            stream.RegisterCommandHandler("craft", new CraftItemCommandHandler(this));
-            stream.RegisterCommandHandler("give", new GiveCommandHandler(this));
-
         }
 
         /// <summary>
@@ -180,6 +173,7 @@ namespace StreamRC.RPG.Inventory {
             return database.Database.LoadEntities<InventoryItem>().Where(i => i.PlayerID == playerid && i.ItemID == itemid).Execute().FirstOrDefault();
         }
 
+        [Command("give", "$service", "$channel", "$user")]
         public void DonateItem(string service, string channel, string username, string[] arguments) {
             if(arguments.Length < 2) {
                 stream.SendMessage(service, channel, username, "You have to tell me who to send what. Syntax: !donate <playername> [amount] <item>.");
@@ -255,6 +249,7 @@ namespace StreamRC.RPG.Inventory {
             }
         }
 
+        [Command("craft", "$service", "$channel", "$user")]
         public void CraftItem(string service, string channel, string username, string[] arguments) {
             List<Item> ingredients = new List<Item>();
             int lastindex = 0;
@@ -326,6 +321,7 @@ namespace StreamRC.RPG.Inventory {
             }
         }
 
+        [Command("drop", "$service", "$channel", "$user")]
         public void DropItem(string service, string channel, string user, string[] arguments) {
             if (arguments.Length == 0)
             {
@@ -481,6 +477,7 @@ namespace StreamRC.RPG.Inventory {
             players.UpdatePeeAndPoo(player.UserID, player.Pee, player.Poo, player.Vomit);
         }
 
+        [Command("use", "$service", "$channel", "$user")]
         public void UseItem(string service, string channel, string username, string[] arguments) {
             if (arguments.Length == 0) {
                 stream.SendMessage(service, channel, username, "Well, you have to specify the name of the item to use");
@@ -518,6 +515,7 @@ namespace StreamRC.RPG.Inventory {
             UseItem(channel, user, player, item, arguments.Skip(index).ToArray());
         }
 
+        [Command("inventory", "$service", "$channel", "$user")]
         public void ShowInventory(string service, string channel, string user) {
             Player player = players.GetPlayer(service, user);
             stream.SendMessage(service, channel, user, string.Join(", ", database.Database.LoadEntities<FullInventoryItem>().Where(p=>p.PlayerID==player.UserID).Execute().Select(i=>$"{i.Quantity} x {i.Name}")));

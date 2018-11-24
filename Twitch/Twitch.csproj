@@ -31,20 +31,23 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.1\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Nightlycode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
+    <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.13.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.13\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Irc, Version=0.7.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Irc.0.7.2\lib\netstandard2.0\NightlyCode.Irc.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Net">
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    <Reference Include="NightlyCode.Japi, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Japi.0.8.5\lib\netstandard2.0\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Twitch">
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Twitch.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.19\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    </Reference>
+    <Reference Include="NightlyCode.Twitch, Version=0.5.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Twitch.0.5.6\lib\netstandard2.0\NightlyCode.Twitch.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -97,6 +100,7 @@
     <EmbeddedResource Include="Resources\Glitch_White_RGB.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

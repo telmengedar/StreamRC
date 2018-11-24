@@ -5,6 +5,7 @@ using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Stream.Commands;
 
 namespace StreamRC.Streaming.Polls.Commands {
+
     public class PollInfoCommandHandler : StreamCommandHandler {
         readonly PollModule module;
 
@@ -35,10 +36,6 @@ namespace StreamRC.Streaming.Polls.Commands {
             }
 
             SendMessage(channel, command.User, message.ToString());
-        }
-
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Returns info about an active poll. Syntax: !pollinfo <poll>");
         }
 
         public override ChannelFlags RequiredFlags => ChannelFlags.None;

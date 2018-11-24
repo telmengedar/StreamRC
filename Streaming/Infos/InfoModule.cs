@@ -3,8 +3,8 @@ using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.UI;
-using StreamRC.Streaming.Infos.Commands;
 using StreamRC.Streaming.Infos.Management;
 using StreamRC.Streaming.Stream;
 
@@ -26,10 +26,9 @@ namespace StreamRC.Streaming.Infos {
             this.database = database;
             database.Database.UpdateSchema<Info>();
             mainwindow.AddMenuItem("Manage.Infos", (sender, args) => new InfoManagementWindow(this).Show());
-            stream.RegisterCommandHandler("info", new InfoCommand(this));
-            stream.RegisterCommandHandler("infos", new InfoListCommand(this));
         }
 
+        [Command("info")]
         public Info GetInfo(string key) {
             return database.Database.LoadEntities<Info>().Where(i => i.Key == key).Execute().FirstOrDefault();
         }
@@ -49,6 +48,7 @@ namespace StreamRC.Streaming.Infos {
         /// get all infos from database
         /// </summary>
         /// <returns>enumeration of infos stored in database</returns>
+        [Command("infos")]
         public IEnumerable<Info> GetInfos() {
             return database.Database.LoadEntities<Info>().Execute();
         }

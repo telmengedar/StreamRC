@@ -1,9 +1,16 @@
+using System;
+
 namespace StreamRC.Core.Settings {
 
     /// <summary>
     /// interface for an application settings accessor
     /// </summary>
     public interface ISettings {
+
+        /// <summary>
+        /// triggered when a setting was changed
+        /// </summary>
+        event Action<string, string, object> SettingChanged;
 
         /// <summary>
         /// get a setting of a module

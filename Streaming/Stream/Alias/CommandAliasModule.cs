@@ -69,10 +69,6 @@ namespace StreamRC.Streaming.Stream.Alias {
                 IsWhispered = command.IsWhispered
             });
         }
-
-        void IStreamCommandHandler.ProvideHelp(IChatChannel channel, string user) {
-        }
-
         public ChannelFlags RequiredFlags => ChannelFlags.None;
     }
 }

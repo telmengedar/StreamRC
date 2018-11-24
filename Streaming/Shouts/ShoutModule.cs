@@ -4,6 +4,7 @@ using System.Linq;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 using StreamRC.Core;
+using StreamRC.Core.Scripts;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Videos;
@@ -30,13 +31,18 @@ namespace StreamRC.Streaming.Shouts {
             database.Database.UpdateSchema<Shout>();
             shouts.AddRange(database.Database.LoadEntities<Shout>().Execute());
             stream.ChatMessage += OnChatMessage;
-            stream.RegisterCommandHandler("shouts", new ListShoutsHandler(this));
-            stream.RegisterCommandHandler("shoutinfo", new ShoutInfoHandler(this));
         }
+
+        /// <summary>
+        /// get available shout key terms
+        /// </summary>
+        [Command("shouts")]
+        public IEnumerable<string> ShoutKeys => Shouts.Select(s => s.Term);
 
         /// <summary>
         /// shouts which can get triggered
         /// </summary>
+        
         public IEnumerable<Shout> Shouts
         {
             get
@@ -45,6 +51,17 @@ namespace StreamRC.Streaming.Shouts {
                     foreach(Shout shout in shouts)
                         yield return shout;
             }
+        }
+
+        /// <summary>
+        /// get info about a known shout
+        /// </summary>
+        /// <param name="terms">terms which make up the shout</param>
+        /// <returns>shout meta information</returns>
+        [Command("shoutinfo")]
+        public Shout GetShout(string[] terms) {
+            string term = string.Join(" ", terms);
+            return Shouts.FirstOrDefault(s => s.Term == term);
         }
 
         /// <summary>

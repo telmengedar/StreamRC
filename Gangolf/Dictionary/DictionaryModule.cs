@@ -10,6 +10,7 @@ using NightlyCode.Database.Clients;
 using NightlyCode.Database.Entities;
 using NightlyCode.Database.Entities.Operations;
 using NightlyCode.Database.Entities.Operations.Fields;
+using NightlyCode.Database.Entities.Operations.Prepared;
 using NightlyCode.Database.Info;
 using NightlyCode.Modules;
 
@@ -22,12 +23,47 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
     public class DictionaryModule {
         readonly IEntityManager dictionary = new EntityManager(new DBClient(new SqliteConnection("Data Source=dictionary.db3"), new SQLiteInfo()));
 
+        readonly PreparedLoadEntitiesOperation<Word> loadrandomword;
+        readonly PreparedLoadEntitiesOperation<Word> loadrandomwordexcept;
+        readonly PreparedLoadEntitiesOperation<Word> loadrandomlinkedword;
+        readonly PreparedLoadEntitiesOperation<Word> loadrandomlinkedwordexcept;
 
         /// <summary>
         /// creates a new <see cref="DictionaryModule"/>
         /// </summary>
         public DictionaryModule() {
             dictionary.UpdateSchema<Word>();
+            loadrandomword = dictionary.LoadEntities<Word>()
+                .Where(w => w.Class == DBParameter<WordClass>.Value 
+                            && (w.Attributes & DBParameter<WordAttribute>.Index(2).Data) == DBParameter<WordAttribute>.Index(2).Data)
+                .OrderBy(new OrderByCriteria(DBFunction.Random))
+                .Limit(1)
+                .Prepare();
+
+            loadrandomwordexcept = dictionary.LoadEntities<Word>()
+                .Where(w => w.Class == DBParameter<WordClass>.Value
+                            && (w.Attributes & DBParameter<WordAttribute>.Index(2).Data) == DBParameter<WordAttribute>.Index(2).Data
+                            && !DBParameter<long[]>.Value.Contains(w.ID))
+                .OrderBy(new OrderByCriteria(DBFunction.Random))
+                .Limit(1)
+                .Prepare();
+
+            loadrandomlinkedword = dictionary.LoadEntities<Word>()
+                .Where(w => w.Class == DBParameter<WordClass>.Value
+                            && (w.Attributes & DBParameter<WordAttribute>.Index(2).Data) == DBParameter<WordAttribute>.Index(2).Data
+                            && (w.Group & DBParameter.Int32) != 0)
+                .OrderBy(new OrderByCriteria(DBFunction.Random))
+                .Limit(1)
+                .Prepare();
+
+            loadrandomlinkedwordexcept = dictionary.LoadEntities<Word>()
+                .Where(w => w.Class == DBParameter<WordClass>.Value
+                            && (w.Attributes & DBParameter<WordAttribute>.Index(2).Data) == DBParameter<WordAttribute>.Index(2).Data
+                            && (w.Group & DBParameter.Int32) != 0
+                            && !DBParameter<long[]>.Value.Contains(w.ID))
+                .OrderBy(new OrderByCriteria(DBFunction.Random))
+                .Limit(1)
+                .Prepare();
         }
 
         /// <summary>
@@ -133,6 +169,35 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// <returns>random word which matches the <paramref name="predicate"/></returns>
         public Word GetRandomWord(Expression<Func<Word, bool>> predicate) {
             return dictionary.LoadEntities<Word>().Where(predicate).OrderBy(new OrderByCriteria(DBFunction.Random)).Limit(1).Execute().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// gets a random word which matches the specified class and attributes
+        /// </summary>
+        /// <param name="class">class word has to match</param>
+        /// <param name="attributes">attributes word has to implement</param>
+        /// <param name="except">ids of words not to include in result</param>
+        /// <returns></returns>
+        public Word GetRandomWord(WordClass @class, WordAttribute attributes, params long[] except) {
+            if(except.Length==0)
+                return loadrandomword.Execute(@class, attributes).FirstOrDefault();
+            return loadrandomwordexcept.Execute(@class, attributes, except).FirstOrDefault();
+        }
+
+
+        /// <summary>
+        /// gets a random word which matches the specified class and attributes
+        /// </summary>
+        /// <param name="class">class word has to match</param>
+        /// <param name="attributes">attributes word has to implement</param>
+        /// <param name="group">word group word is linked to</param>
+        /// <param name="except">ids of words not to include in result</param>
+        /// <returns></returns>
+        public Word GetRandomLinkedWord(WordClass @class, WordAttribute attributes, int group, params long[] except)
+        {
+            if (except.Length == 0)
+                return loadrandomlinkedword.Execute(@class, attributes).FirstOrDefault();
+            return loadrandomlinkedwordexcept.Execute(@class, attributes, except).FirstOrDefault();
         }
 
         /// <summary>

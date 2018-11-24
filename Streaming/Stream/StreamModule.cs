@@ -21,11 +21,14 @@ namespace StreamRC.Streaming.Stream {
         readonly UserPermissionModule permissions;
         readonly ScriptModule scripts;
         readonly UserModule users;
+        readonly StreamCommandManager commandmanager;
+
         readonly Dictionary<string, IStreamServiceModule> services = new Dictionary<string, IStreamServiceModule>();
-        readonly StreamCommandManager commandmanager = new StreamCommandManager();
 
         readonly object channellock = new object();
         readonly List<IChatChannel> channels=new List<IChatChannel>();
+
+        readonly DateTime start = DateTime.Now;
 
         /// <summary>
         /// creates a new <see cref="StreamModule"/>
@@ -33,14 +36,24 @@ namespace StreamRC.Streaming.Stream {
         /// <param name="permissions">access to user permissions</param>
         /// <param name="scripts">access to scripts</param>
         /// <param name="users">access to user data</param>
-        public StreamModule(UserPermissionModule permissions, ScriptModule scripts, UserModule users) {
+        public StreamModule(UserPermissionModule permissions, ScriptModule scripts, UserModule users, StreamCommandManager commandmanager) {
             this.permissions = permissions;
             this.scripts = scripts;
             this.users = users;
-            RegisterCommandHandler("commands", new CommandListHandler(commandmanager));
-            RegisterCommandHandler("uptime", new UptimeCommandHandler());
-            RegisterCommandHandler("help", new HelpCommandHandler(commandmanager));
+            this.commandmanager = commandmanager;
         }
+
+        /// <summary>
+        /// time stream is running
+        /// </summary>
+        [Command("uptime")]
+        public TimeSpan Uptime => DateTime.Now - start;
+
+        /// <summary>
+        /// list of supported stream commands
+        /// </summary>
+        [Command("commands")]
+        public IEnumerable<string> Commands => commandmanager.Commands;
 
         /// <summary>
         /// get a channel which matches the filters
@@ -78,6 +91,7 @@ namespace StreamRC.Streaming.Stream {
                 return channels.Where(c => (c.Flags & included) == included && (c.Flags & excluded) == ChannelFlags.None);
         }
 
+        /// <inheritdoc />
         public void AddChannel(IChatChannel channel) {
             Logger.Info(this, $"Adding channel '{channel.Name}' from connected channel list");
             lock (channellock) {
@@ -347,7 +361,14 @@ namespace StreamRC.Streaming.Stream {
         /// </summary>
         /// <param name="command">command for which to register handler</param>
         /// <param name="handler">handler used to process commands</param>
+        public void RegisterCommandHandler(string command, Type handler) {
+            Logger.Info(this, $"Adding command '{command}' to stream");
+            commandmanager.AddCommandHandler(command, handler);
+        }
+
+        /// <inheritdoc />
         public void RegisterCommandHandler(string command, IStreamCommandHandler handler) {
+            Logger.Info(this, $"Adding command '{command}' to stream");
             commandmanager.AddCommandHandler(command, handler);
         }
 

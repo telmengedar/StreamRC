@@ -10,6 +10,7 @@ using NightlyCode.Twitch.Api;
 using NightlyCode.Twitch.Chat;
 using NightlyCode.Twitch.V5;
 using StreamRC.Core;
+using StreamRC.Core.Http;
 using StreamRC.Core.Settings;
 using StreamRC.Core.Timer;
 using StreamRC.Core.UI;
@@ -61,7 +62,7 @@ namespace StreamRC.Twitch.Chat {
         /// creates a new <see cref="TwitchBotModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public TwitchBotModule(IMainWindow mainwindow, TwitchChatModule chatmodule, StreamModule stream, DatabaseModule database, UserModule users, ISettings settings, TimerModule timer, ImageCacheModule imagecache) {
+        public TwitchBotModule(IMainWindow mainwindow, TwitchChatModule chatmodule, StreamModule stream, DatabaseModule database, UserModule users, ISettings settings, TimerModule timer, ImageCacheModule imagecache, IHttpServiceModule httpservice) {
             this.chatmodule = chatmodule;
             this.stream = stream;
             this.usermodule = users;
@@ -82,7 +83,7 @@ namespace StreamRC.Twitch.Chat {
 
             stream.AddService(TwitchConstants.ServiceKey, this);
 
-            mainwindow.AddMenuItem("Profiles.Twitch.Connect", (sender, args) => new TwitchConnector(this, chatmodule).ShowDialog());
+            mainwindow.AddMenuItem("Profiles.Twitch.Connect", (sender, args) => new TwitchConnector(this, chatmodule, httpservice).ShowDialog());
 
             botname = settings.Get<string>(this, "botname", null);
             accesstoken = settings.Get<string>(this, "token", null);

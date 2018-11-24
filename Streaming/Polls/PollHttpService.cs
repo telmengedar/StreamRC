@@ -1,11 +1,8 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 
 namespace StreamRC.Streaming.Polls {
@@ -13,9 +10,9 @@ namespace StreamRC.Streaming.Polls {
     [Module(AutoCreate = true)]
     public class PollHttpService : IHttpService {
         readonly PollModule polls;
-        PollHttpResponse response;
+        PollHttpResponse httpresponse;
 
-        public PollHttpService(HttpServiceModule httpmodule, PollModule polls) {
+        public PollHttpService(IHttpServiceModule httpmodule, PollModule polls) {
             this.polls = polls;
             httpmodule.AddServiceHandler("/streamrc/polls", this);
             httpmodule.AddServiceHandler("/streamrc/polls.css", this);
@@ -29,12 +26,12 @@ namespace StreamRC.Streaming.Polls {
         }
 
         void PreparePollData(Poll poll) {
-            if (poll.Name == response?.Name)
+            if (poll.Name == httpresponse?.Name)
                 return;
 
             PollDiagramData diagramdata = new PollDiagramData(polls.GetWeightedVotes(poll.Name));
             diagramdata.AddOptions(polls.GetOptions(poll.Name));
-            response = new PollHttpResponse
+            httpresponse = new PollHttpResponse
             {
                 Name = poll.Name,
                 Description = poll.Description,
@@ -46,62 +43,57 @@ namespace StreamRC.Streaming.Polls {
             PreparePollData(poll);
         }
 
-        public void ProcessRequest(HttpClient client, HttpRequest request) {
+        public void ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/polls":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.html"), ".html");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.html"), ".html");
                     break;
                 case "/streamrc/polls.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.css"), ".css");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.css"), ".css");
                     break;
                 case "/streamrc/polls.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.js"), ".js");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls.js"), ".js");
                     break;
                 case "/streamrc/polls-h":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.html"), ".html");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.html"), ".html");
                     break;
                 case "/streamrc/polls-h.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.css"), ".css");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.css"), ".css");
                     break;
                 case "/streamrc/polls-h.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.js"), ".js");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Polls.polls-h.js"), ".js");
                     break;
                 case "/streamrc/polls/data":
-                    ServePollData(request, client);
+                    ServePollData(request, response);
                     break;
             }
         }
 
-        void ServePollData(HttpRequest request, HttpClient client) {
-            if(response == null) {
-                if(request.GetParameter<bool>("init")) {
+        void ServePollData(IHttpRequest request, IHttpResponse response) {
+            if (httpresponse == null) {
+                if (request.GetParameter<bool>("init")) {
                     Poll poll = polls.GetPolls().RandomItem(RNG.XORShift64);
-                    if(poll != null)
+                    if (poll != null)
                         PreparePollData(poll);
                 }
 
-                if(response==null) {
-                    client.WriteStatus(200, "OK");
-                    client.WriteHeader("Content-Length", "0");
-                    client.EndHeader();
+                if (httpresponse == null)
                     return;
-                }
             }
 
             int count = request.GetParameter<int>("items");
-            if(count == 0) count = 5;
+            if (count == 0) count = 5;
 
-            using(MemoryStream ms = new MemoryStream()) {
-                PollHttpResponse clientresponse = new PollHttpResponse {
-                    Name = response.Name,
-                    Description = response.Description,
-                    Items = response.Items.Take(count).ToArray()
-                };
+            PollHttpResponse clientresponse = new PollHttpResponse {
+                Name = httpresponse.Name,
+                Description = httpresponse.Description,
+                Items = httpresponse.Items.Take(count).ToArray()
+            };
 
-                JSON.Write(clientresponse, ms);
-                client.ServeData(ms.ToArray(), ".json");
-            }
-            response = null;
+            response.ContentType = MimeTypes.GetMimeType(".json");
+            JSON.Write(clientresponse, response.Content);
+
+            httpresponse = null;
         }
     }
 }

@@ -2,10 +2,10 @@
 using System.Globalization;
 using System.Linq;
 using NightlyCode.Modules;
+using StreamRC.Core.Scripts;
 using StreamRC.Core.Timer;
 using StreamRC.RPG.Adventure;
 using StreamRC.RPG.Effects.Battle;
-using StreamRC.RPG.Effects.Commands;
 using StreamRC.RPG.Effects.Modifiers;
 using StreamRC.RPG.Effects.Status;
 using StreamRC.RPG.Inventory;
@@ -33,7 +33,6 @@ namespace StreamRC.RPG.Effects {
             this.users = users;
             this.players = players;
             this.adventure = adventure;
-            stream.RegisterCommandHandler("effects", new ListEffectsCommandHandler(this));
             timer.AddService(this, 1.0);
         }
 
@@ -119,6 +118,7 @@ namespace StreamRC.RPG.Effects {
             }
         }
 
+        [Command("effects")]
         public void ListEffects(string service, string channel, string user) {
             string effects = string.Join(", ", GetActivePlayerEffects(players.GetExistingPlayer(service, user).UserID));
             if(string.IsNullOrEmpty(effects))

@@ -5,12 +5,11 @@ using NightlyCode.Modules;
 using NightlyCode.Modules.Scripts;
 
 namespace StreamRC.Core.Scripts {
-
     /// <summary>
     /// provides help for scripts
     /// </summary>
     [Module(Key="scripts")]
-    public class ScriptModule {
+    public class ScriptModule : IScriptModule {
         readonly IModuleContext context;
         readonly ScriptParser scriptparser;
 
@@ -52,9 +51,10 @@ namespace StreamRC.Core.Scripts {
         /// executes a script
         /// </summary>
         /// <param name="script">script data</param>
+        /// <param name="variablehost">host containing script variables</param>
         /// <returns>result of executed script</returns>
-        public object Execute(string script) {
-            IScriptToken token = scriptparser.Parse(script);
+        public object Execute(string script, IScriptVariableHost variablehost=null) {
+            IScriptToken token = scriptparser.Parse(script, variablehost);
             return token.Execute();
         }
     }

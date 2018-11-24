@@ -7,23 +7,26 @@ using NightlyCode.Modules;
 using StreamRC.Core.Settings;
 
 namespace StreamRC.Core.Timer {
-
     /// <summary>
     /// module providing a periodic timer
     /// </summary>
     [Module(AutoCreate = true)]
-    public class TimerModule {
+    public class TimerModule : ITimerModule {
         readonly ISettings settings;
 
         readonly PeriodicTimer timer=new PeriodicTimer();
         DateTime lastexecution = DateTime.Now;
 
         readonly object timerlock = new object();
+        readonly object lateaddlock = new object();
+
         readonly HashSet<ITimerService> services=new HashSet<ITimerService>();
         TimeSpan resolution;
 
         readonly List<TimerEntry> intervaltable=new List<TimerEntry>();
         readonly List<TimerEntry> lateadd = new List<TimerEntry>();
+
+        bool processing;
 
         /// <summary>
         /// creates a new <see cref="TimerModule"/>
@@ -39,6 +42,8 @@ namespace StreamRC.Core.Timer {
         void OnTimer() {
             double time = (DateTime.Now - lastexecution).TotalSeconds;
             lastexecution = DateTime.Now;
+
+            processing = true;
             lock (timerlock) {
                 foreach(ITimerService service in services) {
                     try {
@@ -62,13 +67,16 @@ namespace StreamRC.Core.Timer {
                     }
                 }
 
-                if(lateadd.Count > 0) {
-                    foreach(TimerEntry entry in lateadd)
-                        intervaltable.Add(entry);
-                    lateadd.Clear();
+                lock (lateaddlock) {
+                    if (lateadd.Count > 0) {
+                        foreach (TimerEntry entry in lateadd)
+                            intervaltable.Add(entry);
+                        lateadd.Clear();
+                    }
                 }
+
+                processing = false;
             }
-            
         }
 
         /// <summary>
@@ -87,10 +95,6 @@ namespace StreamRC.Core.Timer {
             }
         }
 
-        public void LateAdd(ITimerService service, double interval=0.0) {
-            lateadd.Add(new TimerEntry(service, interval));
-        }
-
         /// <summary>
         /// adds a service to the timer
         /// </summary>
@@ -100,6 +104,13 @@ namespace StreamRC.Core.Timer {
         /// <param name="service">service to be executed regularly</param>
         /// <param name="interval">interval in which to execute service (optional)</param>
         public void AddService(ITimerService service, double interval=0.0) {
+
+            if (processing) {
+                lock (lateaddlock) {
+                    lateadd.Add(new TimerEntry(service, interval));
+                }
+            }
+
             lock(timerlock) {
                 if(interval > 0.0)
                     intervaltable.Add(new TimerEntry(service, interval));

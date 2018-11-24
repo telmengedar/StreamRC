@@ -1,17 +1,17 @@
 ﻿using System;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Math;
-using NightlyCode.StreamRC.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Messages;
 
 namespace StreamRC.RPG.Players.Skills.Monster {
-    public class SuckSkill : MonsterSkill {
-        readonly Context context;
 
-        public SuckSkill(Context context, int level) {
+    public class SuckSkill : MonsterSkill {
+        readonly RPGMessageModule messages;
+
+        public SuckSkill(int level, RPGMessageModule messages) {
+            this.messages = messages;
             Level = level;
-            this.context = context;
         }
 
         public override string Name => "Suck";
@@ -33,7 +33,7 @@ namespace StreamRC.RPG.Players.Skills.Monster {
 
         public override void Process(IBattleEntity attacker, IBattleEntity target) {
             float hitprobability = MathCore.Sigmoid(GetModifiedDexterity(attacker) - target.Dexterity, 1.1f, 0.68f);
-            RPGMessageBuilder message = context.GetModule<RPGMessageModule>().Create().BattleActor(attacker).Text(" tries to bite ").BattleActor(target);
+            RPGMessageBuilder message = messages.Create().BattleActor(attacker).Text(" tries to bite ").BattleActor(target);
 
             if(RNG.XORShift64.NextFloat() < hitprobability) {
 

@@ -73,7 +73,7 @@ namespace StreamRC.Youtube {
                 YoutubeChatChannel chatchannel = new YoutubeChatChannel(service, broadcast);
                 activestreams.Add(chatchannel);
                 stream.AddChannel(chatchannel);
-                timer.LateAdd(chatchannel);
+                timer.AddService(chatchannel);
             }
 
             string[] activeids = response.Items.Select(b => b.Snippet.LiveChatId).ToArray();

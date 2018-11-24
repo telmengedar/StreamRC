@@ -37,21 +37,17 @@
       <HintPath>..\packages\Microsoft.Data.Sqlite.Core.2.1.0\lib\netstandard2.0\Microsoft.Data.Sqlite.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.1\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\NightlyCode.Database.dll</HintPath>
+    <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Japi, Version=0.8.6412.17504, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
+    <Reference Include="NightlyCode.Japi, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Japi.0.8.5\lib\netstandard2.0\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.13.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.13\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
-    </Reference>
-    <Reference Include="NightlyCode.Net">
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.19\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -82,10 +78,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DatabaseModule.cs" />
+    <Compile Include="Http\HttpExtensions.cs" />
+    <Compile Include="Http\HttpRequest.cs" />
+    <Compile Include="Http\HttpSysResponse.cs" />
     <Compile Include="Http\HttpServiceExtensions.cs" />
-    <Compile Include="Http\HttpServiceModule.cs" />
+    <Compile Include="Http\HttpSysExtensions.cs" />
+    <Compile Include="Http\HttpSysServiceModule.cs" />
+    <Compile Include="Http\IHttpRequest.cs" />
+    <Compile Include="Http\IHttpResponse.cs" />
     <Compile Include="Http\IHttpService.cs" />
+    <Compile Include="Http\IHttpServiceModule.cs" />
+    <Compile Include="Http\MimeTypes.cs" />
     <Compile Include="IChatMessageSender.cs" />
+    <Compile Include="IDatabaseModule.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
@@ -98,10 +103,14 @@
     <Compile Include="Messages\MessageExtensions.cs" />
     <Compile Include="Messages\MessageModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scripts\CommandAttribute.cs" />
+    <Compile Include="Scripts\IScriptModule.cs" />
+    <Compile Include="Scripts\ModuleCommandAttribute.cs" />
     <Compile Include="Scripts\ScriptModule.cs" />
     <Compile Include="Settings\ISettings.cs" />
     <Compile Include="Settings\Setting.cs" />
     <Compile Include="Settings\SettingsModule.cs" />
+    <Compile Include="Timer\ITimerModule.cs" />
     <Compile Include="Timer\ITimerService.cs" />
     <Compile Include="Timer\TimerEntry.cs" />
     <Compile Include="Timer\TimerModule.cs" />

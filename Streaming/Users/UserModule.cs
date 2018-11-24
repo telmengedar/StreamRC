@@ -4,8 +4,6 @@ using System.Linq;
 using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
@@ -31,7 +29,7 @@ namespace StreamRC.Streaming.Users {
         /// creates a new <see cref="UserModule"/>
         /// </summary>
         /// <param name="context"></param>
-        public UserModule(DatabaseModule database, HttpServiceModule httpservice, TimerModule timer) {
+        public UserModule(DatabaseModule database, IHttpServiceModule httpservice, TimerModule timer) {
             this.database = database;
             database.Database.UpdateSchema<User>();
             httpservice.AddServiceHandler("/streamrc/users/flag", this);
@@ -317,16 +315,16 @@ namespace StreamRC.Streaming.Users {
             }
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/users/flag":
-                    ServeUserFlagImage(client, (UserFlags)request.GetParameter<int>("id"));
+                    ServeUserFlagImage(response, (UserFlags)request.GetParameter<int>("id"));
                     break;
             }
         }
 
-        void ServeUserFlagImage(HttpClient client, UserFlags flag) {
-            client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>($"StreamRC.Streaming.Users.Flags.{flag.ToString().ToLower()}.png"), ".png");
+        void ServeUserFlagImage(IHttpResponse response, UserFlags flag) {
+            response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>($"StreamRC.Streaming.Users.Flags.{flag.ToString().ToLower()}.png"), ".png");
         }
     }
 }

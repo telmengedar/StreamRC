@@ -82,10 +82,6 @@ namespace StreamRC.Gambling.BlackJack {
             message.Send();
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Splits the current hand of a black jack game.");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.Game;
     }
 }

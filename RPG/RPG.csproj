@@ -31,11 +31,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.0\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.1\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Nightlycode.Database, Version=0.7.15.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Database.0.7.15\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
+    <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
     </Reference>
     <Reference Include="NightlyCode.Japi">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Japi.dll</HintPath>
@@ -43,12 +43,8 @@
     <Reference Include="NightlyCode.Math">
       <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Math.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.13.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.13\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
-    </Reference>
-    <Reference Include="NightlyCode.Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(DevDir)\Compiled\Library\NightlyCode.Net.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.19\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -66,9 +62,6 @@
     <Compile Include="Adventure\AdventureModule.cs" />
     <Compile Include="Adventure\AdventureStatus.cs" />
     <Compile Include="Adventure\AwarenessContext.cs" />
-    <Compile Include="Adventure\Commands\ExploreCommandHandler.cs" />
-    <Compile Include="Adventure\Commands\RescuePlayerCommandHandler.cs" />
-    <Compile Include="Adventure\Commands\RestCommandHandler.cs" />
     <Compile Include="Adventure\Exploration\ExplorationLogic.cs" />
     <Compile Include="Adventure\Exploration\FoundItem.cs" />
     <Compile Include="Adventure\IAdventureLogic.cs" />
@@ -89,7 +82,6 @@
     <Compile Include="Adventure\SpiritRealm\SpiritRealmLogic.cs" />
     <Compile Include="Data\AdventureColors.cs" />
     <Compile Include="Effects\BattleEffectType.cs" />
-    <Compile Include="Effects\Commands\ListEffectsCommandHandler.cs" />
     <Compile Include="Effects\EffectMessage.cs" />
     <Compile Include="Effects\EffectResult.cs" />
     <Compile Include="Effects\EffectResultType.cs" />
@@ -109,26 +101,12 @@
     <Compile Include="Effects\Status\PlaqueEffect.cs" />
     <Compile Include="Emotions\EmotionImageModule.cs" />
     <Compile Include="Emotions\EmotionType.cs" />
-    <Compile Include="Equipment\Commands\CompareEquipmentCommandHandler.cs" />
-    <Compile Include="Equipment\Commands\EquipCommandHandler.cs" />
-    <Compile Include="Equipment\Commands\ShowEquipmentCommandHandler.cs" />
-    <Compile Include="Equipment\Commands\TakeoffCommandHandler.cs" />
-    <Compile Include="Inventory\Commands\CraftItemCommandHandler.cs" />
-    <Compile Include="Inventory\Commands\DropItemCommandHandler.cs" />
-    <Compile Include="Inventory\Commands\GiveCommandHandler.cs" />
-    <Compile Include="Inventory\Commands\ShowInventoryCommandHandler.cs" />
-    <Compile Include="Inventory\Commands\UseItemCommandHandler.cs" />
     <Compile Include="Inventory\IItemCommandModule.cs" />
     <Compile Include="Inventory\ItemUseContext.cs" />
     <Compile Include="Inventory\ItemUseException.cs" />
-    <Compile Include="Items\Commands\ItemInfoCommandHandler.cs" />
     <Compile Include="Messages\GameMessageModule.cs" />
     <Compile Include="Items\ItemImageModule.cs" />
     <Compile Include="Messages\RPGMessageBuilder.cs" />
-    <Compile Include="Players\Commands\CastSpellCommandHandler.cs" />
-    <Compile Include="Players\Commands\CharacterStatsCommandHandler.cs" />
-    <Compile Include="Players\Commands\HealCommandHandler.cs" />
-    <Compile Include="Players\Commands\SkillListCommandHandler.cs" />
     <Compile Include="Players\ConvenienceModule.cs" />
     <Compile Include="Players\LevelEntry.cs" />
     <Compile Include="Data\StringExtensions.cs" />
@@ -170,15 +148,10 @@
     <Compile Include="Players\Skills\SkillModule.cs" />
     <Compile Include="Players\Skills\SkillType.cs" />
     <Compile Include="Properties\Annotations.cs" />
-    <Compile Include="Requests\Command\RequestListCommandHandler.cs" />
     <Compile Include="Requests\GameRequest.cs" />
     <Compile Include="Requests\GameRequestModule.cs" />
     <Compile Include="Messages\RPGMessageModule.cs" />
     <Compile Include="Shops\AdvisedItem.cs" />
-    <Compile Include="Shops\Commands\AdviseCommandHandler.cs" />
-    <Compile Include="Shops\Commands\BuyCommandHandler.cs" />
-    <Compile Include="Shops\Commands\SellCommandHandler.cs" />
-    <Compile Include="Shops\Commands\ShowStockCommandHandler.cs" />
     <Compile Include="Shops\FullShopItem.cs" />
     <Compile Include="Shops\MessageEvaluator.cs" />
     <Compile Include="Shops\ShopImageModule.cs" />
@@ -303,6 +276,7 @@
     <EmbeddedResource Include="Adventure\MonsterBattle\Monsters\Definitions\snakelevels.csv" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

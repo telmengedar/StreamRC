@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Data;
 using NightlyCode.Modules;
@@ -12,12 +13,14 @@ namespace StreamRC.RPG.Players {
     /// </summary>
     [Module]
     public class PlayerLevelModule {
+        readonly DatabaseModule database;
 
         /// <summary>
         /// creates a new <see cref="PlayerLevelModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
         public PlayerLevelModule(DatabaseModule database) {
+            this.database = database;
             database.Database.UpdateSchema<LevelEntry>();
             foreach (LevelEntry entry in DataTable.ReadCSV(ResourceAccessor.GetResource<Stream>($"{GetType().Namespace}.leveltable.csv"), '\t', true).Deserialize<LevelEntry>())
             {

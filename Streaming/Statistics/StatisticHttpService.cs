@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
 using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
 using StreamRC.Streaming.Games;
@@ -28,7 +24,7 @@ namespace StreamRC.Streaming.Statistics
         /// creates a new <see cref="StatisticHttpService"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public StatisticHttpService(HttpServiceModule httpservice, GameTimeModule gametime, StatisticModule statistics) {
+        public StatisticHttpService(IHttpServiceModule httpservice, GameTimeModule gametime, StatisticModule statistics) {
             this.gametime = gametime;
             this.statistics = statistics;
             httpservice.AddServiceHandler("/streamrc/statistics", this);
@@ -38,30 +34,26 @@ namespace StreamRC.Streaming.Statistics
             httpservice.AddServiceHandler("/streamrc/statistics/image", this);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/statistics":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.html"), ".html");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.html"), ".html");
                     break;
                 case "/streamrc/statistics.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.css"), ".css");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.css"), ".css");
                     break;
                 case "/streamrc/statistics.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.js"), ".js");
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Statistics.statistics.js"), ".js");
                     break;
                 case "/streamrc/statistics/data":
-                    ServeMessages(client, request);
+                    ServeMessages(request, response);
                     break;
                 case "/streamrc/statistics/image":
-                    ServerImage(client, request);
+                    response.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>($"StreamRC.Streaming.Statistics.Icons.{request.GetParameter<string>("name")}.png"), ".png");
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
-        }
-
-        void ServerImage(HttpClient client, HttpRequest request) {
-            client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>($"StreamRC.Streaming.Statistics.Icons.{request.GetParameter<string>("name")}.png"), ".png");
         }
 
         IEnumerable<MessageChunk> CreateStatisticChunks(Statistic statistic) {
@@ -100,14 +92,12 @@ namespace StreamRC.Streaming.Statistics
             };
         }
 
-        void ServeMessages(HttpClient client, HttpRequest request) {
-            using(MemoryStream ms = new MemoryStream()) {
-                StatisticsHttpResponse response = new StatisticsHttpResponse {
-                    Statistics = statistics.Get().Select(CreateStatistic).ToArray()
-                };
-                JSON.Write(response, ms);
-                client.ServeData(ms.ToArray(), ".json");
-            }
+        void ServeMessages(IHttpRequest request, IHttpResponse response) {
+            StatisticsHttpResponse httpresponse = new StatisticsHttpResponse {
+                Statistics = statistics.Get().Select(CreateStatistic).ToArray()
+            };
+            response.ContentType = MimeTypes.GetMimeType(".json");
+            JSON.Write(httpresponse, response.Content);
         }
     }
 }

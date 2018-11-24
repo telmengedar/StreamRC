@@ -13,7 +13,7 @@ using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
 using StreamRC.Core;
-using StreamRC.RPG.Items.Commands;
+using StreamRC.Core.Scripts;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.Streaming.Stream;
 
@@ -39,7 +39,6 @@ namespace StreamRC.RPG.Items {
             this.items = items;
             this.stream = stream;
 
-            stream.RegisterCommandHandler("iteminfo", new ItemInfoCommandHandler(this));
             Task.Run(() => InitializeItems());
 
         }
@@ -200,6 +199,7 @@ namespace StreamRC.RPG.Items {
                 Logger.Info(this, "Item Information changed", log.ToString());
         }
 
+        [Command("iteminfo", "$service", "$channel", "$user")]
         public void PrintItemInfo(string service, string channel, string user, string[] arguments) {
             if(arguments.Length == 0) {
                 stream.SendMessage(service, channel, user, "You have to provide the name of the item to get info about.");

@@ -1,4 +1,5 @@
-﻿using NightlyCode.Core.Collections;
+﻿using System.Threading.Tasks;
+using NightlyCode.Core.Collections;
 using NightlyCode.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.Core.TTS;
@@ -23,12 +24,14 @@ namespace StreamRC.Streaming.Chat {
         /// sends a game message to all channels
         /// </summary>
         /// <param name="message">message to send</param>
-        /// <param name="flags">flags for channels to match to send a message to</param>
+        /// <param name="flags">flags for channels to match to send a message toB</param>
         public void SendMessage(Message message, ChannelFlags flags=ChannelFlags.None, string tts=null)
         {
             messagemodule.AddMessage(message);
             if (flags != ChannelFlags.None)
-                streammodule.GetChannels(flags).Foreach(c => c.SendMessage(message.ToString()));
+                foreach(IChatChannel channel in streammodule.GetChannels(flags))
+                    Task.Run(()=> channel.SendMessage(message.ToString()));
+
             if (tts != null)
                 ttsmodule.Speak(message.ToString(), tts);
         }

@@ -49,7 +49,7 @@ namespace RPG.Tests
             }
         }
 
-        [TestFixtureSetUp]
+        [SetUp]
         public void Setup() {
             Items = DataTable.ReadCSV(ResourceAccessor.GetResource<Stream>(typeof(Item).Assembly, typeof(Item).Namespace + ".items.csv"), '\t', true).Deserialize<Item>().ToArray();
             Levels = DataTable.ReadCSV(ResourceAccessor.GetResource<Stream>(typeof(LevelEntry).Assembly, $"{typeof(LevelEntry).Namespace}.leveltable.csv"), '\t', true).Deserialize<LevelEntry>().ToArray();

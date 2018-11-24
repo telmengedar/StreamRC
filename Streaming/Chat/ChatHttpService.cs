@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
@@ -40,7 +37,7 @@ namespace StreamRC.Streaming.Chat {
         /// <param name="timer">access to timer module</param>
         /// <param name="messages">access to system messages</param>
         /// <param name="users">access to user information</param>
-        public ChatHttpService(IStreamModule streammodule, HttpServiceModule httpservice, ImageCacheModule imagecache, TimerModule timer, MessageModule messages, UserModule users) {
+        public ChatHttpService(IStreamModule streammodule, IHttpServiceModule httpservice, ImageCacheModule imagecache, TimerModule timer, MessageModule messages, UserModule users) {
             this.imagecache = imagecache;
             this.users = users;
             httpservice.AddServiceHandler("/streamrc/chat", this);
@@ -134,9 +131,9 @@ namespace StreamRC.Streaming.Chat {
                 yield return new MessageChunk(MessageChunkType.Emoticon, imagecache.GetImageByUrl(message.AvatarLink).ToString());
 
             if((users.GetUser(message.Service, message.User).Flags & UserFlags.Brainy) == UserFlags.Brainy)
-                yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=4");
+                yield return new MessageChunk(MessageChunkType.Emoticon, "http://localhost/streamrc/users/flag?id=4");
             if ((users.GetUser(message.Service, message.User).Flags & UserFlags.Racist) == UserFlags.Racist)
-                yield return new MessageChunk(MessageChunkType.Emoticon, $"http://localhost/streamrc/users/flag?id=8");
+                yield return new MessageChunk(MessageChunkType.Emoticon, "http://localhost/streamrc/users/flag?id=8");
 
             yield return new MessageChunk(MessageChunkType.Text, message.User, message.UserColor.FixColor(), FontWeight.Bold);
         } 
@@ -160,37 +157,38 @@ namespace StreamRC.Streaming.Chat {
                 yield return new MessageChunk(MessageChunkType.Text, message.Substring(laststart));
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/chat":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.html"), ".html");
+                    response.ContentType = MimeTypes.GetMimeType(".html");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.html").CopyTo(response.Content);
                     break;
                 case "/streamrc/chat.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.css"), ".css");
+                    response.ContentType = MimeTypes.GetMimeType(".css");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.css").CopyTo(response.Content);
                     break;
                 case "/streamrc/chat.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.js"), ".js");
+                    response.ContentType = MimeTypes.GetMimeType(".js");
+                    ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Chat.chat.js").CopyTo(response.Content);
                     break;
                 case "/streamrc/chat/messages":
-                    ServeMessages(client, request);
+                    ServeMessages(request, response);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
         }
 
-        void ServeMessages(HttpClient client, HttpRequest request) {
-            DateTime messagethreshold = Converter.Convert<DateTime>(Converter.Convert<long>(request.GetParameter("timestamp")));
+        void ServeMessages(IHttpRequest request, IHttpResponse response) {
+            DateTime messagethreshold = Converter.Convert<DateTime>(Converter.Convert<long>(request.Query["timestamp"]));
 
-            lock(messagelock) {
-                using(MemoryStream ms = new MemoryStream()) {
-                    ChatHttpResponse response = new ChatHttpResponse {
-                        Timestamp = DateTime.Now,
-                        Messages = messages.Where(m => m.Timestamp > messagethreshold).ToArray()
-                    };
-                    JSON.Write(response, ms);
-                    client.ServeData(ms.ToArray(), ".json");
-                }
+            lock (messagelock) {
+                ChatHttpResponse httpresponse = new ChatHttpResponse {
+                    Timestamp = DateTime.Now,
+                    Messages = messages.Where(m => m.Timestamp > messagethreshold).ToArray()
+                };
+                response.ContentType = MimeTypes.GetMimeType(".json");
+                JSON.Write(httpresponse, response.Content);
             }
         }
 

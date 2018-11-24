@@ -43,10 +43,6 @@ namespace StreamRC.Streaming.Polls.Commands {
             SendMessage(channel, command.User, message);
         }
 
-        public override void ProvideHelp(IChatChannel channel, string user) {
-            SendMessage(channel, user, "Returns the results for a poll in chat. Syntax: !pollresult <poll>");
-        }
-
         public override ChannelFlags RequiredFlags => ChannelFlags.None;
     }
 }

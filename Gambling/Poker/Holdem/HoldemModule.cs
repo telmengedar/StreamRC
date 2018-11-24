@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Dependencies;
-using NightlyCode.StreamRC.Modules;
+using StreamRC.Core.Scripts;
 using StreamRC.Gambling.Cards;
 using StreamRC.RPG.Messages;
 using StreamRC.RPG.Players;
@@ -11,23 +10,22 @@ using StreamRC.Streaming.Users;
 namespace StreamRC.Gambling.Poker.Holdem {
 
     /// <summary>
-    /// 
+    /// provides a casino holdem game to the stream
     /// </summary>
-    [Dependency(nameof(CardImageModule), SpecifierType.Type)]
-    [Dependency(nameof(RPGMessageModule), SpecifierType.Type)]
-    [Dependency(nameof(PlayerModule), SpecifierType.Type)]
-    [Dependency(nameof(UserModule), SpecifierType.Type)]
-    [Dependency(nameof(StreamModule), SpecifierType.Type)]
-    public class HoldemModule : IRunnableModule {
-        readonly Context context;
+    [Module]
+    [ModuleCommand("holdem", typeof(HoldemCommand))]
+    [ModuleCommand("call", typeof(CallCommand))]
+    [ModuleCommand("fold", typeof(FoldCommand))]
+    public class HoldemModule {
+        readonly UserModule users;
         readonly Dictionary<long, HoldemGame> games = new Dictionary<long, HoldemGame>();
 
         /// <summary>
         /// creates a new <see cref="HoldemGame"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public HoldemModule(Context context) {
-            this.context = context;
+        public HoldemModule(UserModule users, IStreamModule stream, PlayerModule players, RPGMessageModule messages, CardImageModule cardimages) {
+            this.users = users;
         }
 
         /// <summary>
@@ -37,7 +35,7 @@ namespace StreamRC.Gambling.Poker.Holdem {
         /// <param name="user">name of user</param>
         /// <returns>game registered for user</returns>
         public HoldemGame GetGame(string service, string user) {
-            return GetGame(context.GetModule<UserModule>().GetUserID(service, user));
+            return GetGame(users.GetUserID(service, user));
         }
 
         /// <summary>
@@ -46,8 +44,7 @@ namespace StreamRC.Gambling.Poker.Holdem {
         /// <param name="userid">id of user</param>
         /// <returns>game registered for user</returns>
         public HoldemGame GetGame(long userid) {
-            HoldemGame game;
-            games.TryGetValue(userid, out game);
+            games.TryGetValue(userid, out HoldemGame game);
             return game;
         }
 
@@ -59,7 +56,7 @@ namespace StreamRC.Gambling.Poker.Holdem {
         /// <param name="bet">bet amount for game actions</param>
         /// <returns>new holdem game</returns>
         public HoldemGame CreateGame(string service, string user, int bet) {
-            return CreateGame(context.GetModule<UserModule>().GetUserID(service, user), bet);
+            return CreateGame(users.GetUserID(service, user), bet);
         }
 
         /// <summary>
@@ -89,7 +86,7 @@ namespace StreamRC.Gambling.Poker.Holdem {
         /// <param name="service">service user is registered to</param>
         /// <param name="user">name of user</param>
         public void RemoveGame(string service, string user) {
-            RemoveGame(context.GetModule<UserModule>().GetUserID(service, user));
+            RemoveGame(users.GetUserID(service, user));
         }
 
         /// <summary>
@@ -98,18 +95,6 @@ namespace StreamRC.Gambling.Poker.Holdem {
         /// <param name="userid">id of user of which to remove the game</param>
         public void RemoveGame(long userid) {
             games.Remove(userid);
-        }
-
-        void IRunnableModule.Start() {
-            context.GetModule<StreamModule>().RegisterCommandHandler("holdem", new HoldemCommand(this, context.GetModule<PlayerModule>(), context.GetModule<RPGMessageModule>(), context.GetModule<CardImageModule>()));
-            context.GetModule<StreamModule>().RegisterCommandHandler("call", new CallCommand(this, context.GetModule<PlayerModule>(), context.GetModule<RPGMessageModule>(), context.GetModule<CardImageModule>()));
-            context.GetModule<StreamModule>().RegisterCommandHandler("fold", new FoldCommand(this, context.GetModule<PlayerModule>(), context.GetModule<RPGMessageModule>(), context.GetModule<CardImageModule>()));
-        }
-
-        void IRunnableModule.Stop() {
-            context.GetModule<StreamModule>().UnregisterCommandHandler("holdem");
-            context.GetModule<StreamModule>().UnregisterCommandHandler("call");
-            context.GetModule<StreamModule>().UnregisterCommandHandler("fold");
         }
     }
 }

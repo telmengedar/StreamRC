@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using NightlyCode.Core.ComponentModel;
 using NightlyCode.Core.Conversion;
 using NightlyCode.Japi.Json;
 using NightlyCode.Modules;
-using NightlyCode.Net.Http;
-using NightlyCode.Net.Http.Requests;
 using StreamRC.Core.Http;
 using StreamRC.Core.Timer;
 
@@ -24,9 +20,9 @@ namespace StreamRC.Streaming.Notifications {
 
         /// <summary>
         /// creates a new <see cref="NotificationsHttpService"/>
-        /// </summary>
+        /// </summa>
         /// <param name="context"></param>
-        public NotificationsHttpService(HttpServiceModule httpservice, NotificationModule notifications, TimerModule timer) {
+        public NotificationsHttpService(IHttpServiceModule httpservice, NotificationModule notifications, TimerModule timer) {
             httpservice.AddServiceHandler("/streamrc/notifications", this);
             httpservice.AddServiceHandler("/streamrc/notifications.css", this);
             httpservice.AddServiceHandler("/streamrc/notifications.js", this);
@@ -35,40 +31,36 @@ namespace StreamRC.Streaming.Notifications {
             timer.AddService(this);
         }
 
-        void IHttpService.ProcessRequest(HttpClient client, HttpRequest request) {
+        void IHttpService.ProcessRequest(IHttpRequest request, IHttpResponse response) {
             switch(request.Resource) {
                 case "/streamrc/notifications":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Notifications.notifications.html"), ".html");
+                    response.ServeResource(GetType().Assembly, "StreamRC.Streaming.Http.Notifications.notifications.html");
                     break;
                 case "/streamrc/notifications.css":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Notifications.notifications.css"), ".css");
+                    response.ServeResource(GetType().Assembly, "StreamRC.Streaming.Http.Notifications.notifications.css");
                     break;
                 case "/streamrc/notifications.js":
-                    client.ServeResource(ResourceAccessor.GetResource<System.IO.Stream>("StreamRC.Streaming.Http.Notifications.notifications.js"), ".js");
+                    response.ServeResource(GetType().Assembly,"StreamRC.Streaming.Http.Notifications.notifications.js");
                     break;
                 case "/streamrc/notifications/data":
-                    ServeNotifications(client, request);
+                    ServeNotifications(request, response);
                     break;
                 default:
                     throw new Exception("Resource not managed by this module");
             }
         }
 
-        void ServeNotifications(HttpClient client, HttpRequest request) {
-            DateTime messagethreshold = Converter.Convert<DateTime>(Converter.Convert<long>(request.GetParameter("timestamp")));
+        void ServeNotifications(IHttpRequest request, IHttpResponse response) {
+            DateTime messagethreshold = Converter.Convert<DateTime>(request.GetParameter<long>("timestamp"));
 
-            lock (notificationlock)
-            {
-                using (MemoryStream ms = new MemoryStream()) {
-                    NotificationHttpResponse response = new NotificationHttpResponse {
-                        Notifications = notifications.Where(n => n.Timestamp >= messagethreshold).Select(n => n.Notification).ToArray(),
-                        Timestamp = DateTime.Now
-                    };
-                    JSON.Write(response, ms);
-                    client.ServeData(ms.ToArray(), ".json");
-                }
+            lock (notificationlock) {
+                NotificationHttpResponse httpresponse = new NotificationHttpResponse {
+                    Notifications = notifications.Where(n => n.Timestamp >= messagethreshold).Select(n => n.Notification).ToArray(),
+                    Timestamp = DateTime.Now
+                };
+                response.ContentType = MimeTypes.GetMimeType(".json");
+                JSON.Write(httpresponse, response.Content);
             }
-
         }
 
         void OnNotification(Notification notification)
