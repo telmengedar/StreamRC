@@ -24,10 +24,7 @@ namespace StreamRC.RPG.Players {
     public class PlayerModule : ICommandModule
     {
         readonly IDatabaseModule database;
-        readonly IStreamModule stream;
-        readonly StreamEventModule streamevents;
         readonly UserModule users;
-        readonly PlayerModule players;
         readonly PlayerLevelModule playerlevels;
         readonly PeriodicTimer experiencetimer = new PeriodicTimer();
         readonly object createplayerlock = new object();
@@ -36,12 +33,9 @@ namespace StreamRC.RPG.Players {
         /// creates a new <see cref="PlayerModule"/>
         /// </summary>
         /// <param name="context">module context</param>
-        public PlayerModule(IDatabaseModule database, IStreamModule stream, StreamEventModule streamevents, UserModule users, PlayerModule players, PlayerLevelModule playerlevels) {
+        public PlayerModule(IDatabaseModule database, IStreamModule stream, StreamEventModule streamevents, UserModule users, PlayerLevelModule playerlevels) {
             this.database = database;
-            this.stream = stream;
-            this.streamevents = streamevents;
             this.users = users;
-            this.players = players;
             this.playerlevels = playerlevels;
             database.Database.UpdateSchema<Player>();
             database.Database.UpdateSchema<PlayerAscension>();

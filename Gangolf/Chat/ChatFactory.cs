@@ -5,6 +5,7 @@ using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Modules;
 using NightlyCode.StreamRC.Gangolf.Dictionary;
+using StreamRC.Core.Messages;
 
 namespace NightlyCode.StreamRC.Gangolf.Chat {
 
@@ -24,7 +25,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             return message.Split(' ').Select(w => w.ToLower()).Any(w => insults.Any(i => w.StartsWith(i) || w.EndsWith(i)));
         }
 
-        public string CreateInsult() {
+        public Insult CreateInsult() {
             HashSet<long> used=new HashSet<long>();
 
             StringBuilder text = new StringBuilder();
@@ -65,7 +66,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 text.Append(verb).Append(' ');
             }
 
-            noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object, used.ToArray());
+            noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.None, used.ToArray());
 
             used.Add(noun.ID);
 
@@ -82,11 +83,30 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 if(postposition != null)
                     text.Append(postposition);
             }
-            return text.ToString();
+
+            return new Insult {
+                Text = text.ToString(),
+                Noun = noun
+            };
+        }
+
+        /// <summary>
+        /// creates a dish for something
+        /// </summary>
+        /// <param name="message">message to fill</param>
+        public void CreateDish(MessageBuilder message) {
+            Word main=dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Food);
+            Word insultive = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Descriptive | WordAttribute.Insultive, main.ID);
+            message.Text($"{insultive}-{main}");
+            if(RNG.XORShift64.NextFloat() < 0.7)
+                return;
+
+            Word appendix = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Food, main.ID, insultive.ID);
+            message.Text($" with {appendix}");
         }
 
         public string InsultiveNoun() {
-            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object);
+            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.None);
 
             WordAttribute predicate = WordAttribute.Descriptive;
             if (noun.Attributes.HasFlag(WordAttribute.Product))
@@ -111,7 +131,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
 
             text.Append(adjective.Text).Append(" ");
 
-            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Object);
+            Word noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.None);
 
             WordAttribute predicate = WordAttribute.Descriptive;
             if (noun.Attributes.HasFlag(WordAttribute.Product))
@@ -133,7 +153,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
         void ReloadInsults() {
             Logger.Info(this, "Reloading insults");
             insults.Clear();
-            foreach (Word insult in dictionary.GetWords(w => (w.Attributes & WordAttribute.Insultive) == WordAttribute.Insultive))
+            foreach (Word insult in dictionary.ListWords(w => (w.Attributes & WordAttribute.Insultive) == WordAttribute.Insultive))
                 insults.Add(insult.Text.ToLower());
         }
 

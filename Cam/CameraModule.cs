@@ -3,11 +3,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using NightlyCode.Core.Logs;
 using NightlyCode.Japi.Json;
+using NightlyCode.Modules;
 using StreamRC.Core.Settings;
 using StreamRC.Core.UI;
 
 namespace StreamRC.Cam {
 
+    [Module(AutoCreate = true)]
     public class CameraModule : IDisposable {
         readonly ISettings settings;
 

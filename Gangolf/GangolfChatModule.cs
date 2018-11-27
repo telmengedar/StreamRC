@@ -9,7 +9,6 @@ using NightlyCode.StreamRC.Gangolf.Dictionary;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
 using StreamRC.Streaming.Cache;
-using StreamRC.Streaming.Chat;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
 using StreamRC.Streaming.Users;
@@ -21,16 +20,17 @@ namespace NightlyCode.StreamRC.Gangolf
     /// <summary>
     /// module providing gangolf interaction with chat
     /// </summary>
-    [Module(Key="gangolf", AutoCreate = true)]
+    [Module(AutoCreate = true)]
     public class GangolfChatModule : ITimerService {
-        const string voice = "CereVoice Stuart - English (Scotland)";
+        
         const string gangolfpic = "NightlyCode.StreamRC.Gangolf.Resources.shopkeeper_normal.png";
 
         readonly ChatFactory factory;
-        readonly ChatMessageModule messages;
+        
         readonly UserModule usermodule;
         readonly ImageCacheModule images;
         readonly DictionaryModule dictionary;
+        readonly GangolfSpeakerModule gangolfspeaker;
 
         readonly object chatterlock = new object();
         readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
@@ -55,12 +55,13 @@ namespace NightlyCode.StreamRC.Gangolf
         /// creates a new <see cref="GangolfChatModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public GangolfChatModule(ChatFactory factory, StreamModule stream, TimerModule timer, ChatMessageModule messages, UserModule usermodule, ImageCacheModule images, DictionaryModule dictionary) {
+        /// <param name="gangolfspeaker"></param>
+        public GangolfChatModule(ChatFactory factory, StreamModule stream, ITimerModule timer, UserModule usermodule, ImageCacheModule images, DictionaryModule dictionary, GangolfSpeakerModule gangolfspeaker) {
             this.factory = factory;
-            this.messages = messages;
             this.usermodule = usermodule;
             this.images = images;
             this.dictionary = dictionary;
+            this.gangolfspeaker = gangolfspeaker;
             stream.ChatMessage += OnChatMessage;
             stream.UserLeft += OnUserLeft;
             timer.AddService(this, 60.0);
@@ -151,8 +152,7 @@ namespace NightlyCode.StreamRC.Gangolf
             }
 
             AppendInsult(response, userid, mode);
-
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
+            gangolfspeaker.Speak(response.BuildMessage());
         }
 
         void AppendInsult(MessageBuilder response, long userid, int mode=0) {
@@ -168,25 +168,32 @@ namespace NightlyCode.StreamRC.Gangolf
                 }
             }
 
-            string insult;
+            Insult insult;
             switch (mode)
             {
                 default:
                 case 0:
                     insult = factory.CreateInsult();
-                    response.Text($" is {(insult.StartsWithVocal() ? "an" : "a")} ").Text(insult);
+                    if (insult.Noun.Attributes.HasFlag(WordAttribute.Countable))
+                        response.Text($" is {(insult.Text.StartsWithVocal() ? "an" : "a")} ").Text(insult.Text);
+                    else response.Text($" is like ").Text(insult.Text);
                     break;
                 case 1:
                     insult = factory.CreateInsult();
-                    response.Text(insult).Text(" to ").User(usermodule.GetUser(userid), images);
+                    response.Text(insult.Text).Text(" to ").User(usermodule.GetUser(userid), images);
                     break;
                 case 2:
                     insult = factory.CreateInsult();
-                    response.Text($" to be {(insult.StartsWithVocal() ? "an" : "a")} ").Text(insult);
+                    if(insult.Noun.Attributes.HasFlag(WordAttribute.Countable))
+                        response.Text($" to be {(insult.Text.StartsWithVocal() ? "an" : "a")} ").Text(insult.Text);
+                    else response.Text(" to be like ").Text(insult.Text);
                     break;
                 case 3:
                     insult = factory.CreateInsult();
-                    response.Text($" {(insult.StartsWithVocal() ? "an" : "a")} {insult} for ").User(usermodule.GetUser(userid), images);
+                    if (insult.Noun.Attributes.HasFlag(WordAttribute.Countable))
+                        response.Text($" {(insult.Text.StartsWithVocal() ? "an" : "a")} {insult} for ").User(usermodule.GetUser(userid), images);
+                    else
+                        response.Text($" {insult} for ").User(usermodule.GetUser(userid), images);
                     break;
             }
         }
@@ -205,9 +212,9 @@ namespace NightlyCode.StreamRC.Gangolf
             response.Text($" {welcoming.TrimEnd('s')} ");
             response.User(usermodule.GetUser(service, user),images).Text(" the ");
 
-            string insult = factory.CreateInsult();
-            response.Text(insult);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
+            Insult insult = factory.CreateInsult();
+            response.Text(insult.Text);
+            gangolfspeaker.Speak(response.BuildMessage());
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
@@ -271,7 +278,7 @@ namespace NightlyCode.StreamRC.Gangolf
             
 
             AppendInsult(response, userid);
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat | ChannelFlags.Bot, voice);
+            gangolfspeaker.Speak(response.BuildMessage());
         }
 
         void ITimerService.Process(double time) {
@@ -287,7 +294,9 @@ namespace NightlyCode.StreamRC.Gangolf
                     return;
 
                 chatterthingy = 0;
-                Exclaim(victim.Key);
+                if(RNG.XORShift64.NextFloat() < 0.4)
+                    Describe(victim.Key);
+                else FoodHint(victim.Key);
             }
         }
 
@@ -310,7 +319,7 @@ namespace NightlyCode.StreamRC.Gangolf
             }
         }
 
-        public void Exclaim(string name) {
+        public void Describe(string name) {
             name = GetName(name);
 
             MessageBuilder response = new MessageBuilder();
@@ -334,7 +343,34 @@ namespace NightlyCode.StreamRC.Gangolf
             string insultive = factory.DescriptiveInsultiveNoun();
             response.Text(insultive.StartsWithVocal() ? "an " : "a ");
             response.Text(insultive).Text("!");
-            messages.SendMessage(response.BuildMessage(), ChannelFlags.Chat|ChannelFlags.Bot, voice);
+            gangolfspeaker.Speak(response.BuildMessage());
+        }
+
+        public void FoodHint(string name) {
+            name = GetName(name);
+
+            MessageBuilder response = new MessageBuilder();
+            response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
+
+            if (RNG.XORShift64.NextFloat() < 0.35)
+            {
+                Word exclamation = dictionary.GetRandomWord(WordClass.Exclamation, WordAttribute.None);
+                if (exclamation != null)
+                    response.Text(exclamation.Text.Namify()).Text("! ");
+            }
+
+            response.Text(name).Text(" ");
+            if(RNG.XORShift64.NextFloat() < 0.5)
+                response.Text("should stop ");
+            else response.Text("should start ");
+
+            response.Text(dictionary.GetRandomWord(WordClass.Verb, WordAttribute.Food).Text);
+            response.Text(" ");
+            factory.CreateDish(response);
+            response.Text(" for ");
+            response.Text(dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Event).Text);
+            response.Text(".");
+            gangolfspeaker.Speak(response.BuildMessage());
         }
     }
 }

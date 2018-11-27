@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -164,7 +165,7 @@ namespace StreamRC.Core
                 if(message.StartsWith("$")) {
                     try {
                         object result = scripts.Execute(message.Substring(1))??"Executed";
-                        if (result is Array array)
+                        if (result is IEnumerable array)
                             result = string.Join("\n", array.Cast<object>());
                         Logger.Info(this, message.Substring(1), $"{result}");
                     }

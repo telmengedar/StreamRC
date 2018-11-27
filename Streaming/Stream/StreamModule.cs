@@ -426,7 +426,7 @@ namespace StreamRC.Streaming.Stream {
         }
 
         void IChatMessageSender.SendChatMessage(string message) {
-            GetChannels(ChannelFlags.Chat, ChannelFlags.Bot).Foreach(c => c.SendMessage(message));
+            GetChannels(ChannelFlags.UserChat, ChannelFlags.None).Foreach(c => c.SendMessage(message));
         }
 
         public event Action<int> ViewersChanged;

@@ -223,7 +223,7 @@ namespace StreamRC.Twitch.Chat {
         /// <summary>
         /// channel flags
         /// </summary>
-        public virtual ChannelFlags Flags => ChannelFlags.Chat;
+        public virtual ChannelFlags Flags => ChannelFlags.UserChat;
 
         /// <summary>
         /// users currently in chat

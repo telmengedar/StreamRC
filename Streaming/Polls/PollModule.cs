@@ -8,7 +8,6 @@ using NightlyCode.Core.Randoms;
 using NightlyCode.Database.Entities.Operations;
 using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
-using NightlyCode.Modules.Commands;
 using StreamRC.Core;
 using StreamRC.Core.Scripts;
 using StreamRC.Core.Settings;

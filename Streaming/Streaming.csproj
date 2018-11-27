@@ -32,8 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NightlyCode.Core, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.1\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.3\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
     <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
@@ -41,8 +41,8 @@
     <Reference Include="NightlyCode.Japi, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Japi.0.8.5\lib\netstandard2.0\NightlyCode.Japi.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Modules, Version=0.8.19.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Modules.0.8.19\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
+    <Reference Include="NightlyCode.Modules, Version=0.8.20.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Modules.0.8.20\lib\netstandard2.0\NightlyCode.Modules.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />

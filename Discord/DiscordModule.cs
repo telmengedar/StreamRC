@@ -65,7 +65,7 @@ namespace StreamRC.Discord
             if(!channels.TryGetValue(message.ChannelID, out DiscordChatChannel channel)) {
                 ChannelFlags flags = ChannelFlags.None;
                 if(message.ChannelID == chatchannel)
-                    flags |= ChannelFlags.Chat;
+                    flags |= ChannelFlags.Chat | ChannelFlags.UserChat;
                 if(message.ChannelID == rpgchannel)
                     flags |= ChannelFlags.Game;
                 if(message.ChannelID == commandchannel)

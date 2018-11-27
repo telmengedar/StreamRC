@@ -25,7 +25,6 @@ namespace StreamRC.RPG.Items {
     [Module]
     public class ItemModule {
         readonly DatabaseModule database;
-        readonly ItemModule items;
         readonly IStreamModule stream;
         ItemRecipe[] recipes=new ItemRecipe[0];
 
@@ -33,14 +32,12 @@ namespace StreamRC.RPG.Items {
         /// creates a new <see cref="ItemModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public ItemModule(DatabaseModule database, ItemModule items, IStreamModule stream) {
+        public ItemModule(DatabaseModule database, IStreamModule stream) {
             database.Database.UpdateSchema<Item>();
             this.database = database;
-            this.items = items;
             this.stream = stream;
 
             Task.Run(() => InitializeItems());
-
         }
 
         public long GetRandomItemID() {
@@ -100,7 +97,7 @@ namespace StreamRC.RPG.Items {
                 string name = string.Join(" ", arguments.Skip(startindex).Take(i - startindex));
 
                 foreach(string singlename in name.GetPossibleSingular()) {
-                    Item item = items.GetItem(singlename);
+                    Item item = GetItem(singlename);
                     if(item != null) {
                         startindex = i;
                         return item;

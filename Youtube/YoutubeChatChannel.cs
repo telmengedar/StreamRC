@@ -43,7 +43,7 @@ namespace StreamRC.Youtube {
 
         public string Name => broadcast.Snippet.LiveChatId;
 
-        public ChannelFlags Flags => ChannelFlags.Chat | ChannelFlags.LineBreaks | ChannelFlags.Game;
+        public ChannelFlags Flags => ChannelFlags.Chat | ChannelFlags.LineBreaks | ChannelFlags.Game | ChannelFlags.UserChat;
 
         public IEnumerable<string> Users
         {

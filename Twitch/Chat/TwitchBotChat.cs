@@ -84,6 +84,6 @@ namespace StreamRC.Twitch.Chat {
         /// <summary>
         /// channel flags
         /// </summary>
-        public override ChannelFlags Flags => ChannelFlags.Major | ChannelFlags.Bot | ChannelFlags.Game | ChannelFlags.Notification | ChannelFlags.Chat;
+        public override ChannelFlags Flags => ChannelFlags.Major | ChannelFlags.Chat | ChannelFlags.Bot | ChannelFlags.Game | ChannelFlags.Notification;
     }
 }

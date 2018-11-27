@@ -7,14 +7,13 @@ using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 
 namespace StreamRC.Core.TTS {
-
     /// <summary>
     /// module used to synthesize text
     /// </summary>
     [Module(Key ="tts")]
-    public class TTSModule {
+    public class TTSModule : ITTSModule {
         //readonly SpeechSynthesizer synthesizer = new SpeechSynthesizer();
-        TTSCom synthesizer = new TTSCom();
+        readonly TTSCom synthesizer = new TTSCom();
 
         readonly Queue<TTSText> speechqueue=new Queue<TTSText>();
         bool isspeaking;

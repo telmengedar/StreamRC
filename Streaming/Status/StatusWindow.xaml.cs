@@ -65,7 +65,6 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewSubscriber += OnSubscriber;
                 streammodule.MicroPresent += OnMicroPresent;
                 streammodule.ViewersChanged += OnViewersChanged;
-                ttsmodule.TextSpoken += OnTextSpoken;
                 messages.Message += OnStatusMessage;
             }
             else {
@@ -76,13 +75,8 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewSubscriber -= OnSubscriber;
                 streammodule.MicroPresent -= OnMicroPresent;
                 streammodule.ViewersChanged -= OnViewersChanged;
-                ttsmodule.TextSpoken -= OnTextSpoken;
                 messages.Message -= OnStatusMessage;
             }
-        }
-
-        void OnTextSpoken(string voice, string text) {
-            Dispatcher.Invoke(() => AddStatus($"{voice}: {text}.", Colors.DarkRed));
         }
 
         void OnMicroPresent(MicroPresent present) {

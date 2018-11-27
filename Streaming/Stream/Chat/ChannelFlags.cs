@@ -49,6 +49,11 @@ namespace StreamRC.Streaming.Stream.Chat {
         LineBreaks=64,
 
         /// <summary>
+        /// channel is used to send user messages
+        /// </summary>
+        UserChat=128,
+
+        /// <summary>
         /// all flags set
         /// </summary>
         All=0x7FFFFFFF

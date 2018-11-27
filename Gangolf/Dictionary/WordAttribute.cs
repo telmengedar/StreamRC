@@ -8,22 +8,34 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
     [Flags]
     public enum WordAttribute {
         None=0,
-        Product=1,
-        Tool=2,
-        Insultive=4,
-        Romantic=8,
-        Producer=16,
-        Color=32,
-        Political=128,
-        Descriptive=256,
-        Object=512,
-        Greeting=1024,
-        Comparision=2048,
-        Title=4096,
+        Product=0x00000001,
+        Tool= 0x00000002,
+        Insultive= 0x00000004,
+        Romantic= 0x00000008,
+        Producer= 0x00000010,
+        Color= 0x00000020,
+        Political= 0x00000040,
+        Descriptive= 0x00000080,
+        Object= 0x00000100,
+        Greeting= 0x00000200,
+        Comparision= 0x00000400,
+        Title= 0x00000800,
 
         /// <summary>
         /// word points to an individual
         /// </summary>
-        Subject=8192
+        Subject= 0x00001000,
+
+        Food= 0x00002000,
+
+        /// <summary>
+        /// event of some sort (mainly used in combination with other attributes)
+        /// </summary>
+        Event= 0x00003000,
+
+        /// <summary>
+        /// term is a countable instance term
+        /// </summary>
+        Countable=0x00004000
     }
 }

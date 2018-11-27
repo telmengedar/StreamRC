@@ -91,6 +91,17 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         }
 
         /// <summary>
+        /// removes attributes of a word
+        /// </summary>
+        /// <param name="text">word text</param>
+        /// <param name="class">word class</param>
+        /// <param name="attributes">attributes to remove</param>
+        public void RemoveAttribute(string text, WordClass @class, WordAttribute attributes) {
+            attributes = ~attributes;
+            dictionary.Update<Word>().Set(w => w.Attributes == (w.Attributes & attributes)).Where(w => w.Class == @class && w.Text == text).Execute();
+        }
+
+        /// <summary>
         /// removes a word from dictionary
         /// </summary>
         /// <param name="text">word characters</param>
@@ -205,8 +216,18 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// </summary>
         /// <param name="predicate">predicate the words have to match</param>
         /// <returns>all words matching the specified <paramref name="predicate"/></returns>
-        public IEnumerable<Word> GetWords(Expression<Func<Word, bool>> predicate) {
+        public IEnumerable<Word> ListWords(Expression<Func<Word, bool>> predicate) {
             return dictionary.LoadEntities<Word>().Where(predicate).OrderBy(new OrderByCriteria(DBFunction.Random)).Execute();
+        }
+
+        /// <summary>
+        /// lists words of the specified class implementing the specified attributes
+        /// </summary>
+        /// <param name="class">class of words to list</param>
+        /// <param name="attributes">attributes of words to implement</param>
+        /// <returns></returns>
+        public IEnumerable<Word> ListWords(WordClass @class, WordAttribute attributes) {
+            return ListWords(w => w.Class == @class && w.Attributes == attributes);
         }
     }
 }

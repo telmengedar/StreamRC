@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 
 namespace StreamRC.Core.Http {
@@ -38,7 +39,13 @@ namespace StreamRC.Core.Http {
                 context.Response.StatusCode = 500;
                 context.Response.StatusDescription = "Fuck You";
             }
-            context.Response.Close();
+
+            try {
+                context.Response.Close();
+            }
+            catch(Exception) {
+                Logger.Warning(this, "You tried to close a nonexisting connection");
+            }
         }
 
         public void AddServiceHandler(string resource, IHttpService service) {

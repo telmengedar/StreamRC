@@ -24,13 +24,13 @@ namespace StreamRC.RPG.Adventure {
 
     [Module(Key="adventure")]
     public class AdventureModule : ITimerService {
+        readonly IModuleContext context;
         readonly StreamModule stream;
         readonly PlayerModule players;
         readonly object adventurerlock = new object();
         readonly List<Adventure> adventurers = new List<Adventure>();
         readonly HashSet<long> activeplayers=new HashSet<long>();
 
-        readonly ExplorationLogic explorationlogic;
         readonly UserModule usermodule;
         readonly RPGMessageModule messages;
         readonly MonsterModule monstermodule;
@@ -46,10 +46,10 @@ namespace StreamRC.RPG.Adventure {
         /// creates a new <see cref="AdventureModule"/>
         /// </summary>
         /// <param name="context">access to modules</param>
-        public AdventureModule(StreamModule stream, PlayerModule players, TimerModule timer, ExplorationLogic explorationlogic, UserModule usermodule, RPGMessageModule messages, MonsterModule monstermodule, EffectModule effectmodule, SkillModule skillmodule, EquipmentModule equipmentmodule, InventoryModule inventorymodule, ItemModule itemmodule) {
+        public AdventureModule(IModuleContext context, StreamModule stream, PlayerModule players, TimerModule timer, UserModule usermodule, RPGMessageModule messages, MonsterModule monstermodule, EffectModule effectmodule, SkillModule skillmodule, EquipmentModule equipmentmodule, InventoryModule inventorymodule, ItemModule itemmodule) {
+            this.context = context;
             this.stream = stream;
             this.players = players;
-            this.explorationlogic = explorationlogic;
             this.usermodule = usermodule;
             this.messages = messages;
             this.monstermodule = monstermodule;
@@ -161,7 +161,7 @@ namespace StreamRC.RPG.Adventure {
             if(adventure.AdventureLogic.Status != status) {
                 switch(status) {
                     case AdventureStatus.Exploration:
-                        adventure.AdventureLogic = explorationlogic;
+                        adventure.AdventureLogic = context.GetModule<ExplorationLogic>();
                         break;
                     case AdventureStatus.MonsterBattle:
                         if(argument != null) {
@@ -202,7 +202,7 @@ namespace StreamRC.RPG.Adventure {
                     return;
 
                 Adventure adventure = new Adventure(player.UserID) {
-                    AdventureLogic = player.CurrentHP > 0 ? (IAdventureLogic)explorationlogic : new SpiritRealmLogic(players, usermodule, messages)
+                    AdventureLogic = player.CurrentHP > 0 ? (IAdventureLogic)context.GetModule<ExplorationLogic>() : new SpiritRealmLogic(players, usermodule, messages)
                 };
                 adventure.Reset();
 
