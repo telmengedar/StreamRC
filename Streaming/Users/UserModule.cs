@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Media;
 using NightlyCode.Core.ComponentModel;
+using NightlyCode.Database.Entities.Operations.Fields;
+using NightlyCode.Database.Entities.Operations.Prepared;
 using NightlyCode.Modules;
 using StreamRC.Core;
 using StreamRC.Core.Http;
@@ -16,7 +18,7 @@ namespace StreamRC.Streaming.Users {
     /// </summary>
     [Module(Key="users", AutoCreate = true)]
     public class UserModule : ITimerService, IHttpService {
-        readonly DatabaseModule database;
+        readonly IDatabaseModule database;
         readonly object userlock = new object();
 
         readonly List<UserCacheEntry> users = new List<UserCacheEntry>();
@@ -25,13 +27,22 @@ namespace StreamRC.Streaming.Users {
 
         readonly HashSet<UserKey> activeusers=new HashSet<UserKey>();
 
+        PreparedLoadValuesOperation findusersids;
+
         /// <summary>
         /// creates a new <see cref="UserModule"/>
         /// </summary>
-        /// <param name="context"></param>
-        public UserModule(DatabaseModule database, IHttpServiceModule httpservice, TimerModule timer) {
+        /// <param name="database">access to database</param>
+        /// <param name="httpservice">access to http server</param>
+        /// <param name="timer">access to timer</param>
+        public UserModule(IDatabaseModule database, IHttpServiceModule httpservice, ITimerModule timer) {
             this.database = database;
             database.Database.UpdateSchema<User>();
+
+            findusersids = database.Database.Load<User>(u => u.ID)
+                .Where(u => DBParameter<string[]>.Value.Contains(u.Name))
+                .Prepare();
+
             httpservice.AddServiceHandler("/streamrc/users/flag", this);
             timer.AddService(this, 1.0);
         }
@@ -84,7 +95,7 @@ namespace StreamRC.Streaming.Users {
         /// <param name="names">names to search for</param>
         /// <returns>ids of matching users</returns>
         public IEnumerable<long> FindUserIDs(IEnumerable<string> names) {
-            return database.Database.Load<User>(u => u.ID).Where(u => names.Contains(u.Name)).ExecuteSet<long>();
+            return findusersids.ExecuteSet<long>(names);
         }
 
         /// <summary>

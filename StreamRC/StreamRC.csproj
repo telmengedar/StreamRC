@@ -42,8 +42,8 @@
     <Reference Include="Microsoft.Data.Sqlite, Version=2.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Data.Sqlite.Core.2.1.0\lib\netstandard2.0\Microsoft.Data.Sqlite.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Core, Version=0.8.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.3\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.5\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
     <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>

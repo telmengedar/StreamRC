@@ -10,7 +10,6 @@ using NightlyCode.Core.Conversion;
 using NightlyCode.Modules;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Settings;
-using StreamRC.Core.TTS;
 using StreamRC.Core.UI;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Chat;
@@ -25,7 +24,6 @@ namespace StreamRC.Streaming.Status
     [Module(Key="status",AutoCreate = true)]
     public partial class StatusWindow : ModuleWindow {
         readonly StreamModule streammodule;
-        readonly TTSModule ttsmodule;
         readonly MessageModule messages;
         readonly ImageCacheModule imagecache;
         readonly object chatlock = new object();
@@ -38,18 +36,13 @@ namespace StreamRC.Streaming.Status
         /// creates a new <see cref="StatusWindow"/>
         /// </summary>
         /// <param name="settings">access to settings</param>
-        public StatusWindow(ISettings settings, StreamModule streammodule, TTSModule ttsmodule, MessageModule messages, ImageCacheModule imagecache, IMainWindow mainwindow)
+        public StatusWindow(ISettings settings, StreamModule streammodule, MessageModule messages, ImageCacheModule imagecache, IMainWindow mainwindow)
             : base(settings) {
             this.streammodule = streammodule;
-            this.ttsmodule = ttsmodule;
             this.messages = messages;
             this.imagecache = imagecache;
             InitializeComponent();
             emotecache = new TimedCache<long, BitmapImage>(CreateImage);
-            Closing += (sender, args) => {
-                Visibility = Visibility.Hidden;
-                args.Cancel = true;
-            };
 
             IsVisibleChanged += OnVisibilityChanged;
             mainwindow.AddMenuItem("Display.Status", (sender, args) => Show());
@@ -64,7 +57,6 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewFollower += OnFollower;
                 streammodule.NewSubscriber += OnSubscriber;
                 streammodule.MicroPresent += OnMicroPresent;
-                streammodule.ViewersChanged += OnViewersChanged;
                 messages.Message += OnStatusMessage;
             }
             else {
@@ -74,7 +66,6 @@ namespace StreamRC.Streaming.Status
                 streammodule.NewFollower -= OnFollower;
                 streammodule.NewSubscriber -= OnSubscriber;
                 streammodule.MicroPresent -= OnMicroPresent;
-                streammodule.ViewersChanged -= OnViewersChanged;
                 messages.Message -= OnStatusMessage;
             }
         }
@@ -326,12 +317,6 @@ namespace StreamRC.Streaming.Status
                     image.EndInit();
                 }
             return image;
-        }
-
-        void OnViewersChanged(int viewers) {
-            Dispatcher.Invoke(() => {
-                lblViewers.Content = viewers.ToString();
-            });
         }
     }
 }

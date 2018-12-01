@@ -190,9 +190,14 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// <param name="except">ids of words not to include in result</param>
         /// <returns></returns>
         public Word GetRandomWord(WordClass @class, WordAttribute attributes, params long[] except) {
+            Word word;
             if(except.Length==0)
-                return loadrandomword.Execute(@class, attributes).FirstOrDefault();
-            return loadrandomwordexcept.Execute(@class, attributes, except).FirstOrDefault();
+                word=loadrandomword.Execute(@class, attributes).FirstOrDefault();
+            else word=loadrandomwordexcept.Execute(@class, attributes, except).FirstOrDefault();
+
+            if(word == null)
+                throw new Exception($"No word in database which matches ({@class}, {attributes}) except ({string.Join(",", except)})");
+            return word;
         }
 
 

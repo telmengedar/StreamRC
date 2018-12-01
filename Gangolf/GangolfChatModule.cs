@@ -8,6 +8,7 @@ using NightlyCode.StreamRC.Gangolf.Chat;
 using NightlyCode.StreamRC.Gangolf.Dictionary;
 using StreamRC.Core.Messages;
 using StreamRC.Core.Timer;
+using StreamRC.RPG.Players;
 using StreamRC.Streaming.Cache;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Stream.Chat;
@@ -31,6 +32,7 @@ namespace NightlyCode.StreamRC.Gangolf
         readonly ImageCacheModule images;
         readonly DictionaryModule dictionary;
         readonly GangolfSpeakerModule gangolfspeaker;
+        readonly PlayerModule playermodule;
 
         readonly object chatterlock = new object();
         readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
@@ -56,12 +58,13 @@ namespace NightlyCode.StreamRC.Gangolf
         /// </summary>
         /// <param name="context">access to modules</param>
         /// <param name="gangolfspeaker"></param>
-        public GangolfChatModule(ChatFactory factory, StreamModule stream, ITimerModule timer, UserModule usermodule, ImageCacheModule images, DictionaryModule dictionary, GangolfSpeakerModule gangolfspeaker) {
+        public GangolfChatModule(ChatFactory factory, StreamModule stream, ITimerModule timer, UserModule usermodule, ImageCacheModule images, DictionaryModule dictionary, GangolfSpeakerModule gangolfspeaker, PlayerModule playermodule) {
             this.factory = factory;
             this.usermodule = usermodule;
             this.images = images;
             this.dictionary = dictionary;
             this.gangolfspeaker = gangolfspeaker;
+            this.playermodule = playermodule;
             stream.ChatMessage += OnChatMessage;
             stream.UserLeft += OnUserLeft;
             timer.AddService(this, 60.0);
@@ -218,6 +221,9 @@ namespace NightlyCode.StreamRC.Gangolf
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
+            if(playermodule.GetExistingPlayer(message.Service, message.User)?.Level < 6)
+                return;
+
             lock(greetlock) {
                 if(!greeted.Contains(new Tuple<string, string>(message.Service, message.User))) {
                     greeted.Add(new Tuple<string, string>(message.Service, message.User));

@@ -7,11 +7,10 @@
         mc:Ignorable="d"
         Title="Status" Height="300" Width="401.6" ShowActivated="False">
     <Grid Background="Black">
-        <FlowDocumentScrollViewer x:Name="txtChat" HorizontalAlignment="Stretch" Height="Auto" Margin="10,41,10,10" VerticalAlignment="Stretch" Width="Auto" Background="Transparent" Foreground="White" BorderBrush="{x:Null}" IsHitTestVisible="False" VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True">
+        <FlowDocumentScrollViewer x:Name="txtChat" HorizontalAlignment="Stretch" Height="Auto" Margin="10" VerticalAlignment="Stretch" Width="Auto" Background="Transparent" Foreground="White" BorderBrush="{x:Null}" IsHitTestVisible="False" VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True">
             <FlowDocument FontSize="26">
             </FlowDocument>
         </FlowDocumentScrollViewer>
-        <Label x:Name="lblViewers" Content="0" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Foreground="#FF59EE4A" FontWeight="Bold" FontSize="16"/>
 
     </Grid>
 </ui:ModuleWindow>

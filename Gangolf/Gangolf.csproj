@@ -36,8 +36,8 @@
     <Reference Include="Microsoft.Data.Sqlite, Version=2.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Data.Sqlite.Core.2.1.0\lib\netstandard2.0\Microsoft.Data.Sqlite.dll</HintPath>
     </Reference>
-    <Reference Include="NightlyCode.Core, Version=0.8.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NightlyCode.Core.0.8.3\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
+    <Reference Include="NightlyCode.Core, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NightlyCode.Core.0.8.5\lib\netstandard2.0\NightlyCode.Core.dll</HintPath>
     </Reference>
     <Reference Include="Nightlycode.Database, Version=0.7.19.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NightlyCode.Database.0.7.19\lib\netstandard2.0\Nightlycode.Database.dll</HintPath>
@@ -87,6 +87,10 @@
     <ProjectReference Include="..\Core\Core.csproj">
       <Project>{49e63bf7-b832-42ec-98fc-68dcac446338}</Project>
       <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RPG\RPG.csproj">
+      <Project>{8281ecbd-b3c7-422c-b546-5e458c35291d}</Project>
+      <Name>RPG</Name>
     </ProjectReference>
     <ProjectReference Include="..\Streaming\Streaming.csproj">
       <Project>{eb1a1823-3d2b-4279-b58c-1c78904ed7d0}</Project>

@@ -18,7 +18,7 @@ namespace StreamRC.Core
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    [Module(Key=ModuleKeys.MainWindow)]
+    [Module(Key = "mainwindow")]
     public partial class MainWindow : ModuleWindow, IMainWindow {
         readonly IChatMessageSender chat;
         readonly ScriptModule scripts;
@@ -48,18 +48,9 @@ namespace StreamRC.Core
 
             ItemCollection currentcollection = menu.Items;
             for(int i = 0; i < path.Length - 1; ++i) {
-                MenuItem menui = null;
-                for (int k = 0; k < currentcollection.Count; ++k)
-                    if ((currentcollection[k] as MenuItem)?.Header as string == path[i])
-                    {
-                        menui = currentcollection[k] as MenuItem;
-                        break;
-                    }
-
-                if (menui == null)
-                {
-                    menui = new MenuItem
-                    {
+                MenuItem menui = currentcollection.OfType<MenuItem>().FirstOrDefault(mi => (string)mi.Header == path[i]);
+                if(menui == null) {
+                    menui = new MenuItem {
                         Header = path[i]
                     };
                     currentcollection.Add(menui);
@@ -80,21 +71,12 @@ namespace StreamRC.Core
             string[] path = menuname.Split('.');
 
             ItemCollection currentcollection = menu.Items;
-            for (int i = 0; i < path.Length; ++i)
-            {
-                MenuItem menui = null;
-                foreach(object item in currentcollection)
-                    if ((item as MenuItem)?.Header as string == path[i])
-                    {
-                        menui = item as MenuItem;
-                        break;
-                    }
+            foreach(string pathitem in path) {
+                MenuItem menui = currentcollection.OfType<MenuItem>().FirstOrDefault(mi => (string)mi.Header == pathitem);
 
-                if (menui == null)
-                {
-                    menui = new MenuItem
-                    {
-                        Header = path[i]
+                if(menui == null) {
+                    menui = new MenuItem {
+                        Header = pathitem
                     };
                     currentcollection.Add(menui);
                 }
@@ -164,10 +146,12 @@ namespace StreamRC.Core
                 string message = txtMessage.Text;
                 if(message.StartsWith("$")) {
                     try {
-                        object result = scripts.Execute(message.Substring(1))??"Executed";
+                        object result = scripts.Execute(message.Substring(1));
                         if (result is IEnumerable array)
                             result = string.Join("\n", array.Cast<object>());
-                        Logger.Info(this, message.Substring(1), $"{result}");
+                        if(result != null)
+                            Logger.Info(this, message.Substring(1), $"{result}");
+                        else Logger.Info(this, message.Substring(1));
                     }
                     catch (Exception ex) {
                         Logger.Error(this, "Error executing command", ex);
