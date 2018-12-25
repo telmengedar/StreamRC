@@ -11,7 +11,7 @@ namespace StreamRC.Streaming.Stream.Commands {
     [Module]
     public class StreamCommandManager {
         readonly object commandhandlerlock = new object();
-        readonly Dictionary<string, Type> commandhandlers = new Dictionary<string, Type>();
+        readonly Dictionary<string, CommandHandlerInformation> commandhandlers = new Dictionary<string, CommandHandlerInformation>();
         readonly IModuleContext context;
 
         /// <summary>
@@ -38,9 +38,9 @@ namespace StreamRC.Streaming.Stream.Commands {
             lock (commandhandlerlock)
             {
                 if (commandhandlers.ContainsKey(command))
-                    Logger.Warning(this, $"'{command}' already registered to '{commandhandlers[command].Name}'. Handler will be replaced by '{handler.Name}'");
+                    Logger.Warning(this, $"'{command}' already registered to '{commandhandlers[command].Type.Name}'. Handler will be replaced by '{handler.Name}'");
                 context.AddModule(handler);
-                commandhandlers[command] = handler;
+                commandhandlers[command] = new CommandHandlerInformation(handler);
             }
         }
 
@@ -54,9 +54,9 @@ namespace StreamRC.Streaming.Stream.Commands {
             lock (commandhandlerlock)
             {
                 if (commandhandlers.ContainsKey(command))
-                    Logger.Warning(this, $"'{command}' already registered to '{commandhandlers[command].Name}'. Handler will be replaced by '{handler.GetType().Name}'");
+                    Logger.Warning(this, $"'{command}' already registered to '{commandhandlers[command].Type.Name}'. Handler will be replaced by '{handler.GetType().Name}'");
                 context.AddModule(handler.GetType(), provider => handler);
-                commandhandlers[command] = handler.GetType();
+                commandhandlers[command] = new CommandHandlerInformation(handler.GetType(), handler);
             }
         }
 
@@ -89,8 +89,12 @@ namespace StreamRC.Streaming.Stream.Commands {
         /// <param name="command">command under which a command handler is registered</param>
         /// <returns>command handler found for command</returns>
         public IStreamCommandHandler GetCommandHandler(string command) {
-            lock(commandhandlerlock)
-                return (IStreamCommandHandler)context.GetModule(commandhandlers[command]);
+            lock(commandhandlerlock) {
+                IStreamCommandHandler handler = GetCommandHandlerOrDefault(command);
+                if(handler == null)
+                    throw new Exception($"Handler for {command} not found");
+                return handler;
+            }
         }
 
         /// <summary>
@@ -100,9 +104,13 @@ namespace StreamRC.Streaming.Stream.Commands {
         /// <returns>command handler found for command or null if no handler is found</returns>
         public IStreamCommandHandler GetCommandHandlerOrDefault(string command) {
             lock (commandhandlerlock) {
-                if (!commandhandlers.TryGetValue(command, out Type handler))
+                if(!commandhandlers.TryGetValue(command, out CommandHandlerInformation info))
                     return null;
-                return (IStreamCommandHandler) context.GetModule(handler);
+
+                if(info.Handler == null)
+                    info.Handler = (IStreamCommandHandler)context.GetModule(info.Type);
+
+                return info.Handler;
             }
         }
     }

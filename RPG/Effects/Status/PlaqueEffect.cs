@@ -1,5 +1,6 @@
 ﻿using System;
 using NightlyCode.Core.Randoms;
+using NightlyCode.Modules;
 using StreamRC.RPG.Adventure;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Data;
@@ -9,15 +10,15 @@ using StreamRC.RPG.Players;
 
 namespace StreamRC.RPG.Effects.Status {
     public class PlaqueEffect : IStatusEffect, IModifierEffect {
-        readonly AdventureModule adventuremodule;
+        readonly IModuleContext context;
         readonly RPGMessageModule messages;
         readonly IBattleEntity target;
 
         double cooldown = 5.0;
 
-        public PlaqueEffect(IBattleEntity target, AdventureModule adventuremodule, RPGMessageModule messages)
+        public PlaqueEffect(IModuleContext context, IBattleEntity target, RPGMessageModule messages)
         {
-            this.adventuremodule = adventuremodule;
+            this.context = context;
             this.messages = messages;
             this.target = target;
         }
@@ -91,7 +92,7 @@ namespace StreamRC.RPG.Effects.Status {
                 if(target.HP <= 0) {
                     target.BattleLogic.Remove(target);
                     message.Text(" ").BattleActor(target).Text(" dies to the ").Color(AdventureColors.Plaque).Text("Plaque").Reset().Text(".");
-                    adventuremodule.ChangeStatus(target.Adventure, AdventureStatus.SpiritRealm);
+                    context.GetModule<AdventureModule>().ChangeStatus(target.Adventure, AdventureStatus.SpiritRealm);
                 }
                 message.Send();
                 cooldown += GetCooldown();

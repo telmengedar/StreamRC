@@ -37,6 +37,8 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// <summary>
         /// term is a countable instance term
         /// </summary>
-        Countable=0x00010000
+        Countable=0x00010000,
+
+        Drink=0x00020000
     }
 }

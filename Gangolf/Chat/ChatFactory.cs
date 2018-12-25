@@ -46,7 +46,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 text.Append(adjective).Append(' ');
 
                 used.Add(adjective.ID);
-                adjective = dictionary.GetRandomWord(WordClass.Adjective, attributefilter, used.ToArray());
+                adjective = dictionary.GetRandomWord(WordClass.Adjective, attributefilter, true, used.ToArray());
                 chance *= chance;
             }
             while(RNG.XORShift64.NextDouble() < chance);
@@ -66,7 +66,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
                 text.Append(verb).Append(' ');
             }
 
-            noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.None, used.ToArray());
+            noun = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.None, true, used.ToArray());
 
             used.Add(noun.ID);
 
@@ -76,7 +76,7 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if(!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, used.ToArray());
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, true, used.ToArray());
             text.Append($"{descriptive.Text}-{noun.Text}");
             if(noun.Class==WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
                 Word postposition = dictionary.GetRandomLinkedWord(WordClass.Postposition, WordAttribute.None, noun.Group, used.ToArray());
@@ -94,14 +94,15 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
         /// creates a dish for something
         /// </summary>
         /// <param name="message">message to fill</param>
-        public void CreateDish(MessageBuilder message) {
-            Word main=dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Food);
-            Word insultive = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Descriptive | WordAttribute.Insultive, main.ID);
+        /// <param name="type">type </param>
+        public void CreateDish(MessageBuilder message, WordAttribute type) {
+            Word main=dictionary.GetRandomWord(WordClass.Noun, type);
+            Word insultive = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Descriptive | WordAttribute.Insultive, true, main.ID);
             message.Text($"{insultive}-{main}");
             if(RNG.XORShift64.NextFloat() < 0.7)
                 return;
 
-            Word appendix = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Food, main.ID, insultive.ID);
+            Word appendix = dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Food|WordAttribute.Drink, false, main.ID, insultive.ID);
             message.Text($" with {appendix}");
         }
 
@@ -114,9 +115,9 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if (!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, noun.ID);
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, true, noun.ID);
             if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
-                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, noun.Group);
+                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, true, noun.Group);
                 if (postposition != null)
                     return $"{descriptive.Text}-{noun.Text}{postposition}";
             }
@@ -139,10 +140,10 @@ namespace NightlyCode.StreamRC.Gangolf.Chat {
             if (!noun.Attributes.HasFlag(WordAttribute.Insultive))
                 predicate |= WordAttribute.Insultive;
 
-            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, adjective.ID, noun.ID);
+            Word descriptive = dictionary.GetRandomWord(WordClass.Noun, predicate, true, adjective.ID, noun.ID);
             text.Append($"{descriptive.Text}-{noun.Text}");
             if (noun.Class == WordClass.Noun && noun.Group > 0 && RNG.XORShift64.NextFloat() < 0.07) {
-                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, noun.Group);
+                Word postposition = dictionary.GetRandomWord(WordClass.Postposition, WordAttribute.None, true, noun.Group);
                 if (postposition != null)
                     text.Append(postposition);
             }

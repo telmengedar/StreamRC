@@ -17,5 +17,10 @@
         /// representation of parameter in script call
         /// </summary>
         public string Parameter { get; }
+
+        /// <inheritdoc />
+        public override string ToString() {
+            return Parameter;
+        }
     }
 }

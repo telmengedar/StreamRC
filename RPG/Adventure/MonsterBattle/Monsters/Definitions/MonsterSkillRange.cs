@@ -18,6 +18,6 @@
         /// <summary>
         /// skill to be used
         /// </summary>
-        public MonsterSkillDefinition Skill { get; set; } 
+        public SkillDefinition Skill { get; set; } 
     }
 }

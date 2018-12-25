@@ -1,4 +1,4 @@
-﻿using NightlyCode.Core.Script;
+﻿using NightlyCode.Scripting;
 
 namespace StreamRC.Core.Scripts {
 

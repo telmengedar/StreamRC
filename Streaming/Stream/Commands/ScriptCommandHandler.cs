@@ -2,7 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using NightlyCode.Core.Script;
+using NightlyCode.Core.Logs;
+using NightlyCode.Scripting;
 using StreamRC.Core.Scripts;
 using StreamRC.Streaming.Stream.Chat;
 
@@ -80,19 +81,26 @@ namespace StreamRC.Streaming.Stream.Commands {
 
             try {
                 object result;
-                if (IsProperty)
-                    result = scripts.Execute($"{Module}.{Method}") ?? "null";
+                if(IsProperty)
+                    result = scripts.Execute($"{Module}.{Method}");
                 else {
-                    if (command.Arguments.Length > ParameterCount)
-                        result = scripts.Execute($"{Module}.{Method}({string.Format(string.Join<IScriptParameter>(",", Parameters), command.Arguments.Take(ParameterCount).Cast<object>().ToArray())},[{string.Join(",", command.Arguments.Skip(ParameterCount).Cast<object>().ToArray())}])", new InstanceVariableHost(new StreamCommandVariables(channel, command))) ?? "Executed";
+                    if(command.Arguments.Length == ParameterCount - 1)
+                        result = scripts.Execute($"{Module}.{Method}({string.Format(string.Join<IScriptParameter>(",", Parameters), command.Arguments.Cast<object>().ToArray())},[])", new InstanceVariableHost(new StreamCommandVariables(channel, command)));
+                    else if(command.Arguments.Length > ParameterCount)
+                        result = scripts.Execute($"{Module}.{Method}({string.Format(string.Join<IScriptParameter>(",", Parameters), command.Arguments.Take(ParameterCount).Cast<object>().ToArray())},[{string.Join(",", command.Arguments.Skip(ParameterCount).Cast<object>().ToArray())}])", new InstanceVariableHost(new StreamCommandVariables(channel, command)));
                     else
-                        result = scripts.Execute($"{Module}.{Method}({string.Format(string.Join<IScriptParameter>(",", Parameters), command.Arguments.Cast<object>().ToArray())})", new InstanceVariableHost(new StreamCommandVariables(channel, command))) ?? "Executed";
+                        result = scripts.Execute($"{Module}.{Method}({string.Format(string.Join<IScriptParameter>(",", Parameters), command.Arguments.Cast<object>().ToArray())})", new InstanceVariableHost(new StreamCommandVariables(channel, command)));
                 }
 
-                if (result is IEnumerable array)
-                    result = string.Join("\n", array.Cast<object>());
-                SendMessage(channel, command.User, $"{result}");
-
+                if(result != null) {
+                    if(!(result is string) && result is IEnumerable array)
+                        result = string.Join("\n", array.Cast<object>());
+                    SendMessage(channel, command.User, $"{result}");
+                }
+            }
+            catch(ScriptException e) {
+                Logger.Error(this, e.Message, e.Details);
+                SendMessage(channel, command.User, e.Message);
             }
             catch (Exception e) {
                 SendMessage(channel, command.User, $"Error: {e.Message}");
@@ -102,6 +110,6 @@ namespace StreamRC.Streaming.Stream.Commands {
         /// <summary>
         /// flags channel has to provide for a command to be accepted
         /// </summary>
-        public override ChannelFlags RequiredFlags => ChannelFlags.Chat;
+        public override ChannelFlags RequiredFlags => ChannelFlags.None;
     }
 }

@@ -59,6 +59,9 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
 
         Subject =1024,
 
+        /// <summary>
+        /// activity
+        /// </summary>
         Verb=2048,
 
         Amplifier=4096,
@@ -66,6 +69,16 @@ namespace NightlyCode.StreamRC.Gangolf.Dictionary {
         /// <summary>
         /// words like mc, van, von
         /// </summary>
-        NameConjuction=8192
+        NameConjuction=8192,
+
+        /// <summary>
+        /// modal word
+        /// </summary>
+        Modal=16384,
+
+        /// <summary>
+        /// used for declaration of things
+        /// </summary>
+        Declaration=32768
     }
 }

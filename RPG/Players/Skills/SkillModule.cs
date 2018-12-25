@@ -5,10 +5,8 @@ using NightlyCode.Database.Entities.Operations.Fields;
 using NightlyCode.Modules;
 using StreamRC.Core;
 using StreamRC.Core.Scripts;
-using StreamRC.RPG.Adventure;
 using StreamRC.RPG.Inventory;
 using StreamRC.RPG.Messages;
-using StreamRC.RPG.Players.Skills.Monster;
 using StreamRC.Streaming.Stream;
 using StreamRC.Streaming.Users;
 
@@ -20,15 +18,13 @@ namespace StreamRC.RPG.Players.Skills {
         readonly IStreamModule stream;
         readonly PlayerModule players;
         readonly RPGMessageModule messages;
-        readonly AdventureModule adventure;
         readonly UserModule usermodule;
 
-        public SkillModule(IDatabaseModule database, IStreamModule stream, PlayerModule players, RPGMessageModule messages, AdventureModule adventure, UserModule usermodule) {
+        public SkillModule(IDatabaseModule database, IStreamModule stream, PlayerModule players, RPGMessageModule messages, UserModule usermodule) {
             this.database = database;
             this.stream = stream;
             this.players = players;
             this.messages = messages;
-            this.adventure = adventure;
             this.usermodule = usermodule;
             database.Database.UpdateSchema<PlayerSkill>();
             database.Database.UpdateSchema<SkillConsumption>();
@@ -45,21 +41,6 @@ namespace StreamRC.RPG.Players.Skills {
                 return false;
 
             return GetSkillCost(SkillType.Heal, skill.Level) <= players.GetPlayer(playerid).CurrentMP;
-        }
-
-        public MonsterSkill GetMonsterSkill(string name, int level) {
-            switch(name) {
-                case "pestilence":
-                    return new PestilenceSkill(level, adventure, messages);
-                case "suck":
-                    return new SuckSkill(level, messages);
-                case "poison":
-                    return new PoisonSkill(level, adventure, messages);
-                case "steal":
-                    return new StealSkill(level, players, messages);
-                default:
-                    return null;
-            }
         }
 
         public int GetSkillCost(SkillType skill, int level) {

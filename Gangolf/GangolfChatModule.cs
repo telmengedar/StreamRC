@@ -22,7 +22,7 @@ namespace NightlyCode.StreamRC.Gangolf
     /// module providing gangolf interaction with chat
     /// </summary>
     [Module(AutoCreate = true)]
-    public class GangolfChatModule : ITimerService {
+    public class GangolfChatModule {
         
         const string gangolfpic = "NightlyCode.StreamRC.Gangolf.Resources.shopkeeper_normal.png";
 
@@ -33,9 +33,6 @@ namespace NightlyCode.StreamRC.Gangolf
         readonly DictionaryModule dictionary;
         readonly GangolfSpeakerModule gangolfspeaker;
         readonly PlayerModule playermodule;
-
-        readonly object chatterlock = new object();
-        readonly Dictionary<string, int> chatternames = new Dictionary<string, int>();
 
         readonly string[] explanationtriggers = {
             "wat", "wut", "what", "understand", "why", "reason"
@@ -51,7 +48,6 @@ namespace NightlyCode.StreamRC.Gangolf
 
         readonly object greetlock = new object();
         readonly HashSet<Tuple<string, string>> greeted = new HashSet<Tuple<string, string>>();
-        int chatterthingy;
 
         /// <summary>
         /// creates a new <see cref="GangolfChatModule"/>
@@ -67,7 +63,6 @@ namespace NightlyCode.StreamRC.Gangolf
             this.playermodule = playermodule;
             stream.ChatMessage += OnChatMessage;
             stream.UserLeft += OnUserLeft;
-            timer.AddService(this, 60.0);
         }
 
         void OnUserLeft(UserInformation user) {
@@ -75,6 +70,11 @@ namespace NightlyCode.StreamRC.Gangolf
         }
 
         void CreateInsult(long userid) {
+            if(RNG.XORShift64.NextFloat() < 0.5f) {
+                FoodHint(userid);
+                return;
+            }
+
             MessageBuilder response = new MessageBuilder();
 
             response.Image(images.GetImageByResource(GetType().Assembly, gangolfpic));
@@ -155,7 +155,7 @@ namespace NightlyCode.StreamRC.Gangolf
             }
 
             AppendInsult(response, userid, mode);
-            gangolfspeaker.Speak(response.BuildMessage());
+            gangolfspeaker.Speak(userid, response.BuildMessage());
         }
 
         void AppendInsult(MessageBuilder response, long userid, int mode=0) {
@@ -217,7 +217,7 @@ namespace NightlyCode.StreamRC.Gangolf
 
             Insult insult = factory.CreateInsult();
             response.Text(insult.Text);
-            gangolfspeaker.Speak(response.BuildMessage());
+            gangolfspeaker.Speak(user, response.BuildMessage());
         }
 
         void OnChatMessage(IChatChannel channel, ChatMessage message) {
@@ -246,29 +246,8 @@ namespace NightlyCode.StreamRC.Gangolf
                 if(factory.ContainsInsult(message.Message))
                     if(RNG.XORShift64.NextFloat() < 0.27f)
                         CreateInsult(usermodule.GetUserID(message.Service, message.User));
-                    else {
-                        lock(chatterlock) {
-                            chatternames.TryGetValue(message.User, out int count);
-                            chatternames[message.User] = count + 15;
-                        }
-                    }
             }
-
-            lock (chatterlock)
-            {
-                chatternames.TryGetValue(message.User, out int count);
-                chatternames[message.User] = count + 1;
-            }
-        }
-
-        /// <summary>
-        /// removes a name from the known chatter list
-        /// </summary>
-        /// <param name="name">name to remove from chatter list</param>
-        public void RemoveVictim(string name) {
-            lock(chatterlock)
-                chatternames.Remove(name);
-        }
+       }
 
         void CreateExplanation(long userid) {
             MessageBuilder response = new MessageBuilder();
@@ -284,26 +263,7 @@ namespace NightlyCode.StreamRC.Gangolf
             
 
             AppendInsult(response, userid);
-            gangolfspeaker.Speak(response.BuildMessage());
-        }
-
-        void ITimerService.Process(double time) {
-            lock(chatterlock) {
-                if(chatternames.Count == 0)
-                    return;
-                
-                KeyValuePair<string, int> victim = chatternames.RandomItem(kvp => kvp.Value, RNG.XORShift64);
-                foreach(string key in chatternames.Keys.ToArray())
-                    chatternames[key] = 0;
-
-                if(victim.Value == 0 && ++chatterthingy < 10)
-                    return;
-
-                chatterthingy = 0;
-                if(RNG.XORShift64.NextFloat() < 0.4)
-                    Describe(victim.Key);
-                else FoodHint(victim.Key);
-            }
+            gangolfspeaker.Speak(userid, response.BuildMessage());
         }
 
         string GetName(string name) {
@@ -349,10 +309,27 @@ namespace NightlyCode.StreamRC.Gangolf
             string insultive = factory.DescriptiveInsultiveNoun();
             response.Text(insultive.StartsWithVocal() ? "an " : "a ");
             response.Text(insultive).Text("!");
-            gangolfspeaker.Speak(response.BuildMessage());
+            gangolfspeaker.Speak(name, response.BuildMessage());
         }
 
+        public void FoodHint(long userid) {
+            FoodHint(usermodule.GetUser(userid).Name);
+        }
+
+        /// <summary>
+        /// creates a food hint
+        /// </summary>
+        /// <param name="name">name for whom to create a food hint</param>
         public void FoodHint(string name) {
+            FoodHint(name, false);
+        }
+
+        /// <summary>
+        /// creates a food hint
+        /// </summary>
+        /// <param name="name">name for whom to create a food hint</param>
+        /// <param name="immediately">whether to talk immediately</param>
+        public void FoodHint(string name, bool immediately) {
             name = GetName(name);
 
             MessageBuilder response = new MessageBuilder();
@@ -366,17 +343,28 @@ namespace NightlyCode.StreamRC.Gangolf
             }
 
             response.Text(name).Text(" ");
-            if(RNG.XORShift64.NextFloat() < 0.5)
-                response.Text("should stop ");
-            else response.Text("should start ");
+            response.Text(dictionary.GetRandomWord(WordClass.Modal | WordClass.Verb, WordAttribute.None).Text);
+            response.Text(" ").Text(dictionary.GetRandomWord(WordClass.Declaration | WordClass.Verb, WordAttribute.None).Text).Text(" ");
 
-            response.Text(dictionary.GetRandomWord(WordClass.Verb, WordAttribute.Food).Text);
+            WordAttribute type;
+            if(RNG.XORShift64.NextFloat() < 0.5)
+                type = WordAttribute.Food;
+            else type = WordAttribute.Drink;
+
+            response.Text(dictionary.GetRandomWord(WordClass.Verb, type).Text);
             response.Text(" ");
-            factory.CreateDish(response);
-            response.Text(" for ");
-            response.Text(dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Event).Text);
+            factory.CreateDish(response, type);
+
+            if(RNG.XORShift64.NextFloat() < 0.31) {
+                response.Text(" for ");
+                response.Text(dictionary.GetRandomWord(WordClass.Noun, WordAttribute.Event).Text);
+            }
+
             response.Text(".");
-            gangolfspeaker.Speak(response.BuildMessage());
+
+            if(immediately)
+                gangolfspeaker.SpeakImmediately(response.BuildMessage());
+            else gangolfspeaker.Speak(name, response.BuildMessage());
         }
     }
 }

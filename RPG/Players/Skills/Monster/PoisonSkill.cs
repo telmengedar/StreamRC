@@ -1,27 +1,26 @@
 ﻿using NightlyCode.Core.Randoms;
 using NightlyCode.Math;
-using StreamRC.RPG.Adventure;
+using NightlyCode.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Effects.Status;
 using StreamRC.RPG.Messages;
 
 namespace StreamRC.RPG.Players.Skills.Monster {
-    public class PoisonSkill : MonsterSkill {
-        readonly AdventureModule adventure;
+
+    [Module(Key = "skill.poison")]
+    public class PoisonSkill : SkillExecutionModule {
+        readonly IModuleContext context;
         readonly RPGMessageModule messages;
 
-        public PoisonSkill(int level, AdventureModule adventure, RPGMessageModule messages) {
-            this.adventure = adventure;
+        public PoisonSkill(IModuleContext context, RPGMessageModule messages) {
+            this.context = context;
             this.messages = messages;
-            Level = level;
         }
 
         public override string Name => "Poison";
 
-        public override int Level { get; }
-
-        int GetModifiedDexterity(IBattleEntity entity) {
-            switch(Level) {
+        int GetModifiedDexterity(IBattleEntity entity, int skilllevel) {
+            switch(skilllevel) {
                 case 1:
                     return (int)(entity.Dexterity * 0.4);
                 case 2:
@@ -33,14 +32,14 @@ namespace StreamRC.RPG.Players.Skills.Monster {
             }
         }
 
-        public override void Process(IBattleEntity attacker, IBattleEntity target) {
-            float hitprobability = MathCore.Sigmoid(GetModifiedDexterity(attacker) - target.Dexterity, 1.1f, 0.7f);
+        public override void Process(IBattleEntity attacker, IBattleEntity target, int skilllevel) {
+            float hitprobability = MathCore.Sigmoid(GetModifiedDexterity(attacker, skilllevel) - target.Dexterity, 1.1f, 0.7f);
             messages.Create().BattleActor(attacker).Text(" tries to bite ").BattleActor(target).Text(".").Send();
             
             if(RNG.XORShift64.NextFloat() < hitprobability)
-                target.AddEffect(new PoisonEffect(target, adventure, messages) {
-                    Level = Level,
-                    Time = 30.0 + 160.0 * Level
+                target.AddEffect(new PoisonEffect(context, target, messages) {
+                    Level = skilllevel,
+                    Time = 30.0 + 160.0 * skilllevel
                 });
         }
     }

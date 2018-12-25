@@ -10,7 +10,6 @@ using StreamRC.Core.Messages;
 using StreamRC.Core.Scripts;
 using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
-using StreamRC.RPG.Equipment;
 using StreamRC.RPG.Items;
 using StreamRC.RPG.Items.Recipes;
 using StreamRC.RPG.Messages;
@@ -24,7 +23,7 @@ namespace StreamRC.RPG.Inventory {
     /// <summary>
     /// module managing inventory of players
     /// </summary>
-    [Module(Key="inventory", AutoCreate = true)]
+    [Module(Key="inventory")]
     public class InventoryModule : ICommandModule {
         readonly DatabaseModule database;
         readonly StreamModule stream;
@@ -33,14 +32,12 @@ namespace StreamRC.RPG.Inventory {
         readonly SkillModule skills;
         readonly ItemModule items;
         readonly RPGMessageModule messages;
-        readonly EquipmentModule equipment;
-        readonly EffectModule effects;
 
         /// <summary>
         /// creates a new <see cref="InventoryModule"/>
         /// </summary>
         /// <param name="context">access to module context</param>
-        public InventoryModule(DatabaseModule database, StreamModule stream, UserModule users, PlayerModule players, SkillModule skills, ItemModule items, RPGMessageModule messages, EquipmentModule equipment, EffectModule effects) {
+        public InventoryModule(DatabaseModule database, StreamModule stream, UserModule users, PlayerModule players, SkillModule skills, ItemModule items, RPGMessageModule messages) {
             this.database = database;
             this.stream = stream;
             this.users = users;
@@ -48,8 +45,6 @@ namespace StreamRC.RPG.Inventory {
             this.skills = skills;
             this.items = items;
             this.messages = messages;
-            this.equipment = equipment;
-            this.effects = effects;
             database.Database.UpdateSchema<InventoryItem>();
             database.Database.UpdateSchema<FullInventoryItem>();
         }
@@ -475,44 +470,6 @@ namespace StreamRC.RPG.Inventory {
             }
             message.Send();
             players.UpdatePeeAndPoo(player.UserID, player.Pee, player.Poo, player.Vomit);
-        }
-
-        [Command("use", "$service", "$channel", "$user")]
-        public void UseItem(string service, string channel, string username, string[] arguments) {
-            if (arguments.Length == 0) {
-                stream.SendMessage(service, channel, username, "Well, you have to specify the name of the item to use");
-                return;
-            }
-
-            int index = 0;
-            Item item = items.RecognizeItem(arguments, ref index);
-            if(item == null) {
-                stream.SendMessage(service, channel, username, $"An item of the name '{string.Join(" ", arguments)}' is unknown.");
-                return;
-            }
-
-            if(item.Type == ItemType.Armor || item.Type == ItemType.Weapon) {
-                equipment.Equip(service, channel, username, players.GetPlayer(service, username), item);
-                return;
-            }
-
-            if(item.Type != ItemType.Consumable && item.Type != ItemType.Potion && string.IsNullOrEmpty(item.Command)) {
-                stream.SendMessage(service, channel, username, $"Yeah sure ... use {item.Name} ... get real!");
-                return;
-            }
-
-            User user = users.GetExistingUser(service, username);
-            Player player = players.GetPlayer(user.ID);
-            if (player == null)
-            {
-                stream.SendMessage(service, channel, username, "Umm ... you do not seem to be a player in this channel.");
-                return;
-            }
-
-            skills.ModifyPlayerStats(player);
-            effects.ModifyPlayerStats(player);
-
-            UseItem(channel, user, player, item, arguments.Skip(index).ToArray());
         }
 
         [Command("inventory", "$service", "$channel", "$user")]

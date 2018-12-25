@@ -28,7 +28,7 @@ namespace StreamRC.Streaming.Stream.Commands {
         /// <summary>
         /// name of chat channel
         /// </summary>
-        public string Name => channel.Name;
+        public string Channel => channel.Name;
 
         /// <summary>
         /// channel flags

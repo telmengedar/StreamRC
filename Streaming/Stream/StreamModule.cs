@@ -4,6 +4,7 @@ using System.Linq;
 using NightlyCode.Core.Collections;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Scripting;
 using StreamRC.Core;
 using StreamRC.Core.Scripts;
 using StreamRC.Streaming.Extensions;
@@ -191,7 +192,7 @@ namespace StreamRC.Streaming.Stream {
 
         void ExecuteSystemCommand(StreamCommand command) {
             try {
-                object result =  scripts.Execute(command.Command) ?? "Command Executed";
+                object result = scripts.Execute(command.Command) ?? "Command Executed";
                 if(result is Array array)
                     result = string.Join("\n", array.Cast<object>());
 
@@ -200,6 +201,10 @@ namespace StreamRC.Streaming.Stream {
                     result = result.ToString().Replace('\n', ';');
 
                 SendMessage(command.Service, command.Channel, command.User, result.ToString());
+            }
+            catch(ScriptException e) {
+                Logger.Error(this, e.Message, e.Details);
+                SendMessage(command.Service, command.Channel, command.User, e.Message);
             }
             catch(Exception e) {
                 Logger.Error(this, $"Unable to execute '{command.Command}'", e);

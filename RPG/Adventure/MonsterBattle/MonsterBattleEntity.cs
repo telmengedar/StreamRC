@@ -27,12 +27,12 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
             MP = monster.MP;
         }
 
-        public MonsterSkill DetermineSkill() {
-            MonsterSkillDefinition skill= Monster.Skills?.RandomItem(s => s.Rate, RNG.XORShift64);
+        public SkillDefinition DetermineSkill() {
+            SkillDefinition skill= Monster.Skills?.RandomItem(s => s.Rate, RNG.XORShift64);
             if(skill == null || skill.Type == "attack")
                 return null;
 
-            return skillmodule.GetMonsterSkill(skill.Type, skill.Level);
+            return skill;
         }
 
         public void AddEffect(ITemporaryEffect effect) {

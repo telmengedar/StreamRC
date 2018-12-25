@@ -37,8 +37,9 @@ namespace StreamRC.Streaming.Users.Commands {
                     }
             }
 
-            object result = scripts.Execute(string.Format(customcommand.SystemCommand, command.Arguments.Cast<object>().ToArray())) ?? "Command executed";
-            SendMessage(channel, command.User, $"{result}");
+            object result = scripts.Execute(string.Format(customcommand.SystemCommand, command.Arguments.Cast<object>().ToArray()));
+            if(result != null)
+                SendMessage(channel, command.User, $"{result}");
         }
 
         /// <inheritdoc />

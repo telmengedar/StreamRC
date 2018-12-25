@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NightlyCode.Core.Logs;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Math;
+using NightlyCode.Modules;
+using StreamRC.RPG.Adventure.MonsterBattle.Monsters.Definitions;
 using StreamRC.RPG.Data;
 using StreamRC.RPG.Effects;
 using StreamRC.RPG.Effects.Battle;
@@ -15,17 +18,20 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
     /// battle logic
     /// </summary>
     public class MonsterBattleLogic : IAdventureLogic {
+        readonly IModuleContext context;
         readonly RPGMessageModule messages;
         readonly object actorlock = new object();
         readonly List<IBattleEntity> actors=new List<IBattleEntity>();
         int actor;
-        
+
         /// <summary>
         /// creates a new <see cref="MonsterBattleLogic"/>
         /// </summary>
+        /// <param name="context"></param>
         /// <param name="messages">module used to present messages</param>
-        public MonsterBattleLogic(RPGMessageModule messages) {
-            this.messages = messages;            
+        public MonsterBattleLogic(IModuleContext context, RPGMessageModule messages) {
+            this.context = context;
+            this.messages = messages;
         }
 
         public void Add(IBattleEntity entity) {
@@ -41,8 +47,8 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
         public void Remove(IBattleEntity entity, RPGMessageBuilder message=null) {
             lock(actorlock) {
                 actors.Remove(entity);
-                if(entity is MonsterBattleEntity)
-                    MonsterDefeated((MonsterBattleEntity)entity, message);
+                if(entity is MonsterBattleEntity battleEntity)
+                    MonsterDefeated(battleEntity, message);
             }
         }
 
@@ -57,7 +63,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
         } 
 
         public void PlayerDefeated(long playerid) {
-            IBattleEntity target = Actors.FirstOrDefault(a => a is PlayerBattleEntity && ((PlayerBattleEntity)a).PlayerID == playerid);
+            IBattleEntity target = Actors.FirstOrDefault(a => a is PlayerBattleEntity entity && entity.PlayerID == playerid);
             if(target == null)
                 return;
 
@@ -135,7 +141,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
 
             RPGMessageBuilder message = messages?.Create();
 
-            foreach(IBattleEffect effect in attacker.Effects.Where(t => t is IBattleEffect && ((IBattleEffect)t).Type == BattleEffectType.Persistent).Cast<IBattleEffect>()) {
+            foreach(IBattleEffect effect in attacker.Effects.Where(t => t is IBattleEffect effect && effect.Type == BattleEffectType.Persistent).Cast<IBattleEffect>()) {
                 EffectResult result = effect.ProcessEffect(attacker, target);
                 if(result.Type == EffectResultType.CancelAttack)
                     return AdventureStatus.MonsterBattle;
@@ -149,12 +155,19 @@ namespace StreamRC.RPG.Adventure.MonsterBattle {
                 }                
             }
 
-            MonsterSkill skill = (attacker as MonsterBattleEntity)?.DetermineSkill();
+            SkillDefinition skill = (attacker as MonsterBattleEntity)?.DetermineSkill();
             if(skill != null) {
-                skill.Process(attacker, target);
-                AdventureStatus status= CheckStatus(attacker, target, message);
-                message?.Send();
-                return status;
+                SkillExecutionModule skillmodule = context.GetModuleByKey<SkillExecutionModule>($"skill.{skill.Type}");
+                if(skillmodule != null) {
+                    skillmodule.Process(attacker, target, skill.Level);
+                    AdventureStatus status = CheckStatus(attacker, target, message);
+                    message?.Send();
+                    return status;
+                }
+                else {
+                    Logger.Warning(this, $"Unable to find skill execution module skill.{skill.Type}");
+                    return Status;
+                }
             }
 
             float hitprobability = MathCore.Sigmoid(attacker.Dexterity - target.Dexterity, 1.1f, 0.7f);

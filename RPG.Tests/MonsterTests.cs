@@ -77,7 +77,7 @@ namespace RPG.Tests
         public void TestMonsterStrength([ValueSource(nameof(Monsters))] Monster monster) {
             TestBattleEntity playerentity = CreatePlayerEntity(monster.Requirement);
             TestBattleEntity monsterentity = new TestBattleEntity(monster.Level, monster.HP, monster.MP, monster.Power, monster.Defense, monster.Dexterity, 0, 1.0 / 500.0);
-            MonsterBattleLogic battlelogic = new MonsterBattleLogic(null);
+            MonsterBattleLogic battlelogic = new MonsterBattleLogic(null, null);
             battlelogic.Add(playerentity);
             battlelogic.Add(monsterentity);
             for(int i = 0; i < 1000; ++i)
@@ -101,7 +101,7 @@ namespace RPG.Tests
             Console.WriteLine($"Player Maximum Damage: {monsterentity.MaxDamage}");
 
             playerentity = CreatePlayerEntity(Math.Min(Levels.Length, monster.Maximum));
-            battlelogic = new MonsterBattleLogic(null);
+            battlelogic = new MonsterBattleLogic(null, null);
             battlelogic.Add(playerentity);
             battlelogic.Add(monsterentity);
             for (int i = 0; i < 1000; ++i)

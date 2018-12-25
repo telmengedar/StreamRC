@@ -14,7 +14,7 @@ namespace NightlyCode.StreamRC.Gangolf {
     public class GangolfSpeakerModule : ITimerService {
         const string voice = "CereVoice Stuart - English (Scotland)";
         readonly object messagelock = new object();
-        readonly List<Message> messages = new List<Message>();
+        readonly Dictionary<object, Message> messages = new Dictionary<object, Message>();
 
         readonly ChatMessageModule chatmessages;
 
@@ -34,9 +34,9 @@ namespace NightlyCode.StreamRC.Gangolf {
         /// let gangolf talk something
         /// </summary>
         /// <param name="message">message to talk</param>
-        public void Speak(Message message) {
+        public void Speak(object key, Message message) {
             lock(messagelock)
-                messages.Add(message);
+                messages[key] = message;
         }
 
         /// <summary>
@@ -55,9 +55,12 @@ namespace NightlyCode.StreamRC.Gangolf {
                 if(messages.Count == 0)
                     return;
 
-                Message message = messages.RandomItem(RNG.XORShift64);
-                messages.Remove(message);
-                chatmessages.SendMessage(message, ChannelFlags.Bot, voice);
+                object key = messages.Keys.RandomItem(RNG.XORShift64);
+                if(key!=null) {
+                    Message message = messages[key];
+                    chatmessages.SendMessage(message, ChannelFlags.Bot, voice);
+                    messages.Remove(key);
+                }
             }
 
             nexttrigger = DateTime.Now + TimeSpan.FromSeconds(30.0 + RNG.XORShift64.NextDouble() * 60.0);

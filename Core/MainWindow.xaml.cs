@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
+using NightlyCode.Scripting;
 using StreamRC.Core.Scripts;
 using StreamRC.Core.Settings;
 using StreamRC.Core.UI;
@@ -147,11 +148,14 @@ namespace StreamRC.Core
                 if(message.StartsWith("$")) {
                     try {
                         object result = scripts.Execute(message.Substring(1));
-                        if (result is IEnumerable array)
+                        if(result is IEnumerable array)
                             result = string.Join("\n", array.Cast<object>());
                         if(result != null)
                             Logger.Info(this, message.Substring(1), $"{result}");
                         else Logger.Info(this, message.Substring(1));
+                    }
+                    catch(ScriptException ex) {
+                        Logger.Error(this, ex.Message, ex.Details);
                     }
                     catch (Exception ex) {
                         Logger.Error(this, "Error executing command", ex);

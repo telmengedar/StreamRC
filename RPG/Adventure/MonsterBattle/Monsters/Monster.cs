@@ -16,7 +16,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
         public int Gold { get; set; }
 
         public DropItem[] DroppedItems { get; set; }
-        public MonsterSkillDefinition[] Skills { get; set; }
+        public SkillDefinition[] Skills { get; set; }
 
         public override string ToString() {
             return $"{Name} Level {Level}";

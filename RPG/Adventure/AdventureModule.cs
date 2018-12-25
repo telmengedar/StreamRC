@@ -165,13 +165,13 @@ namespace StreamRC.RPG.Adventure {
                         break;
                     case AdventureStatus.MonsterBattle:
                         if(argument != null) {
-                            MonsterBattleLogic battlelogic = new MonsterBattleLogic(messages);
+                            MonsterBattleLogic battlelogic = new MonsterBattleLogic(context, messages);
                             battlelogic.Add(new PlayerBattleEntity(adventure.Player, adventure, battlelogic,usermodule,effectmodule,players,skillmodule,equipmentmodule,itemmodule,inventorymodule));
                             battlelogic.Add(new MonsterBattleEntity(monstermodule.GetMonster((string)argument, players.GetExistingPlayer(adventure.Player).Level), adventure, battlelogic, effectmodule, skillmodule));
                             adventure.AdventureLogic = battlelogic;
                         }
                         else {
-                            MonsterBattleLogic battlelogic = new MonsterBattleLogic(messages);
+                            MonsterBattleLogic battlelogic = new MonsterBattleLogic(context, messages);
                             battlelogic.Add(new PlayerBattleEntity(adventure.Player, adventure, battlelogic, usermodule, effectmodule, players, skillmodule, equipmentmodule, itemmodule, inventorymodule));
                             battlelogic.Add(new MonsterBattleEntity(monstermodule.GetMonster(players.GetExistingPlayer(adventure.Player).Level), adventure, battlelogic, effectmodule, skillmodule));
                             adventure.AdventureLogic = battlelogic;

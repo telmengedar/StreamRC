@@ -66,7 +66,7 @@ namespace StreamRC.RPG.Adventure.MonsterBattle.Monsters {
                         Gold = level.Gold,
                         DroppedItems = drops,
                         Skills = definition.SkillSet.Where(s => s.MinLevel <= level.Level && s.MaxLevel >= level.Level).Select(s => s.Skill).Concat(new[] {
-                            new MonsterSkillDefinition {
+                            new SkillDefinition {
                                 Type = "attack",
                                 Level = 1,
                                 Rate = 1.0

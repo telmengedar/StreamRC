@@ -6,15 +6,26 @@ using NightlyCode.Modules;
 
 namespace StreamRC.Core.Http {
 
+    /// <summary>
+    /// provides a http server using http.sys functionality
+    /// </summary>
     [Module]
     public class HttpSysServiceModule : IHttpServiceModule {
         readonly HttpListener httplistener = new HttpListener();
         readonly Dictionary<string, IHttpService> servicehandlers = new Dictionary<string, IHttpService>();
 
+        /// <summary>
+        /// creates a new <see cref="HttpSysServiceModule"/>
+        /// </summary>
         public HttpSysServiceModule() {
             httplistener.Prefixes.Add("http://localhost/streamrc/");
-            httplistener.Start();
-            httplistener.BeginGetContext(OnHttpContext, null);
+            try {
+                httplistener.Start();
+                httplistener.BeginGetContext(OnHttpContext, null);
+            }
+            catch (Exception e) {
+                Logger.Warning(this, "Unable to start http server", e);
+            }
         }
 
         void OnHttpContext(IAsyncResult ar) {
@@ -48,10 +59,19 @@ namespace StreamRC.Core.Http {
             }
         }
 
+        /// <summary>
+        /// adds a service handler for a resource
+        /// </summary>
+        /// <param name="resource">resource to handle</param>
+        /// <param name="service">service handling requests</param>
         public void AddServiceHandler(string resource, IHttpService service) {
             servicehandlers[resource] = service;
         }
 
+        /// <summary>
+        /// removes a service handler for a resource
+        /// </summary>
+        /// <param name="resource">resource of which to remove handler</param>
         public void RemoveServiceHandler(string resource) {
             servicehandlers.Remove(resource);
         }

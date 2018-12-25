@@ -3,7 +3,7 @@
     /// <summary>
     /// definition of a skill a monster can use
     /// </summary>
-    public class MonsterSkillDefinition {
+    public class SkillDefinition {
 
         /// <summary>
         /// name of skill

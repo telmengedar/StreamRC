@@ -34,15 +34,17 @@ namespace StreamRC.Streaming.Stream.Commands {
         void ScanForCommands() {
             List<ModuleCommandAttribute> modulecommands = new List<ModuleCommandAttribute>();
             List<Tuple<ModuleInformation, MethodInfo, CommandAttribute>> methodcommands = new List<Tuple<ModuleInformation, MethodInfo, CommandAttribute>>();
+            List<Tuple<ModuleInformation, PropertyInfo, CommandAttribute>> propertycommands = new List<Tuple<ModuleInformation, PropertyInfo, CommandAttribute>>();
 
             foreach (ModuleInformation module in context.Modules) {
-                ModuleCommandAttribute[] commands = Attribute.GetCustomAttributes(module.Type, typeof(ModuleCommandAttribute)) as ModuleCommandAttribute[];
-                if (commands != null)
+                if (Attribute.GetCustomAttributes(module.Type, typeof(ModuleCommandAttribute)) is ModuleCommandAttribute[] commands)
                     foreach (ModuleCommandAttribute command in commands)
                         modulecommands.Add(command);
 
                 foreach (MethodInfo method in module.Type.GetMethods().Where(m => Attribute.IsDefined(m, typeof(CommandAttribute))))
                     methodcommands.AddRange(CheckMethod(module, method));
+                foreach(PropertyInfo property in module.Type.GetProperties().Where(p => Attribute.IsDefined(p, typeof(CommandAttribute))))
+                    propertycommands.AddRange(CheckProperty(module, property));
             }
 
             foreach (ModuleCommandAttribute modulecommand in modulecommands)
@@ -50,6 +52,11 @@ namespace StreamRC.Streaming.Stream.Commands {
 
             foreach (Tuple<ModuleInformation, MethodInfo, CommandAttribute> command in methodcommands) {
                 ScriptCommandHandler commandhandler = new ScriptCommandHandler(scripts, string.IsNullOrEmpty(command.Item1.Key) ? command.Item1.TypeName : command.Item1.Key, command.Item2.Name, false, ToScriptParameters(command.Item2.GetParameters(), command.Item3.Arguments).ToArray());
+                stream.RegisterCommandHandler(command.Item3.StreamCommand, commandhandler);
+            }
+
+            foreach(Tuple<ModuleInformation, PropertyInfo, CommandAttribute> command in propertycommands) {
+                ScriptCommandHandler commandhandler = new ScriptCommandHandler(scripts, string.IsNullOrEmpty(command.Item1.Key) ? command.Item1.TypeName : command.Item1.Key, command.Item2.Name, true);
                 stream.RegisterCommandHandler(command.Item3.StreamCommand, commandhandler);
             }
         }
@@ -62,10 +69,20 @@ namespace StreamRC.Streaming.Stream.Commands {
             }
         }
 
+        IEnumerable<Tuple<ModuleInformation, PropertyInfo, CommandAttribute>> CheckProperty(ModuleInformation module, PropertyInfo property) {
+            CommandAttribute commandinfo = (CommandAttribute)Attribute.GetCustomAttribute(property, typeof(CommandAttribute));
+            if(commandinfo.Arguments.Length > 0) {
+                Logger.Warning(this, $"Unable to add command for {module.TypeName}::{property}", "Properties do not support parameters");
+                yield break;
+            }
+
+            yield return new Tuple<ModuleInformation, PropertyInfo, CommandAttribute>(module, property, commandinfo);
+        }
+
         IEnumerable<Tuple<ModuleInformation, MethodInfo, CommandAttribute>> CheckMethod(ModuleInformation module, MethodInfo method) {
             CommandAttribute commandinfo = (CommandAttribute) Attribute.GetCustomAttribute(method, typeof(CommandAttribute));
             ParameterInfo[] parameters = method.GetParameters();
-            if (parameters.Length != commandinfo.Arguments.Length) {
+            if (parameters.Length < commandinfo.Arguments.Length) {
                 Logger.Warning(this, $"Unable to add command for {module.TypeName}::{method}", "Specified parameter count does not match");
                 yield break;
             }

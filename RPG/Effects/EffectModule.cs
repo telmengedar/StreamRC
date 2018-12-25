@@ -18,21 +18,21 @@ namespace StreamRC.RPG.Effects {
 
     [Module(Key="effects")]
     public class EffectModule : ITimerService, ICommandModule, IItemCommandModule {
+        readonly IModuleContext context;
         readonly StreamModule stream;
         readonly RPGMessageModule messages;
         readonly UserModule users;
         readonly PlayerModule players;
-        readonly AdventureModule adventure;
         readonly object effectlock = new object();
         readonly List<ITemporaryEffect> monstereffects = new List<ITemporaryEffect>();
         readonly Dictionary<long, List<ITemporaryEffect>> playereffects = new Dictionary<long, List<ITemporaryEffect>>();
 
-        public EffectModule(StreamModule stream, TimerModule timer, RPGMessageModule messages, UserModule users, PlayerModule players, AdventureModule adventure) {
+        public EffectModule(IModuleContext context, StreamModule stream, TimerModule timer, RPGMessageModule messages, UserModule users, PlayerModule players) {
+            this.context = context;
             this.stream = stream;
             this.messages = messages;
             this.users = users;
             this.players = players;
-            this.adventure = adventure;
             timer.AddService(this, 1.0);
         }
 
@@ -87,8 +87,7 @@ namespace StreamRC.RPG.Effects {
         /// <param name="effect">effect to add</param>
         public void AddPlayerEffect(long playerid, ITemporaryEffect effect) {
             lock(effectlock) {
-                List<ITemporaryEffect> effects;
-                if(!playereffects.TryGetValue(playerid, out effects))
+                if(!playereffects.TryGetValue(playerid, out List<ITemporaryEffect> effects))
                     playereffects[playerid] = effects = new List<ITemporaryEffect>();
 
                 effects.RemoveAll(e => e.GetType() == effect.GetType());
@@ -109,8 +108,7 @@ namespace StreamRC.RPG.Effects {
         /// <returns>enumeration of active effects</returns>
         public IEnumerable<ITemporaryEffect> GetActivePlayerEffects(long playerid) {
             lock(effectlock) {
-                List<ITemporaryEffect> effects;
-                if(!playereffects.TryGetValue(playerid, out effects))
+                if(!playereffects.TryGetValue(playerid, out List<ITemporaryEffect> effects))
                     yield break;
 
                 foreach(ITemporaryEffect effect in effects)
@@ -179,7 +177,7 @@ namespace StreamRC.RPG.Effects {
                     AddPlayerEffect(user.ID, new SmellyArmorEffect(level, time, messages, user.ID));
                     break;
                 case "shittyweapon":
-                    AddPlayerEffect(user.ID, new ShittyWeaponEffect(level, time, user.ID, messages, adventure));
+                    AddPlayerEffect(user.ID, new ShittyWeaponEffect(level, time, user.ID, messages, context.GetModule<AdventureModule>()));
                     break;
                 case "herakles":
                     AddPlayerEffect(user.ID, new HeraklesEffect(level, time, messages, user));

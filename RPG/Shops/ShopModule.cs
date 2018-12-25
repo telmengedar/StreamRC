@@ -87,7 +87,7 @@ namespace StreamRC.RPG.Shops {
         }
 
         [Command("advise", "$service", "$channel", "$user")]
-        public void Advise(string service, string channel, string user, string[] arguments) {
+        public void Advise(string service, string channel, string user) {
             Player player = players.GetExistingPlayer(service, user);
 
             AdvisedItem[] adviseditems = database.Database.LoadEntities<AdvisedItem>().Where(i => i.PlayerID == player.UserID).Execute().OrderByDescending(i=>i.Value).ToArray();

@@ -1,28 +1,28 @@
 ﻿using System;
 using NightlyCode.Core.Randoms;
 using NightlyCode.Math;
+using NightlyCode.Modules;
 using StreamRC.RPG.Adventure.MonsterBattle;
 using StreamRC.RPG.Messages;
 
 namespace StreamRC.RPG.Players.Skills.Monster {
-    public class StealSkill : MonsterSkill {
+
+    [Module(Key = "skill.steal")]
+    public class StealSkill : SkillExecutionModule {
         readonly PlayerModule players;
         readonly RPGMessageModule messages;
 
-        public StealSkill(int level, PlayerModule players, RPGMessageModule messages) {
+        public StealSkill(PlayerModule players, RPGMessageModule messages) {
             this.players = players;
             this.messages = messages;
-            Level = level;
         }
 
 
         public override string Name => "Steal";
 
-        public override int Level { get; }
-
-        float GetCenter()
+        float GetCenter(int skilllevel)
         {
-            switch (Level)
+            switch (skilllevel)
             {
                 case 1:
                     return 0.5f;
@@ -41,11 +41,11 @@ namespace StreamRC.RPG.Players.Skills.Monster {
             }
         }
 
-        public override void Process(IBattleEntity attacker, IBattleEntity target) {
-            float hitprobability = MathCore.Sigmoid(attacker.Dexterity - target.Dexterity, 1.1f, GetCenter());
+        public override void Process(IBattleEntity attacker, IBattleEntity target, int skilllevel) {
+            float hitprobability = MathCore.Sigmoid(attacker.Dexterity - target.Dexterity, 1.1f, GetCenter(skilllevel));
             if(RNG.XORShift64.NextFloat() < hitprobability) {
                 long playerid = (target as PlayerBattleEntity)?.PlayerID??0;
-                int gold = Level * 50 + RNG.XORShift64.NextInt(attacker.Level * 15);
+                int gold = skilllevel * 50 + RNG.XORShift64.NextInt(attacker.Level * 15);
                 gold = Math.Min(gold, players.GetPlayerGold(playerid));
 
                 if(gold == 0)
