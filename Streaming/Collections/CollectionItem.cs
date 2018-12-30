@@ -22,5 +22,10 @@ namespace StreamRC.Streaming.Collections {
         /// item name
         /// </summary>
         public string Item { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString() {
+            return $"{Item} ({User})";
+        }
     }
 }

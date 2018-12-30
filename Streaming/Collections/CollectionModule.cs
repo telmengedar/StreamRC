@@ -87,6 +87,12 @@ namespace StreamRC.Streaming.Collections {
             return database.Database.LoadEntities<Collection>().Execute().ToArray();
         }
 
+        /// <summary>
+        /// get items contained in a collection
+        /// </summary>
+        /// <param name="collection">name of collection</param>
+        /// <returns>items contained in collection</returns>
+        [Command("backlog", "backlog")]
         public CollectionItem[] GetItems(string collection) {
             return database.Database.LoadEntities<CollectionItem>().Where(i => i.Collection == collection).Execute().ToArray();
         }
@@ -134,8 +140,15 @@ namespace StreamRC.Streaming.Collections {
             });
         }
 
-        [Command("add", "$user", "{0}", "{1}")]
-        public void AddItem(string user, string collectionname, string item) {
+        /// <summary>
+        /// adds an item to the specified collection
+        /// </summary>
+        /// <param name="user">user who wants to add an item</param>
+        /// <param name="collectionname">name of collection to add item to</param>
+        /// <param name="itemnames">tokens which make up the item name</param>
+        [Command("add", "$user", "{0}")]
+        public void AddItem(string user, string collectionname, string[] itemnames) {
+            string item = string.Join(" ", itemnames);
             Collection collection = database.Database.LoadEntities<Collection>().Where(c => c.Name == collectionname).Execute().FirstOrDefault();
             if(collection == null)
                 throw new StreamCommandException($"There is no collection named '{collectionname}'");

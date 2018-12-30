@@ -5,7 +5,7 @@ namespace StreamRC.Core.Scripts {
     /// <summary>
     /// attribute used to declare methods to be callable from stream
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method|AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Method|AttributeTargets.Property, AllowMultiple = true)]
     public class CommandAttribute : Attribute {
 
         /// <summary>

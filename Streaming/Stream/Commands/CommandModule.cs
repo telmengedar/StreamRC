@@ -70,24 +70,28 @@ namespace StreamRC.Streaming.Stream.Commands {
         }
 
         IEnumerable<Tuple<ModuleInformation, PropertyInfo, CommandAttribute>> CheckProperty(ModuleInformation module, PropertyInfo property) {
-            CommandAttribute commandinfo = (CommandAttribute)Attribute.GetCustomAttribute(property, typeof(CommandAttribute));
-            if(commandinfo.Arguments.Length > 0) {
-                Logger.Warning(this, $"Unable to add command for {module.TypeName}::{property}", "Properties do not support parameters");
-                yield break;
-            }
+            CommandAttribute[] commandinfos = (CommandAttribute[])Attribute.GetCustomAttributes(property, typeof(CommandAttribute));
+            foreach(CommandAttribute commandinfo in commandinfos) {
+                if(commandinfo.Arguments.Length > 0) {
+                    Logger.Warning(this, $"Unable to add command for {module.TypeName}::{property}", "Properties do not support parameters");
+                    yield break;
+                }
 
-            yield return new Tuple<ModuleInformation, PropertyInfo, CommandAttribute>(module, property, commandinfo);
+                yield return new Tuple<ModuleInformation, PropertyInfo, CommandAttribute>(module, property, commandinfo);
+            }
         }
 
         IEnumerable<Tuple<ModuleInformation, MethodInfo, CommandAttribute>> CheckMethod(ModuleInformation module, MethodInfo method) {
-            CommandAttribute commandinfo = (CommandAttribute) Attribute.GetCustomAttribute(method, typeof(CommandAttribute));
-            ParameterInfo[] parameters = method.GetParameters();
-            if (parameters.Length < commandinfo.Arguments.Length) {
-                Logger.Warning(this, $"Unable to add command for {module.TypeName}::{method}", "Specified parameter count does not match");
-                yield break;
-            }
+            CommandAttribute[] commandinfos = (CommandAttribute[]) Attribute.GetCustomAttributes(method, typeof(CommandAttribute));
+            foreach(CommandAttribute commandinfo in commandinfos) {
+                ParameterInfo[] parameters = method.GetParameters();
+                if(parameters.Length < commandinfo.Arguments.Length) {
+                    Logger.Warning(this, $"Unable to add command for {module.TypeName}::{method}", "Specified parameter count does not match");
+                    yield break;
+                }
 
-            yield return new Tuple<ModuleInformation, MethodInfo, CommandAttribute>(module, method, commandinfo);
+                yield return new Tuple<ModuleInformation, MethodInfo, CommandAttribute>(module, method, commandinfo);
+            }
         }
     }
 }

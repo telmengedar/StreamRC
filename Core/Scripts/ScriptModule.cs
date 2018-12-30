@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
+using NightlyCode.Core.Logs;
 using NightlyCode.Modules;
 using NightlyCode.Modules.Scripts;
 using NightlyCode.Scripting;
@@ -54,6 +55,7 @@ namespace StreamRC.Core.Scripts {
         /// <param name="variablehost">host containing script variables</param>
         /// <returns>result of executed script</returns>
         public object Execute(string script, IScriptVariableHost variablehost = default(IScriptVariableHost)) {
+            Logger.Info(this, $"Executing '{script}'");
             IScriptToken token = scriptparser.Parse(script, variablehost);
             return token.Execute();
         }

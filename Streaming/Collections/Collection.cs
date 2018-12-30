@@ -22,5 +22,10 @@ namespace StreamRC.Streaming.Collections {
         /// items a single user can add
         /// </summary>
         public int ItemsPerUser { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString() {
+            return $"{Name} - {Description} - {ItemsPerUser} items per user";
+        }
     }
 }

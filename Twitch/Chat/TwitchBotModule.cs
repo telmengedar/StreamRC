@@ -451,6 +451,23 @@ namespace StreamRC.Twitch.Chat {
                 Connect();
         }
 
+        public void CheckViewers() {
+            if (userdata != null)
+            {
+                GetStreamsResponse response = twitchapi.GetStreams(userdata.ID);
+                TwitchStream stream = response.Data.FirstOrDefault();
+                if (stream == null)
+                {
+                    Live = false;
+                    viewercheck = 180.0;
+                    return;
+                }
+
+                Live = true;
+                Viewers = stream.ViewerCount;
+            }
+        }
+
         void ITimerService.Process(double time) {
             if(!isconnected) return;
 
@@ -469,19 +486,8 @@ namespace StreamRC.Twitch.Chat {
 
             viewercheck -= time;
             if(viewercheck <= 0.0) {
-                if(userdata != null) {
-                    GetStreamsResponse response = twitchapi.GetStreams(userdata.ID);
-                    TwitchStream stream = response.Data.FirstOrDefault();
-                    if(stream == null) {
-                        Live = false;
-                        viewercheck = 180.0;
-                        return;
-                    }
-
-                    Live = true;
-                    Viewers = stream.ViewerCount;
-                    viewercheck = 180.0;
-                }
+                viewercheck = 180.0;
+                CheckViewers();
             }
         }
 
